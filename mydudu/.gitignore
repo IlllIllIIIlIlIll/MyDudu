@@ -1,0 +1,133 @@
+# ==================================
+# 1. General Node & Logs
+# ==================================
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ==================================
+# 2. Dependencies
+# ==================================
+node_modules/
+.pnpm-store/
+
+# ==================================
+# 3. Build Outputs (General & Monorepo)
+# ==================================
+dist/
+build/
+out/
+coverage/
+lib-cov/
+.nyc_output/
+
+# TurboRepo cache
+.turbo/
+
+# ==================================
+# 4. Framework: NestJS (Backend/API)
+# ==================================
+# File build incremental TS
+*.tsbuildinfo
+
+# ==================================
+# 5. Framework: Next.js (Frontend)
+# ==================================
+.next/
+# Jika menggunakan Next.js telemetry
+.next-env.d.ts
+
+# ==================================
+# 6. Python / IoT Gateway
+# ==================================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments (Penting!)
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ==================================
+# 7. Firebase
+# ==================================
+.firebase/
+firebase-debug.log*
+firebase-debug.*.log*
+# .firebaserc <-- (Saran: JANGAN di-ignore agar target deploy "default" tersimpan, kecuali tim punya project beda-beda)
+
+# ==================================
+# 8. Environment Variables (SECURITY!)
+# ==================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.production
+*.env
+.dataconnect
+
+# ==================================
+# 9. IDE & OS Files
+# ==================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# VS Code (Opsional: kadang settings.json dishare, tapi amannya di-ignore)
+.vscode/
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# JetBrains / IntelliJ
+.idea/
+
+# ==================================
+# 10. Others
+# ==================================
+# Optional eslint cache
+.eslintcache
+# Yarn Integrity file
+.yarn-integrity
+# Output of 'npm pack'
+*.tgz
