@@ -1,0 +1,10 @@
+{
+    "name": "@mydudu/types",
+    "version": "1.0.0",
+    "description": "Shared types for MyDudu",
+    "main": "index.js",
+    "types": "index.d.ts",
+    "devDependencies": {
+        "typescript": "^5.0.0"
+    }
+}
