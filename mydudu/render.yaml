@@ -1,0 +1,16 @@
+services:
+  # Laravel Backend
+  - type: web
+    name: mydudu-api
+    runtime: docker
+    root: mydudu/apps/api
+    plan: free
+    envVars:
+      - key: APP_KEY
+        generateValue: true
+      - key: APP_DEBUG
+        value: false
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: LOG_CHANNEL
+        value: stderr
