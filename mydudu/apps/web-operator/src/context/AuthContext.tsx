@@ -1,107 +1,49 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+"use client";
 
-export type UserRole = 'admin' | 'puskesmas' | 'posyandu';
-
-export interface User {
-  id: string;
-  email: string;
-  username: string;
-  role: UserRole;
-  fullName: string;
-  assignedLocation?: {
-    type: 'posyandu' | 'puskesmas' | 'kecamatan';
-    posyanduName?: string;  // Specific posyandu name for posyandu operators
-    village?: string;        // Village name
-    kecamatan?: string;      // Kecamatan name
-    puskesmasName?: string;  // Puskesmas name for puskesmas operators
-  };
-  avatar?: string;
-}
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { User, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string) => void;
-  logout: () => void;
-  isAuthenticated: boolean;
+  loading: boolean;
+  signInWithGoogle: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | null>(null);
 
-// Mock user data for demonstration
-const mockUsers: Record<string, User> = {
-  'admin': {
-    id: '1',
-    email: 'admin@mydudu.id',
-    username: 'admin',
-    role: 'admin',
-    fullName: 'System Administrator'
-  },
-  'sari.wijaya': {
-    id: '2',
-    email: 'sari.wijaya@mydudu.id',
-    username: 'sari.wijaya',
-    role: 'posyandu',
-    fullName: 'Sari Wijaya',
-    assignedLocation: {
-      type: 'posyandu',
-      posyanduName: 'Posyandu Melati',
-      village: 'Desa Sukamaju',
-      kecamatan: 'Kecamatan Cianjur'
-    }
-  },
-  'ahmad.fauzi': {
-    id: '3',
-    email: 'ahmad.fauzi@mydudu.id',
-    username: 'ahmad.fauzi',
-    role: 'puskesmas',
-    fullName: 'Dr. Ahmad Fauzi',
-    assignedLocation: {
-      type: 'puskesmas',
-      puskesmasName: 'Puskesmas Cianjur',
-      kecamatan: 'Kecamatan Cianjur'
-    }
-  },
-  'rina.kusuma': {
-    id: '4',
-    email: 'rina.kusuma@mydudu.id',
-    username: 'rina.kusuma',
-    role: 'posyandu',
-    fullName: 'Rina Kusuma',
-    assignedLocation: {
-      type: 'posyandu',
-      posyanduName: 'Posyandu Mawar',
-      village: 'Desa Makmur',
-      kecamatan: 'Kecamatan Cianjur'
-    }
-  }
-};
-
-export function AuthProvider({ children }: { children: ReactNode }) {
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = (email: string) => {
-    const username = email.split('@')[0];
-    const userData = mockUsers[username];
-    if (userData) {
-      setUser(userData);
-    }
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      console.log("Auth State Changed:", currentUser);
+      setUser(currentUser);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const signInWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider);
   };
 
-  const logout = () => {
-    setUser(null);
+  const logout = async () => {
+    await signOut(auth);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, loading, signInWithGoogle, logout }}>
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
-}
+};

@@ -22,20 +22,37 @@ import { SystemLogs } from '../pages/admin/SystemLogs';
 import { DeviceRegistry } from '../pages/admin/DeviceRegistry';
 
 function AppContent() {
-    const { user, login, isAuthenticated } = useAuth();
+    const { user, signInWithGoogle, loading } = useAuth();
+    const isAuthenticated = !!user;
+
+    // Temporary: Derive admin role from email for demonstration
+    // In a real app, this should come from the user's custom claims or database profile
+    const isAdmin = user?.email?.includes('admin') || user?.email?.includes('favian');
+
     const [activePage, setActivePage] = useState(() =>
-        user?.role === 'admin' ? 'admin-dashboard' : 'dashboard'
+        isAdmin ? 'admin-dashboard' : 'dashboard'
     );
     const [showProfile, setShowProfile] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
 
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-screen bg-gray-50">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
+
     if (!isAuthenticated) {
-        return <Login onLogin={login} />;
+        return <Login onLogin={signInWithGoogle} />;
     }
 
     const renderPage = () => {
+        // Re-derive for render logic since state might not update if we didn't store role in state
+        const isAdmin = user?.email?.includes('admin') || user?.email?.includes('favian');
+
         // Admin pages
-        if (user?.role === 'admin') {
+        if (isAdmin) {
             switch (activePage) {
                 case 'admin-dashboard':
                     return <AdminDashboard />;
