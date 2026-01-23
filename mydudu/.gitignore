@@ -131,3 +131,4 @@ Desktop.ini
 .yarn-integrity
 # Output of 'npm pack'
 *.tgz
+.vercel
