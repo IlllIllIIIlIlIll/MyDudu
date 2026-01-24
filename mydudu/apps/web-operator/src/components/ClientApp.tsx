@@ -2,24 +2,24 @@
 
 import { useState } from 'react';
 import { AuthProvider, useAuth } from '../context/AuthContext';
-import { Login } from '../pages/Login';
+import { Login } from '../views/Login';
 import { Sidebar } from '../components/Sidebar';
 import { Topbar } from '../components/Topbar';
 import { ProfileModal } from '../components/ProfileModal';
 import { NotificationPanel } from '../components/NotificationPanel';
 
 // Operator Pages
-import { Dashboard } from '../pages/Dashboard';
-import { ChildRecords } from '../pages/ChildRecords';
-import { DeviceMonitoring } from '../pages/DeviceMonitoring';
-import { DoctorValidation } from '../pages/DoctorValidation';
-import { ReportsAnalytics } from '../pages/ReportsAnalytics';
+import { Dashboard } from '../views/Dashboard';
+import { ChildRecords } from '../views/ChildRecords';
+import { DeviceMonitoring } from '../views/DeviceMonitoring';
+import { DoctorValidation } from '../views/DoctorValidation';
+import { ReportsAnalytics } from '../views/ReportsAnalytics';
 
 // Admin Pages
-import { AdminDashboard } from '../pages/admin/AdminDashboard';
-import { UserManagement } from '../pages/admin/UserManagement';
-import { SystemLogs } from '../pages/admin/SystemLogs';
-import { DeviceRegistry } from '../pages/admin/DeviceRegistry';
+import { AdminDashboard } from '../views/admin/AdminDashboard';
+import { UserManagement } from '../views/admin/UserManagement';
+import { SystemLogs } from '../views/admin/SystemLogs';
+import { DeviceRegistry } from '../views/admin/DeviceRegistry';
 
 function AppContent() {
     const { user, signInWithGoogle, loading } = useAuth();

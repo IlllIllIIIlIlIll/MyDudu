@@ -1,4 +1,0 @@
-2026/01/23 13:14:01 [emerg] 17824#32916: CreateFile() "C:\Users\FAVIAN\Documents\GitHub\MyDudu\nginx/mime.types" failed (2: The system cannot find the file specified) in C:\Users\FAVIAN\Documents\GitHub\MyDudu\nginx/operator.conf:9
-2026/01/23 13:17:08 [emerg] 6796#16180: CreateDirectory() "C:\Users\FAVIAN\Documents\GitHub\MyDudu\nginx/temp/client_body_temp" failed (3: The system cannot find the path specified)
-2026/01/23 13:20:18 [emerg] 25316#15964: CreateDirectory() "C:\Users\FAVIAN\Documents\GitHub\MyDudu\nginx/temp/client_body_temp" failed (3: The system cannot find the path specified)
-2026/01/23 15:56:33 [emerg] 20364#21656: CreateDirectory() "C:\Users\FAVIAN\Documents\GitHub\MyDudu\nginx/temp/client_body_temp" failed (3: The system cannot find the path specified)

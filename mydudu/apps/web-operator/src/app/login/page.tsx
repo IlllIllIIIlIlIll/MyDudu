@@ -12,6 +12,13 @@ export default function LoginPage() {
     useEffect(() => {
         if (user && !loading) {
             router.push("/");
+            // Sync user to backend
+            user.getIdToken().then(token => {
+                fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/sync`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).catch(err => console.error("Sync failed", err));
+            });
         }
     }, [user, loading, router]);
 

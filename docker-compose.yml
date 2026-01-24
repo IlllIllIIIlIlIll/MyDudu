@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # Database (Neon.tech simulation)
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: neondb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Cache/Queue (Upstash simulation)
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass password
+
+  # MQTT Broker (HiveMQTT simulation or Mosquitto)
+  # Using simple Mosquitto for local dev instead of public HiveMQTT to ensure offline capability
+  mqtt:
+    image: eclipse-mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+
+  # Backend API
+  api:
+    build: 
+      context: ./mydudu
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/neondb
+      - REDIS_URL=redis://default:password@redis:6379
+      - FIREBASE_CREDENTIALS_PATH=/app/service-account.json
+      # For dev, we might mock firebase or mount the file
+    volumes:
+      - ./service-account.json:/app/service-account.json
+    depends_on:
+      - postgres
+      - redis
+
+  # IoT Gateway
+  gateway:
+    build:
+      context: ./mydudu/apps/iot-gateway
+    environment:
+      - MQTT_BROKER=mqtt
+      - MQTT_PORT=1883
+      - MQTT_TOPIC=mydudu/telemetry
+    depends_on:
+      - mqtt
+
+  # Frontend (Optional in Docker, usually run locally for HMR)
+  # web-operator:
+  #   build: ./mydudu/apps/web-operator
+  #   ports:
+  #     - "3001:3001"
+
+volumes:
+  postgres_data:
