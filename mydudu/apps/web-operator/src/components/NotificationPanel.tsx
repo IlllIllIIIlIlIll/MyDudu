@@ -88,8 +88,8 @@ export function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center md:justify-end z-50">
-      <div className="bg-white w-full md:w-[420px] md:h-screen md:max-h-screen flex flex-col rounded-t-2xl md:rounded-none shadow-2xl max-h-[90vh]">
+    <div className="fixed inset-0 bg-black/50 flex items-end md:items-start justify-center md:justify-end z-50 transition-opacity">
+      <div className="bg-white w-full h-[85vh] md:w-[420px] md:h-screen flex flex-col rounded-t-2xl md:rounded-l-2xl md:rounded-tr-none shadow-2xl animate-in slide-in-from-bottom md:slide-in-from-right duration-300">
         {/* Header */}
         <div className="gradient-primary p-6 text-white flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
@@ -111,7 +111,10 @@ export function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
 
         {/* Actions */}
         <div className="px-6 py-3 border-b border-gray-200 flex gap-2 flex-shrink-0">
-          <button className="text-[14px] text-[#11998E] font-semibold hover:underline">
+          <button
+            onClick={() => alert("Marked all as read")}
+            className="text-[14px] text-[#11998E] font-semibold hover:underline"
+          >
             Tandai semua sudah dibaca
           </button>
         </div>
@@ -138,6 +141,7 @@ export function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
                   <div className="flex items-center justify-between">
                     <span className="text-[12px] text-gray-500">{notification.time}</span>
                     <button
+                      onClick={() => alert(`Deleted notification: ${notification.id}`)}
                       className="p-1 hover:bg-white rounded transition-colors"
                       title="Hapus notifikasi"
                     >
@@ -152,7 +156,10 @@ export function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
 
         {/* Footer */}
         <div className="p-4 border-t border-gray-200 flex-shrink-0">
-          <button className="w-full text-center text-[14px] text-[#11998E] font-semibold hover:underline">
+          <button
+            onClick={() => alert("Redirecting to full notifications page...")}
+            className="w-full text-center text-[14px] text-[#11998E] font-semibold hover:underline"
+          >
             Lihat Semua Notifikasi
           </button>
         </div>
