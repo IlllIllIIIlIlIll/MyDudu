@@ -27,10 +27,16 @@ export function UserManagement() {
   const [loading, setLoading] = useState(true);
 
   // Registration Form State
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
   const [districts, setDistricts] = useState<{ id: number; name: string }[]>([]);
   const [districtSearch, setDistrictSearch] = useState('');
   const [showDistrictDropdown, setShowDistrictDropdown] = useState(false);
   const [selectedDistrict, setSelectedDistrict] = useState('');
+
+  // Editing State
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
   const filteredDistricts = districts.filter(d =>
     d.name.toLowerCase().includes(districtSearch.toLowerCase())
@@ -43,17 +49,20 @@ export function UserManagement() {
       const res = await fetch(`${API_URL}/users`);
       if (res.ok) {
         const data = await res.json();
-        const formattedUsers = data.map((u: any) => ({
-          id: u.id,
-          username: u.email.split('@')[0],
-          email: u.email,
-          fullName: u.fullName,
-          role: u.role.toLowerCase(),
-          status: u.status === 'ACTIVE' ? 'Active' : u.status === 'PENDING' ? 'Pending' : 'Suspended',
-          assignedLocation: u.posyandu ? u.posyandu.name : 'Unknown Location',
-          createdAt: new Date(u.createdAt).toLocaleDateString(),
-          lastLogin: u.lastLogin ? new Date(u.lastLogin).toLocaleString() : '-'
-        }));
+        const formattedUsers = data.map((u: any) => {
+          const role = u.role.toLowerCase();
+          return {
+            id: u.id,
+            username: u.email.split('@')[0],
+            email: u.email,
+            fullName: u.fullName,
+            role: role,
+            status: u.status === 'ACTIVE' ? 'Active' : u.status === 'PENDING' ? 'Pending' : 'Suspended',
+            assignedLocation: role === 'admin' ? 'Indonesia' : role === 'puskesmas' ? (u.district?.name || 'Unknown District') : (u.posyandu?.village?.name || 'Unknown Village'),
+            createdAt: new Date(u.createdAt).toLocaleDateString(),
+            lastLogin: u.lastLogin ? new Date(u.lastLogin).toLocaleString() : '-'
+          };
+        });
         setUsers(formattedUsers);
       }
     } catch (error) {
@@ -166,12 +175,29 @@ export function UserManagement() {
   };
 
   const handleEditUser = (user: UserAccount) => {
-    alert(`Edit user: ${user.fullName}`);
+    setIsEditing(true);
+    setEditingUserId(user.id);
+    setFullName(user.fullName);
+    setEmail(user.email);
+    // Note: In real app, we might need to fetch full details or store district name in UserAccount to pre-fill districtSearch
+    // For now assuming we can use assignedLocation if it's not 'Unknown'
+    setDistrictSearch(user.role === 'puskesmas' ? user.assignedLocation : '');
+    setShowRegisterModal(true);
   };
 
-  const handleDeleteUser = (user: UserAccount) => {
+  const handleDeleteUser = async (user: UserAccount) => {
     if (confirm(`Hapus user ${user.fullName}? Aksi ini tidak dapat dibatalkan.`)) {
-      setUsers(users.filter(u => u.id !== user.id));
+      try {
+        const res = await fetch(`${API_URL}/users/${user.id}`, { method: 'DELETE' });
+        if (res.ok) {
+          setUsers(users.filter(u => u.id !== user.id));
+        } else {
+          alert('Failed to delete user');
+        }
+      } catch (error) {
+        console.error('Error deleting user:', error);
+        alert('Error occurring while deleting user');
+      }
     }
   };
 
@@ -195,7 +221,15 @@ export function UserManagement() {
           </p>
         </div>
         <button
-          onClick={() => setShowRegisterModal(true)}
+          onClick={() => {
+            setIsEditing(false);
+            setEditingUserId(null);
+            setFullName('');
+            setEmail('');
+            setDistrictSearch('');
+            setProfilePicBase64(undefined);
+            setShowRegisterModal(true);
+          }}
           className="gradient-primary text-white px-6 py-3 rounded-lg flex items-center gap-2 hover:opacity-90 transition-opacity"
         >
           <UserPlus className="w-5 h-5" />
@@ -368,21 +402,7 @@ export function UserManagement() {
           </p>
         </div>
       </div>
-
-      {/* Access Control Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-20">
-        <div className="flex items-start gap-3">
-          <Shield className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="font-semibold text-[15px] text-blue-800 mb-1">ITIL Access Management</p>
-            <p className="text-[14px] text-blue-700">
-              All user accounts are bound to specific locations for data security. Posyandu operators can only access their assigned posyandu.
-              Puskesmas operators can view all posyandus within their kecamatan. Only IT admins have full system access.
-            </p>
-          </div>
-        </div>
-      </div>
-
+      
       {/* Simplified Modal for Registration (Demo) */}
       {/* In real app, make this a separate component */}
       {/* Simplified Modal for Registration (Demo) */}
@@ -391,7 +411,7 @@ export function UserManagement() {
         <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50 p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-t-2xl md:rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col animate-in slide-in-from-bottom-4 duration-300">
             <div className="flex justify-between items-center p-6 border-b border-gray-200">
-              <h3 className="text-lg font-bold">Register Puskesmas Operator</h3>
+              <h3 className="text-lg font-bold">{isEditing ? 'Edit User' : 'Register Puskesmas Operator'}</h3>
               <button
                 onClick={() => setShowRegisterModal(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -400,10 +420,60 @@ export function UserManagement() {
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-            <form className="p-6 space-y-4" onSubmit={(e) => {
+            <form className="p-6 space-y-4" onSubmit={async (e) => {
               e.preventDefault();
-              alert("This would submit to API: POST /auth/register-puskesmas");
-              setShowRegisterModal(false);
+
+              if (!fullName || !email) {
+                alert("Please fill all required fields");
+                return;
+              }
+
+              const payload = {
+                fullName,
+                email, // usually email isn't editable easily without re-verification, allowing specific fields 
+                district: districtSearch,
+                profilePicture: profilePicBase64
+              };
+
+              try {
+                let url = `${API_URL}/users/puskesmas`;
+                let method = 'POST';
+
+                if (isEditing && editingUserId) {
+                  url = `${API_URL}/users/${editingUserId}`;
+                  method = 'PATCH';
+                }
+
+                const res = await fetch(url, {
+                  method: method,
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(payload),
+                });
+
+                if (res.ok) {
+                  alert(isEditing ? "User updated successfully!" : "Puskesmas operator registered successfully!");
+                  setShowRegisterModal(false);
+
+                  // Reset form
+                  setIsEditing(false);
+                  setEditingUserId(null);
+                  setFullName('');
+                  setEmail('');
+                  setDistrictSearch('');
+                  setProfilePicBase64(undefined);
+
+                  // Refresh list
+                  fetchUsers();
+                } else {
+                  const errData = await res.json();
+                  alert(`Operation failed: ${errData.message || 'Unknown error'}`);
+                }
+              } catch (error) {
+                console.error("Operation error:", error);
+                alert("An error occurred.");
+              }
             }}>
               {/* Profile Picture Input Section in Form */}
               <div>
@@ -412,7 +482,7 @@ export function UserManagement() {
                   {profilePicBase64 && (
                     <img src={profilePicBase64} alt="Preview" className="w-16 h-16 rounded-full object-cover border-2 border-[#11998E]" />
                   )}
-                  <label className="cursor-pointer px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors" style={{ display: 'none' }}>
+                  <label className="cursor-pointer px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
                     <span className="text-[18px]">📷</span>
                     <span>{profilePicBase64 ? 'Change Photo' : 'Upload Photo'}</span>
                     <input
@@ -420,7 +490,6 @@ export function UserManagement() {
                       accept="image/*"
                       onChange={handleFileChange}
                       className="hidden"
-                      style={{ display: 'none' }}
                     />
                   </label>
                 </div>
@@ -429,11 +498,25 @@ export function UserManagement() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <input type="text" className="w-full border rounded-lg p-2" placeholder="e.g. Dr. Budi" required />
+                <input
+                  type="text"
+                  className="w-full border rounded-lg p-2"
+                  placeholder="e.g. Dr. Budi"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input type="email" className="w-full border rounded-lg p-2" placeholder="budi@puskesmas.id" required />
+                <input
+                  type="email"
+                  className="w-full border rounded-lg p-2"
+                  placeholder="budi@puskesmas.id"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </div>
 
               {/* District Autocomplete Field */}
@@ -487,7 +570,9 @@ export function UserManagement() {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="px-4 py-2 bg-[#11998E] text-white rounded-lg hover:opacity-90">Register</button>
+                <button type="submit" className="px-4 py-2 bg-[#11998E] text-white rounded-lg hover:opacity-90">
+                  {isEditing ? 'Save Changes' : 'Register'}
+                </button>
               </div>
             </form>
           </div>
