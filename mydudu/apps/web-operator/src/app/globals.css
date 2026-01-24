@@ -1,8 +1,13 @@
 @import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap");
+
 /*! tailwindcss v4.1.3 | MIT License | https://tailwindcss.com */
 @layer properties {
   @supports (((-webkit-hyphens: none)) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color: rgb(from red r g b)))) {
-    *, :before, :after, ::backdrop {
+
+    *,
+    :before,
+    :after,
+    ::backdrop {
       --tw-translate-x: 0;
       --tw-translate-y: 0;
       --tw-translate-z: 0;
@@ -52,7 +57,9 @@
 }
 
 @layer theme {
-  :root, :host {
+
+  :root,
+  :host {
     --font-sans: "Nunito Sans", system-ui, -apple-system, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --color-red-50: oklch(.971 .013 17.38);
@@ -120,7 +127,11 @@
 }
 
 @layer base {
-  *, :after, :before, ::backdrop {
+
+  *,
+  :after,
+  :before,
+  ::backdrop {
     box-sizing: border-box;
     border: 0 solid;
     margin: 0;
@@ -134,7 +145,8 @@
     padding: 0;
   }
 
-  html, :host {
+  html,
+  :host {
     -webkit-text-size-adjust: 100%;
     tab-size: 4;
     line-height: 1.5;
@@ -159,7 +171,12 @@
     text-decoration: underline dotted;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-size: inherit;
     font-weight: inherit;
   }
@@ -171,11 +188,15 @@
     text-decoration: inherit;
   }
 
-  b, strong {
+  b,
+  strong {
     font-weight: bolder;
   }
 
-  code, kbd, samp, pre {
+  code,
+  kbd,
+  samp,
+  pre {
     font-family: var(--default-mono-font-family, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
     font-feature-settings: var(--default-mono-font-feature-settings, normal);
     font-variation-settings: var(--default-mono-font-variation-settings, normal);
@@ -186,7 +207,8 @@
     font-size: 80%;
   }
 
-  sub, sup {
+  sub,
+  sup {
     vertical-align: baseline;
     font-size: 75%;
     line-height: 0;
@@ -219,21 +241,35 @@
     display: list-item;
   }
 
-  ol, ul, menu {
+  ol,
+  ul,
+  menu {
     list-style: none;
   }
 
-  img, svg, video, canvas, audio, iframe, embed, object {
+  img,
+  svg,
+  video,
+  canvas,
+  audio,
+  iframe,
+  embed,
+  object {
     vertical-align: middle;
     display: block;
   }
 
-  img, video {
+  img,
+  video {
     max-width: 100%;
     height: auto;
   }
 
-  button, input, select, optgroup, textarea {
+  button,
+  input,
+  select,
+  optgroup,
+  textarea {
     font: inherit;
     font-feature-settings: inherit;
     font-variation-settings: inherit;
@@ -339,7 +375,8 @@
     box-shadow: none;
   }
 
-  button, input:where([type="button"], [type="reset"], [type="submit"]) {
+  button,
+  input:where([type="button"], [type="reset"], [type="submit"]) {
     appearance: button;
   }
 
@@ -369,7 +406,7 @@
     color: oklch(.145 0 0);
   }
 
-  
+
   body {
     font-family: var(--font-sans);
     background-color: var(--color-bg-light);
@@ -1488,79 +1525,79 @@
     opacity: .5;
   }
 
-  @media (width >= 48rem) {
+  @media (width >=48rem) {
     .md\:col-span-2 {
       grid-column: span 2 / span 2;
     }
   }
 
-  @media (width >= 48rem) {
+  @media (width >=48rem) {
     .md\:h-screen {
       height: 100vh;
     }
   }
 
-  @media (width >= 48rem) {
+  @media (width >=48rem) {
     .md\:max-h-screen {
       max-height: 100vh;
     }
   }
 
-  @media (width >= 48rem) {
+  @media (width >=48rem) {
     .md\:w-\[420px\] {
       width: 420px;
     }
   }
 
-  @media (width >= 48rem) {
+  @media (width >=48rem) {
     .md\:grid-cols-2 {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
-  @media (width >= 48rem) {
+  @media (width >=48rem) {
     .md\:grid-cols-3 {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
 
-  @media (width >= 48rem) {
+  @media (width >=48rem) {
     .md\:grid-cols-4 {
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
 
-  @media (width >= 48rem) {
+  @media (width >=48rem) {
     .md\:items-center {
       align-items: center;
     }
   }
 
-  @media (width >= 48rem) {
+  @media (width >=48rem) {
     .md\:justify-end {
       justify-content: flex-end;
     }
   }
 
-  @media (width >= 48rem) {
+  @media (width >=48rem) {
     .md\:rounded-none {
       border-radius: 0;
     }
   }
 
-  @media (width >= 64rem) {
+  @media (width >=64rem) {
     .lg\:grid-cols-2 {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
-  @media (width >= 64rem) {
+  @media (width >=64rem) {
     .lg\:grid-cols-3 {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
 
-  @media (width >= 64rem) {
+  @media (width >=64rem) {
     .lg\:grid-cols-4 {
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
@@ -1823,4 +1860,96 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* ===== react-easy-crop REQUIRED STYLES ===== */
+
+.reactEasyCrop_Container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  touch-action: none;
+}
+
+.reactEasyCrop_Image,
+.reactEasyCrop_Video {
+  will-change: transform;
+}
+
+.reactEasyCrop_CropArea {
+  border: 2px solid #ffffff;
+  box-sizing: border-box;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
+}
+
+/* Round crop mask */
+.reactEasyCrop_CropAreaRound {
+  border-radius: 50%;
+}
+
+/* Disable selection artifacts */
+.reactEasyCrop_Image {
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+/* Better drag behavior */
+.reactEasyCrop_Container {
+  cursor: grab;
+}
+
+.reactEasyCrop_Container:active {
+  cursor: grabbing;
+}
+
+/* Prevent slider/input from shrinking */
+input[type="range"] {
+  min-width: 120px;
+}
+
+/* Optional: smoother scaling */
+.reactEasyCrop_Image {
+  image-rendering: auto;
+}
+
+/* Optional: center container if parent flex breaks */
+.reactEasyCrop_Container>* {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* Fix react-easy-crop container */
+.reactEasyCrop_Container {
+  position: absolute !important;
+  inset: 0 !important;
+  overflow: hidden !important;
+  background-color: black !important;
+}
+
+/* Force image to behave correctly */
+.reactEasyCrop_Image {
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: contain !important;
+}
+
+/* Fix media wrapper */
+.reactEasyCrop_CropArea {
+  border-radius: 50% !important;
+}
+
+/* Prevent weird scaling */
+.reactEasyCrop_Video,
+.reactEasyCrop_Image {
+  transform-origin: center center !important;
+}
+
+/* Ensure parent is constrained */
+.cropper-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: black;
 }

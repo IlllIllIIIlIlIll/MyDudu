@@ -10,7 +10,7 @@ const operatorMenuItems = [
   { id: 'dashboard', label: 'Beranda', icon: LayoutDashboard },
   { id: 'children', label: 'Data Anak', icon: Users },
   { id: 'devices', label: 'Alat Dudu', icon: Smartphone },
-  { id: 'validation', label: 'Validasi Dokter', icon: FileCheck },
+  { id: 'validation', label: 'Validasi Medis', icon: FileCheck },
   { id: 'reports', label: 'Laporan', icon: BarChart3 }
 ];
 
@@ -61,8 +61,8 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
                 <button
                   onClick={() => onNavigate(item.id)}
                   className={`w-full flex items-center gap-4 px-4 py-4 rounded-lg transition-all ${isActive
-                      ? 'gradient-primary text-white shadow-lg'
-                      : 'text-gray-700 hover:bg-gray-50'
+                    ? 'gradient-primary text-white shadow-lg'
+                    : 'text-gray-700 hover:bg-gray-50'
                     }`}
                 >
                   <Icon className="w-6 h-6" />

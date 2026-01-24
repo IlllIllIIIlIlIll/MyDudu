@@ -17,7 +17,7 @@ export class TelemetryService {
         const devicesOnline = await this.prisma.device.count({ where: { status: 'ONLINE' } });
 
         // Simulate pending validations
-        const pendingReviews = await this.prisma.validationRecord.count({ where: { doctorId: null } });
+        const pendingReviews = await this.prisma.validationRecord.count({ where: { validatorId: null } });
 
         // Simulate reports generated this month
         const reportsGenerated = await this.prisma.report.count({

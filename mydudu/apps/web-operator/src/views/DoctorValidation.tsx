@@ -9,32 +9,32 @@ export function DoctorValidation() {
   const { user } = useAuth();
   const allValidations = filterValidationsByUserRole(mockValidations, user);
   // Only show flagged validations that require doctor review
-  const flaggedValidations = allValidations.filter(v => v.flagged);
+  const flaggedValidations = allValidations.filter(v => v.flagReason);
   const [validations, setValidations] = useState(flaggedValidations);
 
   const handleApprove = (id: string) => {
     setValidations(prev =>
-      prev.map(v => v.id === id ? { ...v, status: 'Approved' as const } : v)
+      prev.map(v => v.id === id ? { ...v, status: 'approved' as const } : v)
     );
     alert('Pemeriksaan telah disetujui');
   };
 
   const handleReject = (id: string) => {
     setValidations(prev =>
-      prev.map(v => v.id === id ? { ...v, status: 'Rejected' as const } : v)
+      prev.map(v => v.id === id ? { ...v, status: 'rejected' as const } : v)
     );
     alert('Pemeriksaan ditolak. Operator akan diminta untuk melakukan pengukuran ulang');
   };
 
-  const pendingCount = validations.filter(v => v.status === 'Pending').length;
-  const approvedCount = validations.filter(v => v.status === 'Approved').length;
-  const rejectedCount = validations.filter(v => v.status === 'Rejected').length;
+  const pendingCount = validations.filter(v => v.status === 'pending').length;
+  const approvedCount = validations.filter(v => v.status === 'approved').length;
+  const rejectedCount = validations.filter(v => v.status === 'rejected').length;
 
   return (
     <div className="p-8 space-y-6">
       {/* Page Header */}
       <div>
-        <h1>Validasi Dokter</h1>
+        <h1>Validasi Medis</h1>
         <p className="text-gray-600 text-[15px] mt-1">
           Tinjau dan setujui hasil pemeriksaan yang memerlukan validasi medis
         </p>
@@ -94,8 +94,8 @@ export function DoctorValidation() {
       {/* Help Information */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-[14px] text-blue-800">
-          <span className="font-semibold">ℹ️ Petunjuk untuk Dokter:</span> Periksa setiap hasil pengukuran dengan teliti. 
-          Pastikan nilai berat, tinggi, dan suhu tubuh sesuai dengan kondisi anak. 
+          <span className="font-semibold">ℹ️ Petunjuk untuk Tenaga Medis:</span> Periksa setiap hasil pengukuran dengan teliti.
+          Pastikan nilai berat, tinggi, dan suhu tubuh sesuai dengan kondisi anak.
           Jika data terlihat tidak akurat, gunakan tombol "Tolak" untuk meminta pengukuran ulang.
         </p>
       </div>

@@ -13,13 +13,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  # Cache/Queue (Upstash simulation)
-  redis:
-    image: redis:alpine
-    ports:
-      - "6379:6379"
-    command: redis-server --requirepass password
-
   # MQTT Broker (HiveMQTT simulation or Mosquitto)
   # Using simple Mosquitto for local dev instead of public HiveMQTT to ensure offline capability
   mqtt:
@@ -36,16 +29,14 @@ services:
       dockerfile: apps/api/Dockerfile
     ports:
       - "3000:3000"
+    env_file:
+      - ./mydudu/apps/api/.env
     environment:
-      - DATABASE_URL=postgresql://user:password@postgres:5432/neondb
-      - REDIS_URL=redis://default:password@redis:6379
       - FIREBASE_CREDENTIALS_PATH=/app/service-account.json
-      # For dev, we might mock firebase or mount the file
     volumes:
-      - ./service-account.json:/app/service-account.json
+      - ./mydudu/apps/api/service-account.json:/app/service-account.json
     depends_on:
       - postgres
-      - redis
 
   # IoT Gateway
   gateway:

@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ============================================================
@@ -12,9 +13,8 @@ datasource db {
 
 enum UserRole {
   ADMIN
-  OPERATOR
+  POSYANDU
   PUSKESMAS
-  DOCTOR
   PARENT
   @@map("user_role")
 }
@@ -88,6 +88,7 @@ model District {
   name     String    @db.VarChar(100)
   code     String?   @unique @db.VarChar(20)
   villages Village[]
+  users    User[]
 
   @@map("districts")
 }
@@ -96,6 +97,7 @@ model Village {
   id         Int        @id @default(autoincrement())
   districtId Int        @map("district_id")
   name       String     @db.VarChar(100)
+  code       String?    @unique @db.VarChar(20)
   district   District   @relation(fields: [districtId], references: [id], onDelete: Cascade)
   posyandus  Posyandu[]
 
@@ -126,11 +128,14 @@ model User {
   passwordHash String     @map("password_hash") @db.VarChar(255)
   role         UserRole   @default(PARENT)
   status       UserStatus @default(ACTIVE)
+  profilePicture String?  @map("profile_picture") @db.Text
   posyanduId   Int?       @map("posyandu_id")
+  districtId   Int?       @map("district_id")
   createdAt    DateTime?  @default(now()) @map("created_at") @db.Timestamp(6)
   lastLogin    DateTime?  @map("last_login") @db.Timestamp(6)
 
   posyandu     Posyandu?  @relation(fields: [posyanduId], references: [id])
+  district     District?  @relation(fields: [districtId], references: [id])
   parentProfile ParentProfile?
   assignedIncidents Incident[]
   operatorSessions  Session[]
@@ -189,7 +194,6 @@ model Device {
   deviceUuid   String       @unique @map("device_uuid") @db.VarChar(64)
   name         String       @db.VarChar(50)
   posyanduId   Int?         @map("posyandu_id")
-  location     String?      @db.VarChar(100)
   status       DeviceStatus @default(OFFLINE)
   batteryLevel Int?         @map("battery_level") @db.SmallInt
   lastSync     DateTime?    @map("last_sync") @db.Timestamp(6)
@@ -318,12 +322,12 @@ model NutritionStatus {
 model ValidationRecord {
   id          Int       @id @default(autoincrement())
   sessionId   Int       @map("session_id")
-  doctorId    Int?      @map("doctor_id")
+  validatorId Int?      @map("validator_id")
   validatedAt DateTime? @default(now()) @map("validated_at") @db.Timestamp(6)
   remarks     String?   @db.Text
 
-  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  doctor  User?   @relation(fields: [doctorId], references: [id])
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  validator User?   @relation(fields: [validatorId], references: [id])
 
   @@map("validation_records")
 }
