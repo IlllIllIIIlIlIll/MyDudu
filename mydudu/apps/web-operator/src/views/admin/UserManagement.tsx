@@ -1,5 +1,8 @@
 import { UserPlus, Edit, Trash2, Shield, Search, Filter } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { ImageCropper } from '@/components/ImageCropper';
+import { getCroppedImg } from '@/utils/getCroppedImg';
+import { Area } from 'react-easy-crop';
 
 interface UserAccount {
   id: string;
@@ -13,80 +16,108 @@ interface UserAccount {
   lastLogin: string;
 }
 
-const mockUserAccounts: UserAccount[] = [
-  {
-    id: '1',
-    username: 'admin',
-    email: 'admin@mydudu.id',
-    fullName: 'System Administrator',
-    role: 'admin',
-    assignedLocation: 'All System',
-    status: 'Active',
-    createdAt: '2025-01-01',
-    lastLogin: '2026-01-19 09:30'
-  },
-  {
-    id: '2',
-    username: 'sari.wijaya',
-    email: 'sari.wijaya@mydudu.id',
-    fullName: 'Sari Wijaya',
-    role: 'posyandu',
-    assignedLocation: 'Posyandu Melati - Desa Sukamaju',
-    status: 'Active',
-    createdAt: '2025-06-15',
-    lastLogin: '2026-01-19 08:45'
-  },
-  {
-    id: '3',
-    username: 'ahmad.fauzi',
-    email: 'ahmad.fauzi@mydudu.id',
-    fullName: 'Dr. Ahmad Fauzi',
-    role: 'puskesmas',
-    assignedLocation: 'Puskesmas Cianjur - Kecamatan Cianjur',
-    status: 'Active',
-    createdAt: '2025-03-20',
-    lastLogin: '2026-01-19 09:15'
-  },
-  {
-    id: '4',
-    username: 'dewi.lestari',
-    email: 'dewi.lestari@mydudu.id',
-    fullName: 'Dewi Lestari',
-    role: 'posyandu',
-    assignedLocation: 'Posyandu Mawar - Desa Makmur',
-    status: 'Active',
-    createdAt: '2025-07-10',
-    lastLogin: '2026-01-18 16:20'
-  },
-  {
-    id: '5',
-    username: 'budi.santoso',
-    email: 'budi.santoso@mydudu.id',
-    fullName: 'Budi Santoso',
-    role: 'posyandu',
-    assignedLocation: 'Posyandu Kenanga - Desa Sejahtera',
-    status: 'Suspended',
-    createdAt: '2025-05-05',
-    lastLogin: '2025-12-20 14:10'
-  },
-  {
-    id: '6',
-    username: 'new_posyandu',
-    email: 'req.posyandu@example.com',
-    fullName: 'Requesting Posyandu',
-    role: 'posyandu',
-    assignedLocation: 'Posyandu Baru - Request via Puskesmas',
-    status: 'Pending',
-    createdAt: '2026-01-24',
-    lastLogin: '-'
-  }
-];
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 export function UserManagement() {
-  const [users, setUsers] = useState(mockUserAccounts);
+  console.log("Current API URL:", API_URL);
+  const [users, setUsers] = useState<UserAccount[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Registration Form State
+  const [districts, setDistricts] = useState<{ id: number; name: string }[]>([]);
+  const [districtSearch, setDistrictSearch] = useState('');
+  const [showDistrictDropdown, setShowDistrictDropdown] = useState(false);
+  const [selectedDistrict, setSelectedDistrict] = useState('');
+
+  const filteredDistricts = districts.filter(d =>
+    d.name.toLowerCase().includes(districtSearch.toLowerCase())
+  );
+
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_URL}/users`);
+      if (res.ok) {
+        const data = await res.json();
+        const formattedUsers = data.map((u: any) => ({
+          id: u.id,
+          username: u.email.split('@')[0],
+          email: u.email,
+          fullName: u.fullName,
+          role: u.role.toLowerCase(),
+          status: u.status === 'ACTIVE' ? 'Active' : u.status === 'PENDING' ? 'Pending' : 'Suspended',
+          assignedLocation: u.posyandu ? u.posyandu.name : 'Unknown Location',
+          createdAt: new Date(u.createdAt).toLocaleDateString(),
+          lastLogin: u.lastLogin ? new Date(u.lastLogin).toLocaleString() : '-'
+        }));
+        setUsers(formattedUsers);
+      }
+    } catch (error) {
+      console.error("Failed to fetch users", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchDistricts = async () => {
+    try {
+      const res = await fetch(`${API_URL}/districts`);
+      if (res.ok) {
+        const data = await res.json();
+        setDistricts(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch districts", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+    fetchDistricts();
+  }, []);
+
+  // Image Cropper State
+  const [profilePicBase64, setProfilePicBase64] = useState<string | undefined>(undefined);
+  const [tempImageSrc, setTempImageSrc] = useState<string | null>(null);
+  const [showCropper, setShowCropper] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setTempImageSrc(reader.result as string);
+        setShowCropper(true);
+      };
+      reader.readAsDataURL(file);
+    }
+    e.target.value = '';
+  };
+
+  const handleSaveCroppedImage = async (croppedAreaPixels: Area, rotation: number) => {
+    if (tempImageSrc && croppedAreaPixels) {
+      try {
+        const croppedImageBlob = await getCroppedImg(tempImageSrc, croppedAreaPixels, rotation);
+        if (croppedImageBlob) {
+          const reader = new FileReader();
+          reader.readAsDataURL(croppedImageBlob);
+          reader.onloadend = () => {
+            setProfilePicBase64(reader.result as string);
+            setShowCropper(false);
+            setTempImageSrc(null);
+          };
+        }
+      } catch (e) {
+        console.error("Failed to crop image", e);
+        alert("Failed to process image");
+      }
+    }
+  };
+
 
   const filteredUsers = users.filter(user => {
     const matchesSearch =
@@ -146,6 +177,15 @@ export function UserManagement() {
 
   return (
     <div className="p-8 space-y-6">
+      {/* Cropper Modal Overlay */}
+      {showCropper && tempImageSrc && (
+        <ImageCropper
+          imageSrc={tempImageSrc}
+          onCancel={() => { setShowCropper(false); setTempImageSrc(null); }}
+          onConfirm={handleSaveCroppedImage}
+        />
+      )}
+
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -356,7 +396,7 @@ export function UserManagement() {
                 onClick={() => setShowRegisterModal(false)}
                 className="text-gray-400 hover:text-gray-600"
               >
-                <span className="sr-only">Close</span>
+                <span className="sr-only"></span>
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
@@ -365,6 +405,28 @@ export function UserManagement() {
               alert("This would submit to API: POST /auth/register-puskesmas");
               setShowRegisterModal(false);
             }}>
+              {/* Profile Picture Input Section in Form */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Profile Picture (Upload & Crop)</label>
+                <div className="flex items-center gap-4">
+                  {profilePicBase64 && (
+                    <img src={profilePicBase64} alt="Preview" className="w-16 h-16 rounded-full object-cover border-2 border-[#11998E]" />
+                  )}
+                  <label className="cursor-pointer px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors" style={{ display: 'none' }}>
+                    <span className="text-[18px]">📷</span>
+                    <span>{profilePicBase64 ? 'Change Photo' : 'Upload Photo'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Image will be cropped to 1:1 and optimized.</p>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                 <input type="text" className="w-full border rounded-lg p-2" placeholder="e.g. Dr. Budi" required />
@@ -373,13 +435,49 @@ export function UserManagement() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                 <input type="email" className="w-full border rounded-lg p-2" placeholder="budi@puskesmas.id" required />
               </div>
-              <div>
+
+              {/* District Autocomplete Field */}
+              <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Kecamatan/District</label>
-                <input type="text" className="w-full border rounded-lg p-2" placeholder="e.g. Dayeuhkolot" required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Puskesmas Name</label>
-                <input type="text" className="w-full border rounded-lg p-2" placeholder="e.g. Puskesmas Dayeuhkolot" required />
+                <input
+                  type="text"
+                  className="w-full border rounded-lg p-2"
+                  placeholder="Type to search kecamatan..."
+                  value={districtSearch}
+                  onChange={(e) => {
+                    setDistrictSearch(e.target.value);
+                    setShowDistrictDropdown(true);
+                    setSelectedDistrict(''); // Reset selection when typing
+                  }}
+                  onFocus={() => setShowDistrictDropdown(true)}
+                  required
+                />
+
+                {/* Autocomplete Dropdown */}
+                {showDistrictDropdown && districtSearch && (
+                  <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto mt-1">
+                    {filteredDistricts.length > 0 ? (
+                      filteredDistricts.map((district) => (
+                        <button
+                          key={district.id}
+                          type="button"
+                          className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
+                          onClick={() => {
+                            setDistrictSearch(district.name);
+                            setSelectedDistrict(district.name);
+                            setShowDistrictDropdown(false);
+                          }}
+                        >
+                          {district.name}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-4 py-2 text-sm text-gray-500 italic">
+                        Kecamatan tidak ditemukan
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="pt-4 flex justify-end gap-3">
                 <button

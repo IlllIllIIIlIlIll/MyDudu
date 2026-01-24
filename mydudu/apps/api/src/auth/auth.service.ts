@@ -17,12 +17,16 @@ export class AuthService {
             // Upsert user in database
             const user = await this.prisma.user.upsert({
                 where: { email: email || `no-email-${uid}@mydudu.id` },
-                update: { lastLogin: new Date() },
+                update: {
+                    lastLogin: new Date(),
+                    // Do NOT update role here, preserve existing
+                },
                 create: {
                     email: email || `no-email-${uid}@mydudu.id`,
                     fullName: name || 'Operator',
                     passwordHash: 'firebase-managed',
-                    role: 'OPERATOR', // Default role
+                    role: 'POSYANDU', // Default role for new users
+                    status: 'PENDING', // Default to PENDING for security
                     lastLogin: new Date(),
                 },
             });

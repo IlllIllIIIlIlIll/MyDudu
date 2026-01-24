@@ -9,26 +9,26 @@ interface ValidationPanelProps {
 }
 
 export function ValidationPanel({ validations, onApprove, onReject }: ValidationPanelProps) {
-  const [filter, setFilter] = useState<'all' | 'Pending' | 'Approved' | 'Rejected'>('all');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
 
-  const filteredValidations = validations.filter(v => 
+  const filteredValidations = validations.filter(v =>
     filter === 'all' ? true : v.status === filter
   );
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'Pending': return <Clock className="w-5 h-5 text-orange-600" />;
-      case 'Approved': return <CheckCircle className="w-5 h-5 text-green-600" />;
-      case 'Rejected': return <XCircle className="w-5 h-5 text-red-600" />;
+      case 'pending': return <Clock className="w-5 h-5 text-orange-600" />;
+      case 'approved': return <CheckCircle className="w-5 h-5 text-green-600" />;
+      case 'rejected': return <XCircle className="w-5 h-5 text-red-600" />;
       default: return null;
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Pending': return 'bg-orange-100 text-orange-700';
-      case 'Approved': return 'bg-green-100 text-green-700';
-      case 'Rejected': return 'bg-red-100 text-red-700';
+      case 'pending': return 'bg-orange-100 text-orange-700';
+      case 'approved': return 'bg-green-100 text-green-700';
+      case 'rejected': return 'bg-red-100 text-red-700';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
@@ -42,17 +42,16 @@ export function ValidationPanel({ validations, onApprove, onReject }: Validation
 
         {/* Filter Tabs */}
         <div className="flex gap-2">
-          {['all', 'Pending', 'Approved', 'Rejected'].map((status) => (
+          {['all', 'pending', 'approved', 'rejected'].map((status) => (
             <button
               key={status}
               onClick={() => setFilter(status as any)}
-              className={`px-4 py-2 rounded-lg text-[15px] font-semibold transition-colors ${
-                filter === status
-                  ? 'gradient-primary text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              className={`px-4 py-2 rounded-lg text-[15px] font-semibold transition-colors ${filter === status
+                ? 'gradient-primary text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
             >
-              {status === 'all' ? 'Semua' : status}
+              {status === 'all' ? 'Semua' : status.charAt(0).toUpperCase() + status.slice(1)}
             </button>
           ))}
         </div>
@@ -86,11 +85,11 @@ export function ValidationPanel({ validations, onApprove, onReject }: Validation
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
                     <p className="text-[13px] text-gray-500">ID Pemeriksaan</p>
-                    <p className="text-[15px] font-semibold">{validation.sessionId}</p>
+                    <p className="text-[15px] font-semibold">{validation.id}</p>
                   </div>
                   <div>
                     <p className="text-[13px] text-gray-500">Tanggal</p>
-                    <p className="text-[15px] font-semibold">{validation.date}</p>
+                    <p className="text-[15px] font-semibold">{validation.measurementDate}</p>
                   </div>
                   <div>
                     <p className="text-[13px] text-gray-500">Dokter</p>
@@ -103,26 +102,26 @@ export function ValidationPanel({ validations, onApprove, onReject }: Validation
                   <div className="flex items-center gap-2">
                     <Weight className="w-4 h-4 text-gray-500" />
                     <span className="text-[14px] text-gray-600">
-                      Berat: <span className="font-semibold">{validation.measurements.weight} kg</span>
+                      Berat: <span className="font-semibold">{validation.weight} kg</span>
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Ruler className="w-4 h-4 text-gray-500" />
                     <span className="text-[14px] text-gray-600">
-                      Tinggi: <span className="font-semibold">{validation.measurements.height} cm</span>
+                      Tinggi: <span className="font-semibold">{validation.height} cm</span>
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <ThermometerSun className="w-4 h-4 text-gray-500" />
                     <span className="text-[14px] text-gray-600">
-                      Suhu: <span className="font-semibold">{validation.measurements.temperature}°C</span>
+                      Suhu: <span className="font-semibold">{validation.temperature}°C</span>
                     </span>
                   </div>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              {validation.status === 'Pending' && (
+              {validation.status === 'pending' && (
                 <div className="flex gap-2">
                   <button
                     onClick={() => onApprove(validation.id)}

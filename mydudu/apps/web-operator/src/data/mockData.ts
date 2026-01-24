@@ -118,6 +118,7 @@ export interface Validation {
   flagReason: string;
   status: 'pending' | 'approved' | 'rejected';
   notes?: string;
+  doctorAssigned?: string;
 }
 
 export const mockValidations: Validation[] = [
@@ -135,7 +136,8 @@ export const mockValidations: Validation[] = [
     headCircumference: 45.5,
     temperature: 36.8,
     flagReason: 'Possible stunting detected (height below -2 SD)',
-    status: 'pending'
+    status: 'pending',
+    doctorAssigned: 'Dr. Sarah Pratiwi'
   },
   {
     id: 'V002',
