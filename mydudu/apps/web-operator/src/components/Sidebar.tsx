@@ -25,8 +25,10 @@ const adminMenuItems = [
 
 export function Sidebar({ activePage, onNavigate }: SidebarProps) {
   const { user } = useAuth();
-  
-  const menuItems = user?.role === 'admin' ? adminMenuItems : operatorMenuItems;
+
+  // Use consistent logic with ClientApp
+  const isAdmin = user?.email?.includes('admin') || user?.email?.includes('dudu');
+  const menuItems = isAdmin ? adminMenuItems : operatorMenuItems;
 
   return (
     <div className="w-72 bg-white border-r border-gray-200 flex flex-col h-screen">
@@ -53,16 +55,15 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activePage === item.id;
-            
+
             return (
               <li key={item.id}>
                 <button
                   onClick={() => onNavigate(item.id)}
-                  className={`w-full flex items-center gap-4 px-4 py-4 rounded-lg transition-all ${
-                    isActive
+                  className={`w-full flex items-center gap-4 px-4 py-4 rounded-lg transition-all ${isActive
                       ? 'gradient-primary text-white shadow-lg'
                       : 'text-gray-700 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <Icon className="w-6 h-6" />
                   <span className="font-semibold text-[16px]">{item.label}</span>

@@ -19,8 +19,8 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50 p-0 md:p-4">
+      <div className="bg-white rounded-t-2xl md:rounded-xl shadow-2xl w-full max-w-lg h-[85vh] md:h-auto md:max-h-[90vh] overflow-hidden flex flex-col animate-in slide-in-from-bottom md:slide-in-from-bottom-4 duration-300">
         {/* Header */}
         <div className="gradient-primary p-6 text-white relative">
           <button
@@ -34,14 +34,18 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6 overflow-y-auto flex-1">
           {/* Avatar */}
           <div className="flex flex-col items-center">
             <div className="relative">
               <div className="w-24 h-24 rounded-full gradient-primary flex items-center justify-center">
                 <User className="w-12 h-12 text-white" />
               </div>
-              <button className="absolute bottom-0 right-0 w-8 h-8 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors">
+              <button
+                onClick={() => alert("Upload photo feature coming soon!")}
+                className="absolute bottom-0 right-0 w-8 h-8 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors"
+                title="Change Photo"
+              >
                 <Camera className="w-4 h-4 text-gray-600" />
               </button>
             </div>

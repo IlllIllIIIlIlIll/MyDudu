@@ -8,7 +8,7 @@ interface UserAccount {
   fullName: string;
   role: 'admin' | 'puskesmas' | 'posyandu';
   assignedLocation: string;
-  status: 'Active' | 'Suspended';
+  status: 'Active' | 'Suspended' | 'Pending';
   createdAt: string;
   lastLogin: string;
 }
@@ -68,6 +68,17 @@ const mockUserAccounts: UserAccount[] = [
     status: 'Suspended',
     createdAt: '2025-05-05',
     lastLogin: '2025-12-20 14:10'
+  },
+  {
+    id: '6',
+    username: 'new_posyandu',
+    email: 'req.posyandu@example.com',
+    fullName: 'Requesting Posyandu',
+    role: 'posyandu',
+    assignedLocation: 'Posyandu Baru - Request via Puskesmas',
+    status: 'Pending',
+    createdAt: '2026-01-24',
+    lastLogin: '-'
   }
 ];
 
@@ -75,14 +86,22 @@ export function UserManagement() {
   const [users, setUsers] = useState(mockUserAccounts);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = 
+    const matchesSearch =
       user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.username.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    return matchesSearch && matchesRole;
+
+    // Tab logic: if roleFilter is 'pending', show only Pending.
+    // If roleFilter is 'all' or specific role, show Active/Suspended matching that role.
+    if (roleFilter === 'pending') {
+      return matchesSearch && user.status === 'Pending';
+    } else {
+      const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+      return matchesSearch && matchesRole && user.status !== 'Pending';
+    }
   });
 
   const getRoleBadge = (role: string) => {
@@ -136,11 +155,11 @@ export function UserManagement() {
           </p>
         </div>
         <button
-          onClick={handleCreateUser}
+          onClick={() => setShowRegisterModal(true)}
           className="gradient-primary text-white px-6 py-3 rounded-lg flex items-center gap-2 hover:opacity-90 transition-opacity"
         >
           <UserPlus className="w-5 h-5" />
-          <span className="font-semibold">Create New User</span>
+          <span className="font-semibold">Register Puskesmas</span>
         </button>
       </div>
 
@@ -170,6 +189,22 @@ export function UserManagement() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex space-x-1 border-b border-gray-200">
+        {['active', 'pending'].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setRoleFilter(tab === 'pending' ? 'pending' : 'all')} // Simplified tab logic for demo
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${(tab === 'pending' && roleFilter === 'pending') || (tab === 'active' && roleFilter !== 'pending')
+              ? 'border-[#11998E] text-[#11998E]'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+          >
+            {tab === 'active' ? 'Active Users' : 'Pending Approvals'}
+          </button>
+        ))}
+      </div>
+
       {/* User Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         {/* Filters */}
@@ -192,6 +227,7 @@ export function UserManagement() {
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
+                disabled={roleFilter === 'pending'} // Disable role filter in pending tab
               >
                 <option value="all">All Roles</option>
                 <option value="admin">IT Admin</option>
@@ -231,32 +267,52 @@ export function UserManagement() {
                   </td>
                   <td className="px-6 py-4 text-[15px] text-gray-600">{user.assignedLocation}</td>
                   <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-[13px] font-semibold ${
-                      user.status === 'Active' 
-                        ? 'bg-green-100 text-green-700' 
+                    <span className={`px-3 py-1 rounded-full text-[13px] font-semibold ${user.status === 'Active'
+                      ? 'bg-green-100 text-green-700'
+                      : user.status === 'Pending'
+                        ? 'bg-yellow-100 text-yellow-700'
                         : 'bg-red-100 text-red-700'
-                    }`}>
+                      }`}>
                       {user.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-[15px] text-gray-600">{user.lastLogin}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleEditUser(user)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Edit User"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteUser(user)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Delete User"
-                        disabled={user.role === 'admin'}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {user.status === 'Pending' ? (
+                        <>
+                          <button
+                            onClick={() => handleEditUser(user)} // Should be Approve
+                            className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(user)} // Should be Reject
+                            className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-colors"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleEditUser(user)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit User"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(user)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete User"
+                            disabled={user.role === 'admin'}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -274,18 +330,71 @@ export function UserManagement() {
       </div>
 
       {/* Access Control Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-20">
         <div className="flex items-start gap-3">
           <Shield className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold text-[15px] text-blue-800 mb-1">ITIL Access Management</p>
             <p className="text-[14px] text-blue-700">
-              All user accounts are bound to specific locations for data security. Posyandu operators can only access their assigned posyandu. 
+              All user accounts are bound to specific locations for data security. Posyandu operators can only access their assigned posyandu.
               Puskesmas operators can view all posyandus within their kecamatan. Only IT admins have full system access.
             </p>
           </div>
         </div>
       </div>
+
+      {/* Simplified Modal for Registration (Demo) */}
+      {/* In real app, make this a separate component */}
+      {/* Simplified Modal for Registration (Demo) */}
+      {/* Replaced <dialog> with standard fixed div to avoid layout/stacking issues */}
+      {showRegisterModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-t-2xl md:rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col animate-in slide-in-from-bottom-4 duration-300">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h3 className="text-lg font-bold">Register Puskesmas Operator</h3>
+              <button
+                onClick={() => setShowRegisterModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <span className="sr-only">Close</span>
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <form className="p-6 space-y-4" onSubmit={(e) => {
+              e.preventDefault();
+              alert("This would submit to API: POST /auth/register-puskesmas");
+              setShowRegisterModal(false);
+            }}>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <input type="text" className="w-full border rounded-lg p-2" placeholder="e.g. Dr. Budi" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input type="email" className="w-full border rounded-lg p-2" placeholder="budi@puskesmas.id" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Kecamatan/District</label>
+                <input type="text" className="w-full border rounded-lg p-2" placeholder="e.g. Dayeuhkolot" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Puskesmas Name</label>
+                <input type="text" className="w-full border rounded-lg p-2" placeholder="e.g. Puskesmas Dayeuhkolot" required />
+              </div>
+              <div className="pt-4 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowRegisterModal(false)}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="px-4 py-2 bg-[#11998E] text-white rounded-lg hover:opacity-90">Register</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

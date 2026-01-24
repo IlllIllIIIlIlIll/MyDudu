@@ -27,11 +27,14 @@ function AppContent() {
 
     // Temporary: Derive admin role from email for demonstration
     // In a real app, this should come from the user's custom claims or database profile
-    const isAdmin = user?.email?.includes('admin') || user?.email?.includes('favian');
+    const isAdmin = user?.email?.includes('admin') || user?.email?.includes('dudu');
 
-    const [activePage, setActivePage] = useState(() =>
-        isAdmin ? 'admin-dashboard' : 'dashboard'
-    );
+    const [activePage, setActivePage] = useState('dashboard'); // Default safe start
+
+    // Effect to switch default page when role is confirmed
+    // This fixes the issue where user logs in but stays on the wrong dashboard
+    const [hasRedirected, setHasRedirected] = useState(false);
+
     const [showProfile, setShowProfile] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
 
@@ -43,13 +46,22 @@ function AppContent() {
         );
     }
 
+    // Redirect logic once loaded
+    if (user && !hasRedirected) {
+        if (isAdmin && activePage !== 'admin-dashboard') {
+            setActivePage('admin-dashboard');
+            setHasRedirected(true);
+        } else if (!isAdmin && !activePage.startsWith('admin')) {
+            setHasRedirected(true);
+        }
+    }
+
     if (!isAuthenticated) {
         return <Login onLogin={signInWithGoogle} />;
     }
 
     const renderPage = () => {
-        // Re-derive for render logic since state might not update if we didn't store role in state
-        const isAdmin = user?.email?.includes('admin') || user?.email?.includes('favian');
+
 
         // Admin pages
         if (isAdmin) {
