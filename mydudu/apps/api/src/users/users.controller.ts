@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, ParseIntPipe, Query, Delete } from '@nestjs/common';
 import { UsersService } from './users.service';
 
 @Controller('users')
@@ -31,8 +31,13 @@ export class UsersController {
   }
 
   @Patch(':id')
-  updateProfile(@Param('id', ParseIntPipe) id: number, @Body() body: { fullName?: string; profilePicture?: string }) {
+  updateProfile(@Param('id', ParseIntPipe) id: number, @Body() body: { fullName?: string; profilePicture?: string; district?: string }) {
     return this.usersService.updateProfile(id, body);
+  }
+
+  @Delete(':id')
+  deleteUser(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.deleteUser(id);
   }
 
   @Patch(':id/approve')

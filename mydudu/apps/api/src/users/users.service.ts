@@ -19,6 +19,9 @@ export class UsersService {
                 lastLogin: true,
                 posyandu: {
                     select: { name: true, village: { select: { name: true } } }
+                },
+                district: {
+                    select: { name: true }
                 }
             }
         });
@@ -82,13 +85,30 @@ export class UsersService {
         return this.prisma.user.findUnique({ where: { email } });
     }
 
-    async updateProfile(id: number, data: { fullName?: string; profilePicture?: string }) {
+    async updateProfile(id: number, data: { fullName?: string; profilePicture?: string; district?: string }) {
+        let districtId = undefined;
+        if (data.district) {
+            const district = await this.prisma.district.findFirst({
+                where: { name: { equals: data.district, mode: 'insensitive' } }
+            });
+            if (district) {
+                districtId = district.id;
+            }
+        }
+
         return this.prisma.user.update({
             where: { id },
             data: {
                 fullName: data.fullName,
-                profilePicture: data.profilePicture
+                profilePicture: data.profilePicture,
+                ...(districtId !== undefined && { districtId })
             }
+        });
+    }
+
+    async deleteUser(id: number) {
+        return this.prisma.user.delete({
+            where: { id }
         });
     }
 
