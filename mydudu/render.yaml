@@ -1,16 +1,31 @@
 services:
-  # Laravel Backend
+  # NestJS Backend (API)
   - type: web
     name: mydudu-api
     runtime: docker
-    root: mydudu/apps/api
+    root: mydudu/apps/api # Points to where Dockerfile is
     plan: free
     envVars:
-      - key: APP_KEY
-        generateValue: true
-      - key: APP_DEBUG
-        value: false
-      - key: DB_CONNECTION
-        value: pgsql
-      - key: LOG_CHANNEL
-        value: stderr
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mydudu-db # Placeholder if using Render DB, otherwise manual
+          property: connectionString
+      - key: REDIS_URL
+        sync: false
+      - key: FIREBASE_CREDENTIALS_PATH
+        value: "/etc/secrets/google-credentials.json"
+      - key: FIREBASE_SERVICE_ACCOUNT_BASE64
+        sync: false # User must provide this in Render Dashboard
+
+  # Python IoT Gateway (Worker)
+  - type: worker
+    name: mydudu-gateway
+    runtime: docker
+    root: mydudu/apps/iot-gateway
+    envVars:
+      - key: MQTT_BROKER
+        value: broker.hivemq.com
+      - key: MQTT_TOPIC
+        value: mydudu/telemetry
+      - key: DEVICE_UUID
+        value: sim-device-render-01

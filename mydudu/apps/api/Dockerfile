@@ -1,44 +1,46 @@
-FROM php:8.2-fpm
+FROM node:20-alpine AS builder
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    zip \
-    unzip \
-    libpq-dev \
-    nginx
+WORKDIR /app
 
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+# Copy root artifacts to support monorepo if needed, or just api specific
+# Assuming we are building just the API in the context of the monorepo
+# We need to copy the relevant package.jsons. 
+# Since this is a monorepo structure, we'll try to keep it simple first
+# by assuming we build from the app directory or handle it via a smart context.
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo_pgsql mbstring exif pcntl bcmath gd
+# However, standard practice for NestJS in monorepo often involves copying proper configs.
+# Let's assume we run this from the root of the repo or we copy everything.
 
-# Get latest Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# OPTION 1: Standalone build (simpler for Render if we set Root Directory correctly)
+# Copy root artifacts to support monorepo
+COPY package*.json ./
+COPY apps/api/package*.json ./apps/api/
+COPY apps/api/tsconfig*.json ./apps/api/
+COPY apps/api/nest-cli.json ./apps/api/
+COPY apps/api/prisma ./apps/api/prisma/
+COPY apps/api/src ./apps/api/src/
+COPY packages ./packages/
 
-# Set working directory
-WORKDIR /var/www
+# Install dependencies from root to link workspaces
+RUN npm install
 
-# Copy existing application directory contents
-COPY . /var/www
+# Build the specific app
+WORKDIR /app/apps/api
+RUN npx prisma generate
+RUN npm run build
 
-# Install dependencies
-RUN composer install --optimize-autoloader --no-dev
+# Production Stage
+FROM node:20-alpine AS runner
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+WORKDIR /app
 
-# Nginx configuration
-COPY ./nginx.conf /etc/nginx/sites-available/default
-RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+COPY --from=builder /app/apps/api/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/api/package.json ./package.json
+COPY --from=builder /app/apps/api/prisma ./prisma
 
-# Expose port 80
-EXPOSE 80
+# Environment variables should be injected by Render
 
-# Start Nginx & PHP-FPM
-CMD service nginx start && php-fpm
+EXPOSE 3000
+
+CMD ["node", "dist/main"]

@@ -24,3 +24,5 @@ Homestead.yaml
 Thumbs.db
 
 service-account.json
+
+/generated/prisma
