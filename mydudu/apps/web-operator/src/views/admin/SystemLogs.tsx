@@ -1,150 +1,91 @@
-import { FileText, Download, Search, Filter, AlertCircle, Info, CheckCircle, XCircle } from 'lucide-react';
-import { useState } from 'react';
+import { FileText, Download, Search, AlertCircle, Info, CheckCircle, XCircle, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
-interface LogEntry {
-  id: string;
-  timestamp: string;
-  level: 'info' | 'warning' | 'error' | 'success';
-  category: string;
-  user: string;
+// Define the shape of a log from the API
+interface SystemLog {
+  id: number;
   action: string;
-  details: string;
-  ipAddress: string;
+  details: any;
+  createdAt: string;
+  user?: {
+    fullName: string;
+    email: string;
+  };
 }
 
-const mockLogs: LogEntry[] = [
-  {
-    id: 'LOG-001',
-    timestamp: '2026-01-19 09:45:23',
-    level: 'info',
-    category: 'Authentication',
-    user: 'sari.wijaya@mydudu.id',
-    action: 'User Login',
-    details: 'Successful login from Posyandu operator',
-    ipAddress: '192.168.1.105'
-  },
-  {
-    id: 'LOG-002',
-    timestamp: '2026-01-19 09:42:15',
-    level: 'success',
-    category: 'Data Sync',
-    user: 'system',
-    action: 'Device Synchronization',
-    details: 'Alat Dudu 3 synchronized 42 measurement records',
-    ipAddress: '10.0.0.23'
-  },
-  {
-    id: 'LOG-003',
-    timestamp: '2026-01-19 09:38:47',
-    level: 'warning',
-    category: 'Device',
-    user: 'system',
-    action: 'Low Battery Alert',
-    details: 'Alat Dudu 5 battery level at 15%',
-    ipAddress: '10.0.0.25'
-  },
-  {
-    id: 'LOG-004',
-    timestamp: '2026-01-19 09:35:12',
-    level: 'error',
-    category: 'API',
-    user: 'ahmad.fauzi@mydudu.id',
-    action: 'Failed API Request',
-    details: 'GET /api/reports timeout after 30s',
-    ipAddress: '192.168.1.87'
-  },
-  {
-    id: 'LOG-005',
-    timestamp: '2026-01-19 09:30:05',
-    level: 'info',
-    category: 'User Management',
-    user: 'admin@mydudu.id',
-    action: 'User Created',
-    details: 'New Posyandu operator account created: dewi.sari@mydudu.id',
-    ipAddress: '192.168.1.10'
-  },
-  {
-    id: 'LOG-006',
-    timestamp: '2026-01-19 09:25:33',
-    level: 'success',
-    category: 'Validation',
-    user: 'ahmad.fauzi@mydudu.id',
-    action: 'Medical Validation',
-    details: 'Approved validation for session S20260119001',
-    ipAddress: '192.168.1.87'
-  },
-  {
-    id: 'LOG-007',
-    timestamp: '2026-01-19 09:20:18',
-    level: 'error',
-    category: 'Database',
-    user: 'system',
-    action: 'Query Error',
-    details: 'Connection pool exhausted, 3 retry attempts failed',
-    ipAddress: '10.0.0.100'
-  },
-  {
-    id: 'LOG-008',
-    timestamp: '2026-01-19 09:15:45',
-    level: 'info',
-    category: 'Report',
-    user: 'ahmad.fauzi@mydudu.id',
-    action: 'Report Generated',
-    details: 'Monthly report for Kecamatan Cianjur generated',
-    ipAddress: '192.168.1.87'
-  }
-];
+interface Meta {
+  total: number;
+  page: number;
+  lastPage: number;
+}
 
 export function SystemLogs() {
-  const [logs] = useState(mockLogs);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [levelFilter, setLevelFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [logs, setLogs] = useState<SystemLog[]>([]);
+  const [meta, setMeta] = useState<Meta>({ total: 0, page: 1, lastPage: 1 });
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(50); // Default per user request
 
-  const filteredLogs = logs.filter(log => {
-    const matchesSearch = 
-      log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.details.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesLevel = levelFilter === 'all' || log.level === levelFilter;
-    const matchesCategory = categoryFilter === 'all' || log.category === categoryFilter;
-    return matchesSearch && matchesLevel && matchesCategory;
-  });
-
-  const categories = ['all', ...Array.from(new Set(logs.map(l => l.category)))];
-
-  const getLevelIcon = (level: string) => {
-    switch (level) {
-      case 'success':
-        return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'warning':
-        return <AlertCircle className="w-4 h-4 text-orange-600" />;
-      case 'error':
-        return <XCircle className="w-4 h-4 text-red-600" />;
-      case 'info':
-        return <Info className="w-4 h-4 text-blue-600" />;
-      default:
-        return <Info className="w-4 h-4 text-gray-600" />;
+  const fetchLogs = async (currentPage: number) => {
+    setLoading(true);
+    try {
+      const response = await fetch(`http://localhost:3000/system-logs?page=${currentPage}&limit=${limit}`);
+      if (response.ok) {
+        const data = await response.json();
+        setLogs(data.data);
+        setMeta(data.meta);
+      } else {
+        console.error('Failed to fetch logs');
+      }
+    } catch (error) {
+      console.error('Error fetching logs:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getLevelBadge = (level: string) => {
-    switch (level) {
-      case 'success':
-        return 'bg-green-100 text-green-700';
-      case 'warning':
-        return 'bg-orange-100 text-orange-700';
-      case 'error':
-        return 'bg-red-100 text-red-700';
-      case 'info':
-        return 'bg-blue-100 text-blue-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
-    }
+  useEffect(() => {
+    fetchLogs(page);
+  }, [page]);
+
+  const handleRefresh = () => {
+    fetchLogs(page);
   };
 
-  const handleExportLogs = () => {
-    alert('System logs akan diekspor ke format CSV');
+  const getActor = (log: SystemLog) => {
+    if (log.user) {
+      return (
+        <div>
+          <p className="text-[14px] text-gray-900 font-medium">{log.user.fullName}</p>
+          <p className="text-[12px] text-gray-500">{log.user.email}</p>
+        </div>
+      );
+    }
+    // Check details for device info if user is missing (System/Device event)
+    if (log.details?.deviceUuid) {
+      return (
+        <div>
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+            DEVICE
+          </span>
+          <p className="text-[13px] font-mono mt-1 text-gray-700">{log.details.deviceUuid}</p>
+        </div>
+      );
+    }
+    return <span className="text-gray-400 italic">System</span>;
+  };
+
+  const formatDetails = (details: any) => {
+    if (!details) return '-';
+    // Remove complex objects or huge arrays if any slipped through
+    const safeDetails = { ...details };
+    // Simple key-value display
+    return (
+      <code className="text-[12px] text-gray-600 bg-gray-50 px-2 py-1 rounded border border-gray-200 block max-w-xs truncate">
+        {JSON.stringify(safeDetails).substring(0, 100)}
+        {JSON.stringify(safeDetails).length > 100 && '...'}
+      </code>
+    );
   };
 
   return (
@@ -157,153 +98,114 @@ export function SystemLogs() {
             ITIL Service Operation - Event & Audit Trail Management
           </p>
         </div>
-        <button
-          onClick={handleExportLogs}
-          className="gradient-primary text-white px-6 py-3 rounded-lg flex items-center gap-2 hover:opacity-90 transition-opacity"
-        >
-          <Download className="w-5 h-5" />
-          <span className="font-semibold">Export Logs</span>
-        </button>
-      </div>
-
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-blue-50 rounded-lg shadow-sm border border-blue-100 p-5">
-          <p className="text-[14px] text-gray-600 mb-1">Info Events</p>
-          <p className="text-[28px] font-bold text-blue-600">
-            {logs.filter(l => l.level === 'info').length}
-          </p>
-        </div>
-        <div className="bg-green-50 rounded-lg shadow-sm border border-green-100 p-5">
-          <p className="text-[14px] text-gray-600 mb-1">Success Events</p>
-          <p className="text-[28px] font-bold text-green-600">
-            {logs.filter(l => l.level === 'success').length}
-          </p>
-        </div>
-        <div className="bg-orange-50 rounded-lg shadow-sm border border-orange-100 p-5">
-          <p className="text-[14px] text-gray-600 mb-1">Warnings</p>
-          <p className="text-[28px] font-bold text-orange-600">
-            {logs.filter(l => l.level === 'warning').length}
-          </p>
-        </div>
-        <div className="bg-red-50 rounded-lg shadow-sm border border-red-100 p-5">
-          <p className="text-[14px] text-gray-600 mb-1">Errors</p>
-          <p className="text-[28px] font-bold text-red-600">
-            {logs.filter(l => l.level === 'error').length}
-          </p>
+        <div className="flex gap-2">
+          {/* <button
+            onClick={handleRefresh}
+            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Refresh Logs"
+          >
+            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+          </button> */}
+          {/* <button
+            className="gradient-primary text-white px-6 py-3 rounded-lg flex items-center gap-2 hover:opacity-90 transition-opacity"
+            onClick={() => alert('Log export coming soon')}
+          >
+            <Download className="w-5 h-5" />
+            <span className="font-semibold">Export Logs</span>
+          </button> */}
         </div>
       </div>
 
       {/* Logs Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-        {/* Filters */}
-        <div className="p-6 border-b border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="md:col-span-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search logs by action, user, or details..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
-                />
-              </div>
-            </div>
-            <div>
-              <select
-                value={levelFilter}
-                onChange={(e) => setLevelFilter(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
-              >
-                <option value="all">All Levels</option>
-                <option value="info">Info</option>
-                <option value="success">Success</option>
-                <option value="warning">Warning</option>
-                <option value="error">Error</option>
-              </select>
-            </div>
-            <div>
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
-              >
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>
-                    {cat === 'all' ? 'All Categories' : cat}
-                  </option>
-                ))}
-              </select>
-            </div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col min-h-[500px]">
+        {/* Toolbar */}
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50/50">
+          <div className="text-sm text-gray-500">
+            Showing latest events. Auto-refresh is manual.
+          </div>
+          <div className="text-sm font-medium text-gray-700">
+            Total Records: {meta.total}
           </div>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
+        {/* Table Content */}
+        <div className="flex-1 overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Timestamp</th>
-                <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Level</th>
-                <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Category</th>
-                <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">User</th>
-                <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Action</th>
-                <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Details</th>
+                <th className="px-6 py-4 text-left text-[13px] font-bold text-gray-500 uppercase tracking-wider">Timestamp</th>
+                <th className="px-6 py-4 text-left text-[13px] font-bold text-gray-500 uppercase tracking-wider">Action</th>
+                <th className="px-6 py-4 text-left text-[13px] font-bold text-gray-500 uppercase tracking-wider">Actor</th>
+                <th className="px-6 py-4 text-left text-[13px] font-bold text-gray-500 uppercase tracking-wider w-1/3">Details</th>
               </tr>
             </thead>
-            <tbody>
-              {filteredLogs.map((log) => (
-                <tr key={log.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <p className="text-[14px] font-mono text-gray-700">{log.timestamp}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      {getLevelIcon(log.level)}
-                      <span className={`px-2 py-1 rounded text-[12px] font-semibold ${getLevelBadge(log.level)}`}>
-                        {log.level.toUpperCase()}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-[14px] text-gray-700 font-medium">{log.category}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="text-[14px] text-gray-600">{log.user}</p>
-                    <p className="text-[12px] text-gray-400">{log.ipAddress}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="text-[14px] font-semibold text-gray-700">{log.action}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="text-[14px] text-gray-600">{log.details}</p>
+            <tbody className="divide-y divide-gray-100">
+              {loading && logs.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="text-center py-12 text-gray-500">
+                    Loading logs...
                   </td>
                 </tr>
-              ))}
+              ) : logs.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="text-center py-12 text-gray-500 italic">
+                    No system logs found.
+                  </td>
+                </tr>
+              ) : (
+                logs.map((log) => (
+                  <tr key={log.id} className="hover:bg-gray-50/80 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <p className="text-[14px] text-gray-900 font-medium">
+                        {new Date(log.createdAt).toLocaleDateString()}
+                      </p>
+                      <p className="text-[12px] text-gray-500">
+                        {new Date(log.createdAt).toLocaleTimeString()}
+                      </p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border
+                        ${log.action.includes('ERROR') ? 'bg-red-50 text-red-700 border-red-100' :
+                          log.action.includes('WARN') ? 'bg-orange-50 text-orange-700 border-orange-100' :
+                            'bg-blue-50 text-blue-700 border-blue-100'}`}>
+                        {log.action}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {getActor(log)}
+                    </td>
+                    <td className="px-6 py-4">
+                      {formatDetails(log.details)}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
 
-        {/* Footer */}
-        <div className="p-6 border-t border-gray-200">
-          <p className="text-[15px] text-gray-600">
-            Showing {filteredLogs.length} of {logs.length} log entries
-          </p>
-        </div>
-      </div>
-
-      {/* Info Banner */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <FileText className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="font-semibold text-[15px] text-blue-800 mb-1">ITIL Event Management</p>
-            <p className="text-[14px] text-blue-700">
-              System logs are retained for 90 days for compliance and audit purposes. All user actions, API calls, and system events are tracked. 
-              Critical errors automatically trigger incident management workflows.
-            </p>
+        {/* Pagination Footer */}
+        <div className="p-4 border-t border-gray-200 flex items-center justify-between bg-gray-50/50">
+          <div className="text-sm text-gray-500">
+            Page <span className="font-medium text-gray-900">{meta.page}</span> of <span className="font-medium text-gray-900">{meta.lastPage}</span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1 || loading}
+              className="px-3 py-1.5 border border-gray-300 rounded-md bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Previous
+            </button>
+            <button
+              onClick={() => setPage(p => Math.min(meta.lastPage, p + 1))}
+              disabled={page >= meta.lastPage || loading}
+              className="px-3 py-1.5 border border-gray-300 rounded-md bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+            >
+              Next
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>

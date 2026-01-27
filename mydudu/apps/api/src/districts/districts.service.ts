@@ -7,7 +7,14 @@ export class DistrictsService {
 
   findAll() {
     return this.prisma.district.findMany({
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
+      include: {
+        villages: {
+          include: {
+            posyandus: true
+          }
+        }
+      }
     });
   }
 
@@ -16,4 +23,13 @@ export class DistrictsService {
   }
 
   // ... other methods can remain unimplemented or basic for now if not needed
+
+  async createPosyandu(name: string, villageId: number) {
+    return this.prisma.posyandu.create({
+      data: {
+        name,
+        villageId
+      }
+    });
+  }
 }

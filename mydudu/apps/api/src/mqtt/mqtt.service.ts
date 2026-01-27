@@ -1,6 +1,7 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import * as mqtt from 'mqtt';
 import { PrismaService } from '../prisma/prisma.service';
+import { SystemLogsService, SystemLogAction } from '../system-logs/system-logs.service';
 // SensorType enum removed from Prisma schema, so we define it here or just check strings
 // But we still need to validate/map inputs.
 
@@ -9,7 +10,10 @@ export class MqttService implements OnModuleInit {
     private client: mqtt.MqttClient;
     private readonly logger = new Logger(MqttService.name);
 
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly systemLogsService: SystemLogsService
+    ) { }
 
     onModuleInit() {
         this.connect();
@@ -161,11 +165,16 @@ export class MqttService implements OnModuleInit {
 
         // 5. Save Data
         try {
-            await this.prisma.session.create({
+            const session = await this.prisma.session.create({
                 data: sessionData
             });
 
             this.logger.log(`Session saved for ${deviceUuid} at ${payloadTime}`);
+
+            await this.systemLogsService.logEvent(SystemLogAction.SESSION_CREATED, {
+                sessionId: session.id,
+                childId: session.childId
+            }, undefined, deviceUuid);
 
         } catch (dbError) {
             this.logger.error('Failed to save session to DB', dbError);

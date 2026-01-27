@@ -184,6 +184,7 @@ model Device {
   deviceUuid   String       @unique @map("device_uuid") @db.VarChar(64)
   name         String       @db.VarChar(50)
   posyanduId   Int?         @map("posyandu_id")
+  isActive     Boolean      @default(true) @map("is_active")
   // status       DeviceStatus @default(OFFLINE) // Removed
   // batteryLevel Int?         @map("battery_level") @db.SmallInt // Removed
   // lastSync     DateTime?    @map("last_sync") @db.Timestamp(6) // Removed
