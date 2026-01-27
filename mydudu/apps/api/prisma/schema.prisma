@@ -41,16 +41,6 @@ enum SessionStatus {
   @@map("session_status")
 }
 
-enum SensorType {
-  WEIGHT
-  HEIGHT
-  TEMP
-  OXY
-  ARM_CIRC
-  HEAD_CIRC
-  @@map("sensor_type")
-}
-
 enum NutritionCategory {
   NORMAL
   STUNTED
@@ -194,12 +184,12 @@ model Device {
   deviceUuid   String       @unique @map("device_uuid") @db.VarChar(64)
   name         String       @db.VarChar(50)
   posyanduId   Int?         @map("posyandu_id")
-  status       DeviceStatus @default(OFFLINE)
-  batteryLevel Int?         @map("battery_level") @db.SmallInt
-  lastSync     DateTime?    @map("last_sync") @db.Timestamp(6)
+  // status       DeviceStatus @default(OFFLINE) // Removed
+  // batteryLevel Int?         @map("battery_level") @db.SmallInt // Removed
+  // lastSync     DateTime?    @map("last_sync") @db.Timestamp(6) // Removed
 
   posyandu  Posyandu? @relation(fields: [posyanduId], references: [id])
-  logs      DeviceLog[]
+  // logs      DeviceLog[] // Removed
   incidents Incident[]
   sessions  Session[]
 
@@ -207,23 +197,10 @@ model Device {
 }
 
 // ============================================================
-// DEVICE LOGS
+// DEVICE LOGS - REMOVED
 // ============================================================
 
-model DeviceLog {
-  id           BigInt           @id @default(autoincrement())
-  deviceId     Int              @map("device_id")
-  logTime      DateTime?        @default(now()) @map("log_time") @db.Timestamp(6)
-  battery      Int?             @db.SmallInt
-  temperature  Decimal?         @db.Decimal(5, 2)
-  clockDriftMs BigInt?          @map("clock_drift_ms")
-  status       ValidationStatus @default(OK)
-
-  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-
-  @@map("device_logs")
-  @@index([deviceId, logTime(sort: Desc)], map: "idx_device_logs_device_time")
-}
+// model DeviceLog { ... }
 
 // ============================================================
 // INCIDENT MANAGEMENT
@@ -256,16 +233,23 @@ model Session {
   childId       Int           @map("child_id")
   deviceId      Int           @map("device_id")
   operatorId    Int?          @map("operator_id")
-  startTime     DateTime      @map("start_time") @db.Timestamp(6)
-  endTime       DateTime?     @map("end_time") @db.Timestamp(6)
+  recordedAt    DateTime?     @map("recorded_at") @db.Timestamp(6) 
   status        SessionStatus @default(IN_PROGRESS)
-  bootSessionId String?       @map("boot_session_id") @db.VarChar(64)
+
+  // Metrics
+  weight       Decimal?      @db.Decimal(5, 2)
+  height       Decimal?      @db.Decimal(5, 2)
+  temperature  Decimal?      @db.Decimal(4, 2)
+  // headCirc     Decimal?      @map("head_circ") @db.Decimal(5, 2)
+  // armCirc      Decimal?      @map("arm_circ") @db.Decimal(5, 2)
+  heartRate    Decimal?      @map("heart_rate") @db.Decimal(5, 2)
+  noiseLevel   Decimal?      @map("noise_level") @db.Decimal(5, 2)
+  // oxy          Decimal?      @db.Decimal(5, 2)
 
   child    Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
   device   Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
   operator User?    @relation(fields: [operatorId], references: [id])
 
-  measurements      Measurement[]
   nutritionStatuses NutritionStatus[]
   validationRecords ValidationRecord[]
   reports           Report[]
@@ -277,26 +261,10 @@ model Session {
 }
 
 // ============================================================
-// MEASUREMENTS
+// MEASUREMENTS - REMOVED (Merged into Session)
 // ============================================================
 
-model Measurement {
-  id            BigInt     @id @default(autoincrement())
-  sessionId     Int        @map("session_id")
-  sensorType    SensorType @map("sensor_type")
-  value         Decimal    @db.Decimal(8, 3)
-  unit          String?    @db.VarChar(10)
-  correctedTime DateTime?  @map("corrected_time") @db.Timestamp(6)
-  uptimeMs      BigInt?    @map("uptime_ms")
-  bootSessionId String?    @map("boot_session_id") @db.VarChar(64)
-  isEstimated   Boolean?   @default(false) @map("is_estimated")
-
-  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-
-  @@map("measurements")
-  // Note: Compound index syntax in Prisma
-  @@index([sessionId, sensorType], map: "idx_measurements_session_sensor")
-}
+// model Measurement { ... }
 
 // ============================================================
 // NUTRITION STATUS

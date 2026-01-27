@@ -8,9 +8,10 @@ import { PrismaModule } from './prisma/prisma.module';
 import { FirebaseAdminModule } from './firebase/firebase-admin.module';
 import { UsersModule } from './users/users.module';
 import { DistrictsModule } from './districts/districts.module';
+import { MqttModule } from './mqtt/mqtt.module';
 
 @Module({
-    imports: [FirebaseAdminModule, PrismaModule, RedisModule, AuthModule, TelemetryModule, UsersModule, DistrictsModule],
+    imports: [FirebaseAdminModule, PrismaModule, RedisModule, MqttModule, AuthModule, TelemetryModule, UsersModule, DistrictsModule],
     controllers: [AppController],
     providers: [AppService],
 })
