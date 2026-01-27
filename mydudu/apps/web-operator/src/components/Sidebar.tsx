@@ -19,8 +19,8 @@ const adminMenuItems = [
   { id: 'admin-users', label: 'User Management', icon: UserCog },
   { id: 'admin-devices', label: 'Device Registry', icon: Smartphone },
   { id: 'admin-logs', label: 'System Logs', icon: FileText },
-  { id: 'admin-monitoring', label: 'Monitoring', icon: Activity },
-  { id: 'admin-security', label: 'Security & Audit', icon: Shield }
+  // { id: 'admin-monitoring', label: 'Monitoring', icon: Activity },
+  // { id: 'admin-security', label: 'Security & Audit', icon: Shield }
 ];
 
 export function Sidebar({ activePage, onNavigate }: SidebarProps) {
