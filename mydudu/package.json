@@ -18,17 +18,10 @@
     "apps/*",
     "packages/*"
   ],
-<<<<<<< HEAD
   "devDependencies": {
     "prisma": "^5.10.2"
   },
   "dependencies": {
     "@prisma/client": "^5.10.2"
-=======
-  "dependencies": {
-    "firebase": "^12.8.0",
-    "react-easy-crop": "^5.5.6",
-    "swr": "^2.3.8"
->>>>>>> d802cd0ab378d3ffef2ddd5d328dab32aa02a14e
   }
 }

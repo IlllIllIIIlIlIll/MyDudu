@@ -113,7 +113,7 @@ export interface Validation {
   measurementDate: string;
   weight: number;
   height: number;
-  headCircumference: number;
+  // headCircumference: number;
   temperature: number;
   flagReason: string;
   status: 'pending' | 'approved' | 'rejected';
@@ -133,7 +133,7 @@ export const mockValidations: Validation[] = [
     measurementDate: '2026-01-14',
     weight: 10.2,
     height: 82,
-    headCircumference: 45.5,
+    // headCircumference: 45.5,
     temperature: 36.8,
     flagReason: 'Possible stunting detected (height below -2 SD)',
     status: 'pending',
@@ -150,7 +150,7 @@ export const mockValidations: Validation[] = [
     measurementDate: '2026-01-09',
     weight: 9.8,
     height: 79,
-    headCircumference: 44.2,
+    // headCircumference: 44.2,
     temperature: 36.5,
     flagReason: 'Weight below expected range',
     status: 'pending'
@@ -166,7 +166,7 @@ export const mockValidations: Validation[] = [
     measurementDate: '2026-01-08',
     weight: 15.5,
     height: 95,
-    headCircumference: 49.8,
+    // headCircumference: 49.8,
     temperature: 37.2,
     flagReason: 'Weight above expected range (possible obesity)',
     status: 'pending'

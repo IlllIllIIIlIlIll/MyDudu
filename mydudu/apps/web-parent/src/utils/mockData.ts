@@ -38,9 +38,9 @@ export const mockChildData = {
       weight: { value: 11.5, unit: "kg", status: "normal" as const, trend: "up" as const },
       height: { value: 82, unit: "cm", status: "warning" as const, trend: "down" as const },
       temperature: { value: 36.8, unit: "°C", status: "normal" as const, trend: "stable" as const },
-      oxygen: { value: 98, unit: "%", status: "normal" as const, trend: "stable" as const },
-      armCircumference: { value: 14.8, unit: "cm", status: "warning" as const, trend: "stable" as const },
-      headCircumference: { value: 47.5, unit: "cm", status: "normal" as const, trend: "up" as const }
+      // oxygen: { value: 98, unit: "%", status: "normal" as const, trend: "stable" as const },
+      // armCircumference: { value: 14.8, unit: "cm", status: "warning" as const, trend: "stable" as const },
+      // headCircumference: { value: 47.5, unit: "cm", status: "normal" as const, trend: "up" as const }
     },
     nextPosyanduDate: "2026-01-25"
   },
@@ -57,9 +57,9 @@ export const mockChildData = {
       weight: { value: 15.2, unit: "kg", status: "normal" as const, trend: "up" as const },
       height: { value: 98, unit: "cm", status: "normal" as const, trend: "up" as const },
       temperature: { value: 36.5, unit: "°C", status: "normal" as const, trend: "stable" as const },
-      oxygen: { value: 99, unit: "%", status: "normal" as const, trend: "stable" as const },
-      armCircumference: { value: 16.2, unit: "cm", status: "normal" as const, trend: "up" as const },
-      headCircumference: { value: 50.1, unit: "cm", status: "normal" as const, trend: "up" as const }
+      // oxygen: { value: 99, unit: "%", status: "normal" as const, trend: "stable" as const },
+      // armCircumference: { value: 16.2, unit: "cm", status: "normal" as const, trend: "up" as const },
+      // headCircumference: { value: 50.1, unit: "cm", status: "normal" as const, trend: "up" as const }
     },
     nextPosyanduDate: "2026-01-26"
   }
@@ -150,22 +150,22 @@ export const mockArmCircumferenceHistory = {
   ]
 };
 
-export const mockHeadCircumferenceHistory = {
-  "child-001": [
-    { date: "Sep '25", value: 46.5 },
-    { date: "Oct '25", value: 46.8 },
-    { date: "Nov '25", value: 47.0 },
-    { date: "Dec '25", value: 47.2 },
-    { date: "Jan '26", value: 47.5 }
-  ],
-  "child-002": [
-    { date: "Sep '25", value: 49.2 },
-    { date: "Oct '25", value: 49.5 },
-    { date: "Nov '25", value: 49.7 },
-    { date: "Dec '25", value: 49.9 },
-    { date: "Jan '26", value: 50.1 }
-  ]
-};
+// export const mockHeadCircumferenceHistory = {
+//   "child-001": [
+//     { date: "Sep '25", value: 46.5 },
+//     { date: "Oct '25", value: 46.8 },
+//     { date: "Nov '25", value: 47.0 },
+//     { date: "Dec '25", value: 47.2 },
+//     { date: "Jan '26", value: 47.5 }
+//   ],
+//   "child-002": [
+//     { date: "Sep '25", value: 49.2 },
+//     { date: "Oct '25", value: 49.5 },
+//     { date: "Nov '25", value: 49.7 },
+//     { date: "Dec '25", value: 49.9 },
+//     { date: "Jan '26", value: 50.1 }
+//   ]
+// };
 
 export const mockConsultationHistory = {
   "child-001": [
@@ -288,9 +288,9 @@ export async function fetchGrowthHistory(childId: string) {
         weight: mockWeightHistory[childId],
         height: mockHeightHistory[childId],
         temperature: mockTemperatureHistory[childId],
-        oxygen: mockOxygenHistory[childId],
-        armCircumference: mockArmCircumferenceHistory[childId],
-        headCircumference: mockHeadCircumferenceHistory[childId]
+        // oxygen: mockOxygenHistory[childId],
+        // armCircumference: mockArmCircumferenceHistory[childId],
+        // headCircumference: mockHeadCircumferenceHistory[childId]
       });
     }, 1000);
   });

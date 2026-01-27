@@ -243,9 +243,10 @@ export default function Home() {
                     value={childData.latestMetrics.temperature.value}
                     unit={childData.latestMetrics.temperature.unit}
                     status={childData.latestMetrics.temperature.status}
+                    status={childData.latestMetrics.temperature.status}
                     trend={childData.latestMetrics.temperature.trend}
                   />
-                  <DashboardCard
+                  {/* <DashboardCard
                     icon={Activity}
                     label="Oksigen"
                     value={childData.latestMetrics.oxygen.value}
@@ -268,7 +269,7 @@ export default function Home() {
                     unit={childData.latestMetrics.headCircumference.unit}
                     status={childData.latestMetrics.headCircumference.status}
                     trend={childData.latestMetrics.headCircumference.trend}
-                  />
+                  /> */}
                 </div>
               )}
             </div>
@@ -337,7 +338,7 @@ export default function Home() {
                     color="#F59E0B"
                     yAxisLabel="°C"
                   />
-                  <TrendChart
+                  {/* <TrendChart
                     title="Kadar Oksigen"
                     data={growthHistory.oxygen}
                     color="#3B82F6"
@@ -354,7 +355,7 @@ export default function Home() {
                     data={growthHistory.headCircumference}
                     color="#EC4899"
                     yAxisLabel="cm"
-                  />
+                  /> */}
                 </div>
               )}
             </div>

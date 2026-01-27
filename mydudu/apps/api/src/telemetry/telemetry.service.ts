@@ -14,7 +14,7 @@ export class TelemetryService {
         // For now, let's allow it to return aggregated real data from Prisma
 
         const childrenCount = await this.prisma.child.count();
-        const devicesOnline = await this.prisma.device.count({ where: { status: 'ONLINE' } });
+        const devicesOnline = 0; // Status field removed from schema
 
         // Simulate pending validations
         const pendingReviews = await this.prisma.validationRecord.count({ where: { validatorId: null } });
