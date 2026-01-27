@@ -5,11 +5,13 @@ import { User, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut 
 import { auth } from "@/lib/firebase";
 
 export interface AppUser extends User {
+  fullName?: string;
   role?: string;
   assignedLocation?: {
-    kecamatan: string;
-    village: string;
-    posyanduName: string;
+    kecamatan?: string;
+    village?: string;
+    posyanduName?: string;
+    puskesmasName?: string;
   };
 }
 
