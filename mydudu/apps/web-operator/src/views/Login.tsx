@@ -26,11 +26,8 @@ export function Login({ onLogin }: LoginProps) {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
         {/* Logo Placeholder */}
         <div className="flex justify-center mb-6">
-          <div className="w-24 h-24 rounded-full gradient-primary flex items-center justify-center">
-            <div className="text-white text-center">
-              <div className="text-[32px] font-extrabold">MD</div>
-              <div className="text-[10px] font-semibold">LOGO</div>
-            </div>
+          <div className="w-24 h-24 flex items-center justify-center">
+            <img src="/logo_mydudu.png" alt="MyDudu Logo" className="w-full h-full object-contain" />
           </div>
         </div>
 
