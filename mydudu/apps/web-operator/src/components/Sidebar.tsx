@@ -35,11 +35,8 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
       {/* Logo */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-12 h-12 rounded-lg gradient-primary flex items-center justify-center">
-            <div className="text-white text-center">
-              <div className="text-[16px] font-extrabold leading-none">MD</div>
-              <div className="text-[6px] font-semibold">LOGO</div>
-            </div>
+          <div className="w-12 h-12 flex items-center justify-center">
+            <img src="/logo_mydudu.png" alt="MyDudu Logo" className="w-full h-full object-contain" />
           </div>
           <div>
             <h1 className="text-[22px] font-extrabold gradient-text leading-none">MyDudu</h1>

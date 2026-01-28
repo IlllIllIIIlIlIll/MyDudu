@@ -29,9 +29,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       console.log("Auth State Changed:", currentUser);
-      setUser(currentUser);
+
+      if (currentUser && currentUser.email) {
+        try {
+          const res = await fetch(`http://localhost:3000/users/details?email=${currentUser.email}`);
+          if (res.ok) {
+            const dbUser = await res.json();
+            // Merge DB data into the User object
+            const appUser = currentUser as AppUser;
+            appUser.fullName = dbUser.fullName;
+            appUser.role = dbUser.role;
+            appUser.assignedLocation = dbUser.assignedLocation;
+            setUser(appUser);
+          } else {
+            setUser(currentUser);
+          }
+        } catch (error) {
+          console.error("Failed to fetch user details:", error);
+          setUser(currentUser);
+        }
+      } else {
+        setUser(currentUser);
+      }
+
       setLoading(false);
     });
     return () => unsubscribe();

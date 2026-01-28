@@ -27,7 +27,7 @@ export function Topbar({ onOpenProfile, onOpenNotifications }: TopbarProps) {
 
   const getLocationDisplay = () => {
     if (!user.assignedLocation) return null;
-    
+
     if (user.role === 'posyandu') {
       return (
         <div className="flex items-center gap-1 text-gray-500">
@@ -38,7 +38,7 @@ export function Topbar({ onOpenProfile, onOpenNotifications }: TopbarProps) {
         </div>
       );
     }
-    
+
     if (user.role === 'puskesmas') {
       return (
         <div className="flex items-center gap-1 text-gray-500">
@@ -49,26 +49,23 @@ export function Topbar({ onOpenProfile, onOpenNotifications }: TopbarProps) {
         </div>
       );
     }
-    
+
     return null;
   };
 
   return (
     <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center">
+        {/* <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center">
           <User className="w-6 h-6 text-white" />
-        </div>
+        </div> */}
         <div>
           <div className="flex items-center gap-2">
-            <p className="font-semibold text-[17px]">{user.fullName}</p>
+            <p className="font-semibold text-[24px]">{user.fullName}</p>
             {getRoleBadge()}
           </div>
           <div className="flex items-center gap-2 mt-0.5">
             {getLocationDisplay()}
-            {!user.assignedLocation && (
-              <p className="text-[13px] text-gray-500">Akses Sistem Penuh</p>
-            )}
           </div>
         </div>
       </div>
