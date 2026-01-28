@@ -35,8 +35,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (currentUser && currentUser.email) {
         try {
-          const res = await fetch(`http://localhost:3000/users/details?email=${currentUser.email}`);
-          if (res.ok) {
+          const res = await fetch(`http://localhost:3000/users/details?email=${currentUser.email}`)
+            .catch(err => {
+              console.warn("AuthContext: Failed to fetch user details (API might be down)", err);
+              return null;
+            });
+
+          if (res && res.ok) {
             const dbUser = await res.json();
             // Merge DB data into the User object
             const appUser = currentUser as AppUser;

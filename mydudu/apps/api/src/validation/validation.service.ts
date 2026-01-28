@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notifications/notifications.service';
-import { ValidationStatus, NotifType } from '@prisma/client';
+import { NotifType } from '@prisma/client';
 
 @Injectable()
 export class ValidationService {
@@ -10,7 +10,7 @@ export class ValidationService {
         private readonly notificationService: NotificationService
     ) { }
 
-    async validateSession(sessionId: number, validatorId: number, status: ValidationStatus, remarks?: string) {
+    async validateSession(sessionId: number, validatorId: number, remarks?: string) {
         // 1. Create Validation Record
         const validation = await this.prisma.validationRecord.create({
             data: {
@@ -32,18 +32,11 @@ export class ValidationService {
         if (session.operatorId) {
             await this.notificationService.notifyOperator(
                 session.operatorId,
-                `Data sesi #${session.id} telah divalidasi oleh Dokter (Status: ${status})`,
+                `Data sesi #${session.id} telah divalidasi oleh Dokter.`,
                 NotifType.RESULT
             );
 
-            // 4. Trigger: [SYSTEM] Minta pengukuran ulang
-            if (status === ValidationStatus.FAIL) {
-                await this.notificationService.notifyOperator(
-                    session.operatorId,
-                    `Pengukuran ulang diperlukan untuk sesi #${session.id}. ${remarks || ''}`,
-                    NotifType.SYSTEM
-                );
-            }
+            // Removed FAIL logic as ValidationStatus was requested to be removed
         }
 
         return validation;

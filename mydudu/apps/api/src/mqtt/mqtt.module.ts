@@ -3,8 +3,10 @@ import { MqttService } from './mqtt.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { RedisModule } from '../redis/redis.module';
 
+import { NutritionModule } from '../telemetry/nutrition.module';
+
 @Module({
-    imports: [PrismaModule, RedisModule],
+    imports: [PrismaModule, RedisModule, NutritionModule],
     providers: [MqttService],
     exports: [MqttService],
 })
