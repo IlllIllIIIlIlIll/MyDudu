@@ -74,7 +74,7 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
       {/* Footer */}
       <div className="p-4 border-t border-gray-200">
         <p className="text-[12px] text-gray-400 text-center">
-          © 2026 MyDudu Dashboard
+          © Innovillage 2025 by Telkom
         </p>
       </div>
     </div>
