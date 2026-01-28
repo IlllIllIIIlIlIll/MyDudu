@@ -2,13 +2,15 @@ import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { PrismaService } from '../prisma/prisma.service';
 import { SystemLogsService, SystemLogAction } from '../system-logs/system-logs.service';
+import { NotificationService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AuthService {
     constructor(
         @Inject('FIREBASE_ADMIN') private readonly firebaseAdmin: admin.app.App,
         private readonly prisma: PrismaService,
-        private readonly systemLogsService: SystemLogsService
+        private readonly systemLogsService: SystemLogsService,
+        private readonly notificationService: NotificationService
     ) { }
 
     async syncUser(token: string) {
@@ -32,6 +34,11 @@ export class AuthService {
                     lastLogin: new Date(),
                 },
             });
+
+            // 3.1 [SYSTEM] User baru daftar (Status PENDING)
+            if (user.status === 'PENDING') {
+                await this.notificationService.notifyAdmin(`User ${user.email} menunggu persetujuan.`);
+            }
 
             await this.systemLogsService.logEvent(SystemLogAction.USER_LOGIN, {
                 email: user.email,

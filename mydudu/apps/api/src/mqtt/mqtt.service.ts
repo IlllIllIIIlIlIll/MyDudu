@@ -2,6 +2,9 @@ import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import * as mqtt from 'mqtt';
 import { PrismaService } from '../prisma/prisma.service';
 import { SystemLogsService, SystemLogAction } from '../system-logs/system-logs.service';
+import { NotificationService } from '../notifications/notifications.service';
+import { NutritionService } from '../telemetry/nutrition.service';
+import { NotifType } from '@prisma/client';
 // SensorType enum removed from Prisma schema, so we define it here or just check strings
 // But we still need to validate/map inputs.
 
@@ -12,7 +15,9 @@ export class MqttService implements OnModuleInit {
 
     constructor(
         private readonly prisma: PrismaService,
-        private readonly systemLogsService: SystemLogsService
+        private readonly systemLogsService: SystemLogsService,
+        private readonly notificationService: NotificationService,
+        private readonly nutritionService: NutritionService
     ) { }
 
     onModuleInit() {
@@ -75,6 +80,7 @@ export class MqttService implements OnModuleInit {
         // 1. Validation: Basic Structure
         if (!payload.deviceUuid || !payload.measurements || !Array.isArray(payload.measurements)) {
             this.logger.warn('Invalid payload structure');
+            await this.notificationService.notifyAdmin(`Payload invalid dari device (UUID: ${payload.deviceUuid || 'Unknown'})`);
             return;
         }
 
@@ -149,6 +155,22 @@ export class MqttService implements OnModuleInit {
                     sessionData.noiseLevel = val;
                     hasData = true;
                     break;
+                case 'BATTERY':
+                    if (val < 20) {
+                        // Find operator assigned to this device/posyandu? 
+                        // For now, notify Admin as fallback or just log. 
+                        // Requirement says "notifyOperator". 
+                        // We don't have operatorID immediately here, but we can look up via device -> posyandu -> users.
+                        // For simplicity in this step, I'll assume we can get it later or just notify via simpler method.
+                        // Actually, let's fetch device's posyandu users.
+                        const posyanduUsers = await this.prisma.user.findMany({
+                            where: { posyanduId: device.posyanduId }
+                        });
+                        for (const u of posyanduUsers) {
+                            await this.notificationService.notifyOperator(u.id, `Baterai alat lemah (${val}%)`, NotifType.SYSTEM);
+                        }
+                    }
+                    break;
                 // case 'OXY':
                 //     sessionData.oxy = val;
                 //     hasData = true;
@@ -175,6 +197,9 @@ export class MqttService implements OnModuleInit {
                 sessionId: session.id,
                 childId: session.childId
             }, undefined, deviceUuid);
+
+            // Trigger Nutrition Analysis & Potential Alerts
+            await this.nutritionService.computeStatus(session.id);
 
         } catch (dbError) {
             this.logger.error('Failed to save session to DB', dbError);

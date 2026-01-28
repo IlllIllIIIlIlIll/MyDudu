@@ -5,6 +5,7 @@ import { User, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut 
 import { auth } from "@/lib/firebase";
 
 export interface AppUser extends User {
+  id?: number;
   fullName?: string;
   role?: string;
   assignedLocation?: {
@@ -39,6 +40,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const dbUser = await res.json();
             // Merge DB data into the User object
             const appUser = currentUser as AppUser;
+            appUser.id = dbUser.id;
             appUser.fullName = dbUser.fullName;
             appUser.role = dbUser.role;
             appUser.assignedLocation = dbUser.assignedLocation;

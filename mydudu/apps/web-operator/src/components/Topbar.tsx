@@ -1,6 +1,7 @@
 import { User, Bell, Settings, LogOut, MapPin } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 
 interface TopbarProps {
   onOpenProfile: () => void;
@@ -9,8 +10,8 @@ interface TopbarProps {
 
 export function Topbar({ onOpenProfile, onOpenNotifications }: TopbarProps) {
   const { user, logout } = useAuth();
+  const { unreadCount } = useNotification();
   const [showMenu, setShowMenu] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(3);
 
   if (!user) return null;
 

@@ -11,12 +11,17 @@ import { DistrictsModule } from './districts/districts.module';
 import { MqttModule } from './mqtt/mqtt.module';
 import { DeviceModule } from './device/device.module';
 import { SystemLogsModule } from './system-logs/system-logs.module';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
-
+import { NotificationModule } from './notifications/notifications.module';
+import { ValidationModule } from './validation/validation.module';
+import { CronModule } from './cron/cron.module';
+import { NutritionModule } from './telemetry/nutrition.module';
 
 @Module({
     imports: [
         ConfigModule.forRoot({ isGlobal: true }),
+        ScheduleModule.forRoot(),
         PrismaModule,
         AuthModule,
         UsersModule,
@@ -27,6 +32,10 @@ import { ConfigModule } from '@nestjs/config';
         FirebaseAdminModule,
         DistrictsModule,
         SystemLogsModule,
+        NotificationModule,
+        ValidationModule,
+        CronModule,
+        NutritionModule,
     ],
     controllers: [AppController],
     providers: [AppService],
