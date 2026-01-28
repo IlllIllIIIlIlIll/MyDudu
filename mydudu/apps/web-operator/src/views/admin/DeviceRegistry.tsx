@@ -76,8 +76,8 @@ export function DeviceRegistry() {
       ]);
       const devicesData = await devicesRes.json();
       const districtsData = await districtsRes.json();
-      setDevices(devicesData);
-      setDistricts(districtsData);
+      setDevices(Array.isArray(devicesData) ? devicesData : []);
+      setDistricts(Array.isArray(districtsData) ? districtsData : []);
     } catch (error) {
       console.error('Failed to fetch data', error);
     } finally {
@@ -173,10 +173,10 @@ export function DeviceRegistry() {
     setIsEditOpen(true);
   };
 
-  const filteredDevices = devices.filter(d =>
+  const filteredDevices = Array.isArray(devices) ? devices.filter(d =>
     d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     d.deviceUuid.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ) : [];
 
   // Flatten posyandus for search
   const allPosyandus = districts.flatMap(d => d.villages.flatMap(v => v.posyandus));

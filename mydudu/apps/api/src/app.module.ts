@@ -17,6 +17,7 @@ import { NotificationModule } from './notifications/notifications.module';
 import { ValidationModule } from './validation/validation.module';
 import { CronModule } from './cron/cron.module';
 import { NutritionModule } from './telemetry/nutrition.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
     imports: [
@@ -36,6 +37,7 @@ import { NutritionModule } from './telemetry/nutrition.module';
         ValidationModule,
         CronModule,
         NutritionModule,
+        AdminModule,
     ],
     controllers: [AppController],
     providers: [AppService],

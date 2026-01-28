@@ -1,31 +1,80 @@
 import { PrismaClient } from '@prisma/client';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const prisma = new PrismaClient();
 
 async function main() {
-    const deviceUuid = 'MD-0001';
+    console.log('Start seeding...');
 
-    // Create a dummy Posyandu first if not exists
-    let posyandu = await prisma.posyandu.findFirst();
-    if (!posyandu) {
-        // Need a Village and District first?
-        // Let's see if we can create just Posyandu? No, it needs villageId.
-        // Let's just create Device without posyanduId if allowed.
-        // Schema: posyanduId Int? -> Allowed.
-    }
-
-    const device = await prisma.device.upsert({
-        where: { deviceUuid },
+    // 1. Create or Find District
+    const district = await prisma.district.upsert({
+        where: { code: 'D-01' },
         update: {},
         create: {
-            deviceUuid,
-            name: 'Test Device 1',
-            // status field removed from schema
-            // other fields are optional
+            name: 'Kecamatan Contoh',
+            code: 'D-01',
         },
     });
+    console.log(`District ensured: ${district.name}`);
 
-    console.log(`Upserted device: ${device.deviceUuid}`);
+    // 2. Create or Find Village
+    const village = await prisma.village.upsert({
+        where: { code: 'V-01' },
+        update: {},
+        create: {
+            name: 'Kelurahan Sehat',
+            code: 'V-01',
+            districtId: district.id,
+        },
+    });
+    console.log(`Village ensured: ${village.name}`);
+
+    // 3. Create or Find Posyandu
+    // Note: Posyandu doesn't have a unique code in schema globally, but let's try to find by name/village
+    let posyandu = await prisma.posyandu.findFirst({
+        where: { name: 'Posyandu Melati', villageId: village.id }
+    });
+
+    if (!posyandu) {
+        posyandu = await prisma.posyandu.create({
+            data: {
+                name: 'Posyandu Melati',
+                villageId: village.id,
+                address: 'Jl. Mawar No. 123',
+            }
+        });
+        console.log(`Posyandu created: ${posyandu.name}`);
+    } else {
+        console.log(`Posyandu found: ${posyandu.name}`);
+    }
+
+    // 4. Create Devices
+    const devicesData = [
+        { uuid: 'MD-0001', name: 'Scale & Height A' },
+        { uuid: 'MD-0002', name: 'Scale & Height B' },
+        { uuid: 'MD-0003', name: 'Thermometer X' },
+    ];
+
+    for (const d of devicesData) {
+        const device = await prisma.device.upsert({
+            where: { deviceUuid: d.uuid },
+            update: {
+                posyanduId: posyandu.id, // Update relation just in case
+            },
+            create: {
+                deviceUuid: d.uuid,
+                name: d.name,
+                posyanduId: posyandu.id,
+                isActive: true,
+            },
+        });
+        console.log(`Device ensured: ${device.deviceUuid}`);
+    }
+
+    console.log('Seeding finished.');
 }
 
 main()
