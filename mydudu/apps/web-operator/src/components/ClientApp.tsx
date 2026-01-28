@@ -125,10 +125,14 @@ function AppContent() {
     );
 }
 
+import { NotificationProvider } from '../context/NotificationContext';
+
 export default function ClientApp() {
     return (
         <AuthProvider>
-            <AppContent />
+            <NotificationProvider>
+                <AppContent />
+            </NotificationProvider>
         </AuthProvider>
     );
 }

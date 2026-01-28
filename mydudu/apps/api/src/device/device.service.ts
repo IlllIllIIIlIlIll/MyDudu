@@ -3,12 +3,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateDeviceDto } from './dto/create-device.dto';
 import { UpdateDeviceDto } from './dto/update-device.dto';
 import { SystemLogsService, SystemLogAction } from '../system-logs/system-logs.service';
-
-@Injectable()
+import { NotificationService } from '../notifications/notifications.service';
 export class DeviceService {
     constructor(
         private readonly prisma: PrismaService,
-        private readonly systemLogsService: SystemLogsService
+        private readonly systemLogsService: SystemLogsService,
+        private readonly notificationService: NotificationService
     ) { }
 
     async create(createDeviceDto: CreateDeviceDto) {
