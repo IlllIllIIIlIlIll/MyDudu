@@ -72,7 +72,7 @@ export function Login({ onLogin }: LoginProps) {
             Butuh bantuan? Hubungi IT Admin
           </p>
           <p className="text-[12px] text-gray-400 mt-2">
-            © 2026 MyDudu Dashboard - Sistem Kesehatan Anak
+            © Innovillage 2025 by Telkom
           </p>
         </div>
       </div>
