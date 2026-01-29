@@ -7,10 +7,16 @@ export class AuthController {
 
     @Post('sync')
     async syncUser(@Headers('authorization') authorization: string) {
-        if (!authorization) throw new UnauthorizedException('No token provided');
+        if (!authorization) {
+            throw new UnauthorizedException('No token provided');
+        }
 
-        // Authorization: Bearer <token>
-        const token = authorization.split(' ')[1];
+        const [type, token] = authorization.split(' ');
+
+        if (type !== 'Bearer' || !token) {
+            throw new UnauthorizedException('Invalid authorization header format');
+        }
+
         return this.authService.syncUser(token);
     }
 }

@@ -1,5 +1,6 @@
-import { FileText, Download, Search, AlertCircle, Info, CheckCircle, XCircle, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { auth } from '@/lib/firebase';
 
 // Define the shape of a log from the API
 interface SystemLog {
@@ -29,7 +30,12 @@ export function SystemLogs() {
   const fetchLogs = async (currentPage: number) => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:3000/system-logs?page=${currentPage}&limit=${limit}`);
+      const token = await auth.currentUser?.getIdToken();
+      const response = await fetch(`http://localhost:3000/system-logs?page=${currentPage}&limit=${limit}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setLogs(data.data);

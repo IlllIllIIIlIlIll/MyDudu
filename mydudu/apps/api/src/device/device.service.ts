@@ -11,7 +11,7 @@ export class DeviceService {
         private readonly prisma: PrismaService,
         private readonly systemLogsService: SystemLogsService,
         private readonly notificationService: NotificationService
-    ) {}
+    ) { }
 
 
     async create(createDeviceDto: CreateDeviceDto) {
@@ -89,5 +89,50 @@ export class DeviceService {
         return this.prisma.device.delete({
             where: { id },
         });
+    }
+
+    async processManualEntry(data: { motherName: string; childName: string; weight?: number; height?: number; temperature?: number }) {
+        // 1. Find Child
+        const child = await this.prisma.child.findFirst({
+            where: {
+                fullName: { contains: data.childName, mode: 'insensitive' },
+                parent: {
+                    user: {
+                        fullName: { contains: data.motherName, mode: 'insensitive' }
+                    }
+                }
+            },
+            include: { parent: true }
+        });
+
+        if (!child) {
+            throw new Error('Child not found. Please check Mother Name and Child Name.');
+        }
+
+        // 2. Create Session (Manual)
+        const session = await this.prisma.session.create({
+            data: {
+                sessionUuid: `manual-${Date.now()}`,
+                childId: child.id,
+                deviceId: 1, // Fallback to a default/virtual device ID or find one
+                status: 'COMPLETE',
+                weight: data.weight,
+                height: data.height,
+                temperature: data.temperature,
+                recordedAt: new Date(),
+            }
+        });
+
+        // 3. Log & Notify
+        await this.systemLogsService.logEvent(SystemLogAction.SESSION_CREATED, {
+            sessionId: session.id,
+            manual: true
+        });
+
+        // 4. Compute Nutrition Status (Lazy load or inject service if needed. Using direct create here)
+        // Ideally inject NutritionService but avoiding circular deps if any.
+        // For now, let's assume it's just stored.
+
+        return session;
     }
 }

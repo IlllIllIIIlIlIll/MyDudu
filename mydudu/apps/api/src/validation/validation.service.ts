@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notifications/notifications.service';
-import { NotifType } from '@prisma/client';
+import { NotifType, SessionStatus } from '@prisma/client';
 
 @Injectable()
 export class ValidationService {
@@ -10,7 +10,12 @@ export class ValidationService {
         private readonly notificationService: NotificationService
     ) { }
 
-    async validateSession(sessionId: number, validatorId: number, remarks?: string) {
+    async validateSession(
+        sessionId: number,
+        validatorId: number,
+        remarks?: string,
+        decision: 'approve' | 'reject' = 'approve'
+    ) {
         // 1. Create Validation Record
         const validation = await this.prisma.validationRecord.create({
             data: {
@@ -28,15 +33,29 @@ export class ValidationService {
 
         if (!session) return validation;
 
+        // 2b. Update session status based on decision
+        const nextStatus =
+            decision === 'approve'
+                ? SessionStatus.CLINICALLY_SUFFICIENT
+                : SessionStatus.INSUFFICIENT;
+
+        await this.prisma.session.update({
+            where: { id: sessionId },
+            data: { status: nextStatus }
+        });
+
         // 3. Trigger: [RESULT] Data tervalidasi dokter
         if (session.operatorId) {
+            const message =
+                decision === 'approve'
+                    ? `Data sesi #${session.id} telah disetujui oleh Dokter.`
+                    : `Data sesi #${session.id} ditolak oleh Dokter. Perlu pemeriksaan ulang.`;
+
             await this.notificationService.notifyOperator(
                 session.operatorId,
-                `Data sesi #${session.id} telah divalidasi oleh Dokter.`,
+                message,
                 NotifType.RESULT
             );
-
-            // Removed FAIL logic as ValidationStatus was requested to be removed
         }
 
         return validation;

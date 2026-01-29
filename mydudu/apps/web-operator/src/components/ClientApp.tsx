@@ -28,9 +28,8 @@ function AppContent() {
     // MOCK OVERRIDE REMOVED - Using AuthContext with src/lib/firebase.ts mock
 
 
-    // Temporary: Derive admin role from email for demonstration
-    // In a real app, this should come from the user's custom claims or database profile
-    const isAdmin = user?.email?.includes('admin') || user?.email?.includes('dudu');
+    // Use consistent logic with Sidebar
+    const isAdmin = user?.role === 'admin';
 
     const [activePage, setActivePage] = useState('dashboard'); // Default safe start
 
@@ -98,6 +97,11 @@ function AppContent() {
                 return <DoctorValidation />;
             case 'reports':
                 return <ReportsAnalytics />;
+            case 'users':
+                if (user?.role === 'puskesmas') {
+                    return <UserManagement />;
+                }
+                return <Dashboard />;
             default:
                 return <Dashboard />;
         }

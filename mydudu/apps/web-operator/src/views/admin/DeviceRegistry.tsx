@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Wifi, MapPin, Tablet, Activity, Edit2, Search } from 'lucide-react';
+import { auth } from '@/lib/firebase';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
@@ -70,9 +71,14 @@ export function DeviceRegistry() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
+      const token = await auth.currentUser?.getIdToken();
       const [devicesRes, districtsRes] = await Promise.all([
-        fetch('http://localhost:3000/devices'),
-        fetch('http://localhost:3000/districts')
+        fetch('http://localhost:3000/devices', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch('http://localhost:3000/districts', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
       ]);
       const devicesData = await devicesRes.json();
       const districtsData = await districtsRes.json();
@@ -100,6 +106,7 @@ export function DeviceRegistry() {
   const handleRegister = async () => {
     try {
       let finalPosyanduId = formData.posyanduId;
+      const token = await auth.currentUser?.getIdToken();
 
       if (isNewPosyandu) {
         if (!selectedVillageId) {
@@ -109,7 +116,10 @@ export function DeviceRegistry() {
         // Create new Posyandu
         const posyanduRes = await fetch('http://localhost:3000/districts/posyandu', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
           body: JSON.stringify({
             name: posyanduSearch,
             villageId: parseInt(selectedVillageId)
@@ -123,7 +133,10 @@ export function DeviceRegistry() {
 
       const res = await fetch('http://localhost:3000/devices', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           name: formData.name,
           posyanduId: finalPosyanduId ? parseInt(finalPosyanduId) : undefined,
@@ -144,9 +157,13 @@ export function DeviceRegistry() {
   const handleUpdate = async () => {
     if (!selectedDevice) return;
     try {
+      const token = await auth.currentUser?.getIdToken();
       const res = await fetch(`http://localhost:3000/devices/${selectedDevice.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           name: formData.name,
           posyanduId: formData.posyanduId ? parseInt(formData.posyanduId) : null,
@@ -245,8 +262,7 @@ export function DeviceRegistry() {
                 <TableCell>
                   {device.posyandu ? (
                     <div className="flex items-center gap-2">
-                      <MapPin className="w-3 h-3 text-gray-400" />
-                      {device.posyandu.name}
+                      {device.posyandu.name.replace(/^Posyandu\s+/i, '')}
                     </div>
                   ) : (
                     <span className="text-gray-400 italic">Unassigned</span>

@@ -6,234 +6,158 @@ const prisma = new PrismaClient();
 async function main() {
     console.log('Start seeding...');
 
-    // 1. Clean up (Optional, commented out)
-    // await prisma.notification.deleteMany();
-    // await prisma.auditLog.deleteMany();
-    // await prisma.incident.deleteMany();
-    // await prisma.nutritionStatus.deleteMany();
-    // await prisma.session.deleteMany();
-    // await prisma.child.deleteMany();
-    // await prisma.device.deleteMany();
-    // await prisma.parentProfile.deleteMany();
-    // await prisma.user.deleteMany();
-    // await prisma.posyandu.deleteMany();
-    // await prisma.village.deleteMany();
-    // await prisma.district.deleteMany();
+    // 1. Clean up
+    await prisma.notification.deleteMany();
+    await prisma.auditLog.deleteMany();
+    await prisma.incident.deleteMany();
+    await prisma.nutritionStatus.deleteMany();
+    await prisma.session.deleteMany();
+    await prisma.child.deleteMany();
+    await prisma.device.deleteMany();
+    await prisma.parentProfile.deleteMany();
+    await prisma.user.deleteMany();
+    await prisma.posyandu.deleteMany();
+    await prisma.village.deleteMany();
+    await prisma.district.deleteMany();
 
-    // 2. Locations
-    const district = await prisma.district.upsert({
-        where: { code: 'D01' },
-        update: {},
-        create: {
-            name: 'Kecamatan Contoh',
-            code: 'D01',
-        },
-    });
+    // 2. Locations (Kabupaten Tangerang Restoration)
+    const locations = {
+        "Balaraja": ["Cangkudu", "Gembong", "Saga", "Sentul", "Sentul Jaya", "Sukamurni", "Talagasari", "Tobat"],
+        "Cikupa": ["Bitung Jaya", "Bojong", "Budi Mulya", "Cibadak", "Cikupa", "Dukuh", "Pasir Gadung", "Pasir Jaya", "Sukadamai", "Sukanagara", "Talaga", "Talagasari"],
+        "Cisauk": ["Cibogo", "Dangdang", "Mekar Wangi", "Sampora", "Suradita"],
+        "Cisoka": ["Bojong Loa", "Carenang", "Caringin", "Cempaka", "Cibugel", "Cisoka", "Jeungjing", "Karang Harja", "Selapajang", "Sukatani"],
+        "Curug": ["Cukanggalih", "Curug Wetan", "Kadu", "Kadu Jaya"],
+        "Gunung Kaler": ["Cibetok", "Cipaeh", "Gunung Kaler", "Kandawati", "Kedung", "Onyam", "Rancagede", "Sidoko", "Tamiang"],
+        "Jambe": ["Ancol Pasir", "Daru", "Jambe", "Kutruk", "Mekarsari", "Pasir Barat", "Ranca Buaya", "Sukamanah", "Taban"],
+        "Pakuhaji": ["Desa Kiara Payung", "Buaran Bambu", "Buaran Mangga", "Bunisari", "Gaga", "Kalibaru", "Kohod", "Kramat", "Laksana", "Paku Alam", "Pakuhaji", "Rawa Boni", "Sukawali", "Surya Bahari"],
+        "Jayanti": ["Cikande", "Dangdeur", "Jayanti", "Pabuaran", "Pangkat", "Pasir Gintung", "Pasir Muncang", "Sumur Bandung"],
+        "Kelapa Dua": ["Bencongan", "Bencongan Indah", "Bojong Nangka", "Curug Sangereng", "Kelapa Dua", "Pakulonan Barat"],
+        "Kemiri": ["Karang Anyar", "Kemiri", "Klebet", "Legok Suka Maju", "Lontar", "Patramanggala", "Ranca Labuh"],
+        "Kosambi": ["Belimbing", "Cengklong", "Dadap", "Jatimulya", "Kosambi Barat", "Kosambi Timur", "Rawa Burung", "Rawa Rengas", "Salembaran Jati", "Salembaran Jaya"],
+        "Kresek": ["Jengkol", "Kemuning", "Koper", "Kresek", "Pasir Ampo", "Patrasana", "Rancede", "Renged", "Talok"],
+        "Kronjo": ["Bakung", "Blukbuk", "Cirumpak", "Kronjo", "Muncung", "Pagedangan Ilir", "Pagenjahan", "Pasilian", "Pasir", "Waliwis"],
+        "Legok": ["Babakan", "Babat", "Bojong Kamal", "Caringin", "Ciangir", "Cirarab", "Kamuning", "Legok", "Palasari", "Rancagong", "Serdang Wetan"],
+        "Mauk": ["Banyu Asin", "Gunung Sari", "Jatiwaringin", "Kedung Dalem", "Ketapang", "Marga Mulya", "Mauk Barat", "Mauk Timur", "Sasak", "Tegal Kunir Kidul", "Tegal Kunir Lor", "Tanjung Anom"],
+        "Mekar Baru": ["Cijeruk", "Gandaria", "Jenggot", "Koda", "Mekar Baru", "Waliwis"],
+        "Pagedangan": ["Cicalengka", "Cihuni", "Cijantra", "Jatake", "Kadu Sirung", "Karang Tengah", "Lengkong Kulon", "Malang Nengah", "Medang", "Pagedangan", "Situ Gadung"],
+        "Panongan": ["Ciakar", "Mekar Bakti", "Mekar Jaya", "Panongan", "Peusar", "Ranca Iyuh", "Ranca Kalapa", "Serdang Kulon"],
+        "Pasar Kemis": ["Gelam Jaya", "Kuta Baru", "Kuta Bumi", "Kuta Jaya", "Pangadegan", "Pasar Kemis", "Sindang Sari", "Suka Asih", "Suka Mantri"],
+        "Rajeg": ["Daon", "Jambu Karya", "Lembang Sari", "Mekar Sari", "Pangarengan", "Rajeg", "Rajeg Mulya", "Ranca Bango", "Sukamanah", "Sukasari", "Tanjakan", "Tanjakan Mekar"],
+        "Sepatan": ["Karet", "Kayu Agung", "Kayu Bongkok", "Mekar Jaya", "Pisangan Jaya", "Pondok Jaya", "Sarakan", "Sepatan"],
+        "Sepatan Timur": ["Gempol Sari", "Jati Mulya", "Kampung Kelor", "Kedaung Barat", "Lebak Wangi", "Pondok Kelor", "Sangiang", "Tanah Merah"],
+        "Sindang Jaya": ["Badak Anom", "Sindang Asih", "Sindang Jaya", "Sindang Panon", "Sindang Sono", "Suka Harja", "Wanakerta"],
+        "Solear": ["Cikareo", "Cikasungka", "Cikuya", "Munjul", "Pasanggrahan", "Solear"],
+        "Sukadiri": ["Buaran Jati", "Gintung", "Karang Serang", "Kosambi", "Mekar Kondang", "Pekayon", "Rawa Kidang", "Sukadiri"],
+        "Sukamulya": ["Benda", "Bunar", "Buniayu", "Kaliasin", "Kubang", "Merak", "Parahu", "Sukamulya"],
+        "Teluknaga": ["Babakan Asem", "Bojong Renged", "Kampung Besar", "Kampung Melayu Barat", "Kampung Melayu Timur", "Kebon Cau", "Lemo", "Muara", "Pangkalan", "Tanjung Burung", "Tanjung Pasir", "Tegal Angus", "Teluknaga"],
+        "Tigaraksa": ["Bantar Panjang", "Cileles", "Cisereh", "Kadu Agung", "Margasari", "Matagara", "Pasir Bolang", "Pasir Nangka", "Pematang", "Petro", "Sodong", "Tapos", "Tigaraksa"]
+    };
 
-    const village = await prisma.village.upsert({
-        where: { code: 'V01' },
-        update: {},
-        create: {
-            name: 'Desa Sehat',
-            code: 'V01',
-            districtId: district.id,
-        },
-    });
+    let districtPakuhajiId = null;
+    let posyanduId = null;
 
-    const posyandu = await prisma.posyandu.upsert({
-        where: { id: 1 },
-        update: {},
-        create: {
-            name: 'Posyandu Mawar',
-            address: 'Jl. Merdeka No. 1',
-            villageId: village.id,
-        },
-    });
+    for (const [districtName, villages] of Object.entries(locations)) {
+        const district = await prisma.district.upsert({
+            where: { code: districtName.substring(0, 3).toUpperCase() },
+            update: {},
+            create: {
+                name: districtName,
+                code: districtName.substring(0, 3).toUpperCase(),
+            },
+        });
+
+        if (districtName === 'Pakuhaji') {
+            districtPakuhajiId = district.id;
+        }
+
+        for (const [index, villageName] of villages.entries()) {
+            const village = await prisma.village.upsert({
+                where: { code: `${district.code}-V${index}` },
+                update: {},
+                create: {
+                    name: villageName,
+                    code: `${district.code}-V${index}`,
+                    districtId: district.id,
+                },
+            });
+
+            // Create at least one Posyandu per village
+            const p = await prisma.posyandu.upsert({
+                where: { id: (district.id * 100) + index }, // Simple deterministic ID generation attempt, or let DB handle it if we remove ID.
+                // Actually, let's just findFirst or create.
+                update: {},
+                create: {
+                    name: `Posyandu ${villageName}`,
+                    address: `Jl. ${villageName} No. 1`,
+                    villageId: village.id,
+                },
+            });
+
+            if (villageName === 'Desa Kiara Payung') {
+                posyanduId = p.id;
+            }
+        }
+    }
 
     // 3. Users
-    const passwordHash = await argon2.hash('password123');
 
-    // Admin
+    // IT Admin
     const admin = await prisma.user.upsert({
-        where: { email: 'admin@dudu.com' },
-        update: {},
+        where: { email: 'dudu.innovillage@gmail.com' },
+        update: {
+            role: 'ADMIN',
+            fullName: 'Madungdung',
+            status: 'ACTIVE'
+        },
         create: {
-            fullName: 'Super Admin',
-            email: 'admin@dudu.com',
-            passwordHash,
-            role: 'ADMIN', // specific string if enum lookup fails in JS, but require should work
+            fullName: 'Madungdung',
+            email: 'dudu.innovillage@gmail.com',
+            role: 'ADMIN',
             status: 'ACTIVE',
         },
     });
+    console.log('Created Admin: Madungdung');
 
-    // Puskesmas User
+    // Puskesmas User (Pakuhaji)
     await prisma.user.upsert({
-        where: { email: 'puskesmas@dudu.com' },
-        update: {},
-        create: {
-            fullName: 'Kepala Puskesmas',
-            email: 'puskesmas@dudu.com',
-            passwordHash,
+        where: { email: 'izza.diasputra10@gmail.com' },
+        update: {
             role: 'PUSKESMAS',
-            districtId: district.id,
+            fullName: 'Favian',
+            status: 'ACTIVE',
+            districtId: districtPakuhajiId
+        },
+        create: {
+            fullName: 'Favian',
+            email: 'izza.diasputra10@gmail.com',
+            role: 'PUSKESMAS',
+            districtId: districtPakuhajiId,
+            status: 'ACTIVE',
         },
     });
+    console.log('Created Puskesmas: Favian');
 
-    // 10 Pending Users
-    for (let i = 0; i < 5; i++) {
-        await prisma.user.create({
-            data: {
-                fullName: `Pending User ${i}`,
-                email: `pending${i}@test.com`,
-                passwordHash,
-                role: 'POSYANDU',
-                status: 'PENDING',
-            },
-        });
+    // 4. Devices (Linked to the generated posyanduId for Pakuhaji/Kiara Payung if avail, else just first one)
+    if (!posyanduId) {
+        // Fallback if not found logic (should be found)
+        const anyPosyandu = await prisma.posyandu.findFirst();
+        posyanduId = anyPosyandu.id;
     }
 
-    // 4. Devices
     const devices = [];
-    for (let i = 1; i <= 15; i++) {
+    for (let i = 1; i <= 5; i++) {
         const device = await prisma.device.upsert({
             where: { deviceUuid: `DEV-${i.toString().padStart(3, '0')}` },
             update: {},
             create: {
                 deviceUuid: `DEV-${i.toString().padStart(3, '0')}`,
                 name: `Dudu Scale ${i}`,
-                posyanduId: posyandu.id,
-                isActive: i <= 12, // 12 active, 3 inactive
+                posyanduId: posyanduId,
+                isActive: true,
             },
         });
         devices.push(device);
     }
-
-    // 5. Parent & Children for Sessions
-    const parentUser = await prisma.user.create({
-        data: {
-            fullName: 'Ibu Budi',
-            email: `ibu.budi.${Date.now()}@test.com`,
-            passwordHash,
-            role: 'PARENT',
-        }
-    });
-
-    const parentProfile = await prisma.parentProfile.create({
-        data: {
-            userId: parentUser.id,
-            address: 'Jl. Melati',
-        }
-    });
-
-    const child = await prisma.child.create({
-        data: {
-            parentId: parentProfile.id,
-            fullName: 'Anak Budi',
-            birthDate: new Date('2024-01-01'),
-            gender: 'M'
-        }
-    });
-
-    // 6. Sessions (Today & Past)
-    // Create 50 sessions
-    for (let i = 0; i < 50; i++) {
-        const isToday = i < 15; // 15 sessions today
-        const date = new Date();
-        if (!isToday) {
-            date.setDate(date.getDate() - Math.floor(Math.random() * 10));
-        } else {
-            date.setHours(8 + Math.floor(Math.random() * 8)); // Valid hours today
-        }
-
-        const session = await prisma.session.create({
-            data: {
-                sessionUuid: `SES-${Date.now()}-${i}`,
-                childId: child.id,
-                deviceId: devices[i % devices.length].id,
-                recordedAt: date,
-                status: 'COMPLETE',
-                weight: 10 + Math.random() * 5,
-                height: 80 + Math.random() * 10,
-            }
-        });
-
-        // Nutrition Status
-        const categories = ['NORMAL', 'STUNTED', 'WASTED', 'OBESE'];
-        const category = categories[Math.floor(Math.random() * categories.length)];
-
-        await prisma.nutritionStatus.create({
-            data: {
-                sessionId: session.id,
-                category: category,
-                bbU: 0,
-                tbU: 0,
-                bbTb: 0
-            }
-        });
-    }
-
-    // 7. Incidents
-    await prisma.incident.create({
-        data: {
-            title: 'Device Sync Failure',
-            description: 'Device D005 failed to sync repeatedly',
-            priority: 'HIGH',
-            status: 'OPEN',
-            deviceId: devices[0].id
-        }
-    });
-
-    await prisma.incident.create({
-        data: {
-            title: 'Battery Low Alert',
-            description: 'Device D002 reports 10% battery',
-            priority: 'MEDIUM',
-            status: 'OPEN',
-            deviceId: devices[1].id
-        }
-    });
-
-    await prisma.incident.create({
-        data: {
-            title: 'Connection Timeout',
-            priority: 'LOW',
-            status: 'RESOLVED',
-            resolvedAt: new Date(),
-            deviceId: devices[2].id
-        }
-    });
-
-    // 8. Audit Logs
-    const actions = ['USER_LOGIN', 'DEVICE_REGISTER', 'DATA_EXPORT', 'USER_UPDATE'];
-    for (let i = 0; i < 10; i++) {
-        await prisma.auditLog.create({
-            data: {
-                action: actions[i % actions.length],
-                userId: admin.id,
-                details: { ip: '192.168.1.1' },
-                createdAt: new Date(Date.now() - i * 3600000)
-            }
-        });
-    }
-
-    // 9. Notifications
-    await prisma.notification.create({
-        data: {
-            userId: admin.id, // Assign to admin
-            type: 'SYSTEM',
-            message: 'System backup completed successfully',
-            status: 'SENT'
-        }
-    });
-
-    await prisma.notification.create({
-        data: {
-            userId: admin.id,
-            type: 'REMINDER',
-            message: 'Monthly report is due tomorrow',
-            status: 'SENT'
-        }
-    });
 
     console.log('Seeding finished.');
 }

@@ -1,29 +1,46 @@
 import { Clock, CheckCircle, XCircle } from 'lucide-react';
 import { ValidationPanel } from '../components/ValidationPanel';
-import { mockValidations } from '../data/mockData';
-import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { filterValidationsByUserRole } from '../utils/dataFilter';
+import useSWR from 'swr';
+import { fetchWithAuth } from '../lib/api';
+import { OperatorValidationRecord } from '../types/operator';
 
 export function DoctorValidation() {
   const { user } = useAuth();
-  const allValidations = filterValidationsByUserRole(mockValidations, user);
-  // Only show flagged validations that require doctor review
-  const flaggedValidations = allValidations.filter(v => v.flagReason);
-  const [validations, setValidations] = useState(flaggedValidations);
+  const { data, mutate, isLoading } = useSWR<OperatorValidationRecord[]>(
+    user?.id ? `/operator/validations?userId=${user.id}` : null,
+    fetchWithAuth,
+  );
 
-  const handleApprove = (id: string) => {
-    setValidations(prev =>
-      prev.map(v => v.id === id ? { ...v, status: 'approved' as const } : v)
-    );
-    alert('Pemeriksaan telah disetujui');
+  const validations = data || [];
+
+  const handleApprove = async (sessionId: number) => {
+    if (!user?.id) return;
+    try {
+      await fetchWithAuth(`/validation/${sessionId}/approve`, {
+        method: 'POST',
+        body: JSON.stringify({ validatorId: user.id }),
+      });
+      await mutate();
+    } catch (error) {
+      console.error('Failed to approve validation', error);
+      alert('Gagal menyetujui pemeriksaan. Coba lagi.');
+    }
   };
 
-  const handleReject = (id: string) => {
-    setValidations(prev =>
-      prev.map(v => v.id === id ? { ...v, status: 'rejected' as const } : v)
-    );
-    alert('Pemeriksaan ditolak. Operator akan diminta untuk melakukan pengukuran ulang');
+  const handleReject = async (sessionId: number) => {
+    if (!user?.id) return;
+    const remarks = window.prompt('Catatan penolakan (opsional):') || undefined;
+    try {
+      await fetchWithAuth(`/validation/${sessionId}/reject`, {
+        method: 'POST',
+        body: JSON.stringify({ validatorId: user.id, remarks }),
+      });
+      await mutate();
+    } catch (error) {
+      console.error('Failed to reject validation', error);
+      alert('Gagal menolak pemeriksaan. Coba lagi.');
+    }
   };
 
   const pendingCount = validations.filter(v => v.status === 'pending').length;
@@ -32,7 +49,6 @@ export function DoctorValidation() {
 
   return (
     <div className="p-8 space-y-6">
-      {/* Page Header */}
       <div>
         <h1>Validasi Medis</h1>
         <p className="text-gray-600 text-[15px] mt-1">
@@ -40,12 +56,11 @@ export function DoctorValidation() {
         </p>
         {user?.assignedLocation && user.role === 'puskesmas' && (
           <p className="text-[13px] text-[#11998E] font-semibold mt-1">
-            📍 Validasi untuk {user.assignedLocation.kecamatan}
+            Validasi untuk {user.assignedLocation.kecamatan}
           </p>
         )}
       </div>
 
-      {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-lg shadow-sm border border-orange-100 p-5">
           <div className="flex items-center gap-3 mb-2">
@@ -84,19 +99,23 @@ export function DoctorValidation() {
         </div>
       </div>
 
-      {/* Validation Panel */}
-      <ValidationPanel
-        validations={validations}
-        onApprove={handleApprove}
-        onReject={handleReject}
-      />
+      {isLoading ? (
+        <div className="bg-white rounded-lg border border-gray-100 p-6 text-gray-500">
+          Memuat daftar validasi...
+        </div>
+      ) : (
+        <ValidationPanel
+          validations={validations}
+          onApprove={handleApprove}
+          onReject={handleReject}
+          canApprove={user?.role === 'puskesmas'}
+        />
+      )}
 
-      {/* Help Information */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-[14px] text-blue-800">
-          <span className="font-semibold">ℹ️ Petunjuk untuk Tenaga Medis:</span> Periksa setiap hasil pengukuran dengan teliti.
-          Pastikan nilai berat, tinggi, dan suhu tubuh sesuai dengan kondisi anak.
-          Jika data terlihat tidak akurat, gunakan tombol "Tolak" untuk meminta pengukuran ulang.
+          <span className="font-semibold">â„¹ï¸ Petunjuk untuk Tenaga Medis:</span> Pastikan nilai pengukuran
+          konsisten sebelum menyetujui. Gunakan catatan saat menolak untuk memberi arahan ke operator.
         </p>
       </div>
     </div>
