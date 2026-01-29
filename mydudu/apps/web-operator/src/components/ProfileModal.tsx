@@ -1,6 +1,7 @@
-import { X, User, Mail, MapPin, Shield, Camera } from 'lucide-react';
+import { X, User, Mail, MapPin, Shield, Camera, Phone } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
+import { auth } from '@/lib/firebase';
 import { ImageCropper } from './ImageCropper';
 import { getCroppedImg } from '@/utils/getCroppedImg';
 import { Area } from 'react-easy-crop';
@@ -15,6 +16,7 @@ interface ProfileModalProps {
 export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const { user } = useAuth();
   const [displayName, setDisplayName] = useState(user?.fullName || '');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [dbUser, setDbUser] = useState<any>(null); // Store full DB user object including ID
   const [loading, setLoading] = useState(false);
 
@@ -25,13 +27,23 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   // Fetch DB user details when modal opens or user changes
   useEffect(() => {
     if (isOpen && user?.email) {
-      fetch(`${API_URL}/users/details?email=${user.email}`)
-        .then(res => res.json())
-        .then(data => {
+      const fetchData = async () => {
+        try {
+          const token = await auth.currentUser?.getIdToken();
+          const res = await fetch(`${API_URL}/users/details?email=${user.email}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          const data = await res.json();
           setDbUser(data);
           if (data?.fullName) setDisplayName(data.fullName);
-        })
-        .catch(err => console.error("Failed to fetch user details", err));
+          if (data?.phoneNumber) setPhoneNumber(data.phoneNumber);
+        } catch (err) {
+          console.error("Failed to fetch user details", err);
+        }
+      };
+      fetchData();
     }
   }, [isOpen, user?.email]);
 
@@ -66,9 +78,13 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           const base64data = reader.result;
 
           // Send PATCH request with new profile picture
+          const token = await auth.currentUser?.getIdToken();
           const res = await fetch(`${API_URL}/users/${dbUser.id}`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify({ profilePicture: base64data })
           });
 
@@ -96,10 +112,14 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     if (!dbUser?.id) return;
     try {
       setLoading(true);
+      const token = await auth.currentUser?.getIdToken();
       const res = await fetch(`${API_URL}/users/${dbUser.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName: displayName })
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ fullName: displayName, phoneNumber: phoneNumber })
       });
 
       if (res.ok) {
@@ -193,6 +213,22 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 />
               </div>
               <p className="text-[12px] text-gray-500 mt-1">Email tidak dapat diubah</p>
+            </div>
+
+            <div>
+              <label className="block text-[14px] font-semibold text-gray-700 mb-2">
+                Nomor Telepon
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="08xxxxxxxxxx"
+                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
+                />
+              </div>
             </div>
 
             {/* Role and Location (Read Only) */}

@@ -31,4 +31,9 @@ export class DeviceController {
     remove(@Param('id', ParseIntPipe) id: number) {
         return this.deviceService.remove(id);
     }
+
+    @Post('manual-telemetry')
+    submitManualTelemetry(@Body() body: { motherName: string; childName: string; weight?: number; height?: number; temperature?: number }) {
+        return this.deviceService.processManualEntry(body);
+    }
 }

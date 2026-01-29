@@ -28,7 +28,7 @@ export class AuthService {
                 create: {
                     email: email || `no-email-${uid}@mydudu.id`,
                     fullName: name || 'Operator',
-                    passwordHash: 'firebase-managed',
+                    phoneNumber: (decoded as any).phone_number || null, // Map from Firebase if available
                     role: 'POSYANDU', // Default role for new users
                     status: 'PENDING', // Default to PENDING for security
                     lastLogin: new Date(),

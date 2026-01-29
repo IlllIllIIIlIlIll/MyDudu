@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { useAuth } from "./AuthContext";
+import { auth } from "@/lib/firebase";
 
 export interface Notification {
     id: number;
@@ -31,7 +32,10 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         if (!user?.id) return;
         try {
             setLoading(true);
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications?userId=${user.id}`);
+            const token = await auth.currentUser?.getIdToken();
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications?userId=${user.id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (res.ok) {
                 const data = await res.json();
                 setNotifications(data);
@@ -46,8 +50,10 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     const markAllAsRead = async () => {
         if (!user?.id) return;
         try {
+            const token = await auth.currentUser?.getIdToken();
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/read-all?userId=${user.id}`, {
-                method: 'PATCH'
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
                 fetchNotifications();
@@ -59,8 +65,10 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
     const markAsRead = async (id: number) => {
         try {
+            const token = await auth.currentUser?.getIdToken();
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/${id}/read`, {
-                method: 'PATCH'
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
                 fetchNotifications();

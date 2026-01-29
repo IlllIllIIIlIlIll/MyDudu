@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { auth } from '@/lib/firebase';
 import { Server, Users, Smartphone, Activity, AlertTriangle, CheckCircle, Database } from 'lucide-react';
 import { OverviewCard } from '../../components/OverviewCard';
 
@@ -6,22 +7,30 @@ export function AdminDashboard() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/admin/dashboard`)
-      .then((res) => {
+    const fetchData = async () => {
+      try {
+        const token = await auth.currentUser?.getIdToken();
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/admin/dashboard`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
         if (!res.ok) {
           console.warn("Dashboard API not ready (404/Error). Showing empty state.");
-          return {};
+          setStats({});
+          return;
         }
-        return res.json();
-      })
-      .then((data) => {
+
+        const data = await res.json();
         setStats(data);
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error("Failed to fetch dashboard stats", err);
-        // Set empty stats to avoid crash
         setStats({});
-      });
+      }
+    };
+
+    fetchData();
   }, []);
 
   if (!stats) return (

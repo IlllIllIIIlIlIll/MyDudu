@@ -27,8 +27,16 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
   const { user } = useAuth();
 
   // Use consistent logic with ClientApp
-  const isAdmin = user?.email?.includes('admin') || user?.email?.includes('dudu');
-  const menuItems = isAdmin ? adminMenuItems : operatorMenuItems;
+  // Use consistent logic with ClientApp
+  const role = user?.role;
+  const isAdmin = role === 'admin';
+
+  let menuItems = isAdmin ? adminMenuItems : [...operatorMenuItems];
+
+  // Add User Management for Puskesmas
+  if (role === 'puskesmas') {
+    menuItems.push({ id: 'users', label: 'User Management', icon: Users });
+  }
 
   return (
     <div className="w-72 bg-white border-r border-gray-200 flex flex-col h-screen">
@@ -57,13 +65,13 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
               <li key={item.id}>
                 <button
                   onClick={() => onNavigate(item.id)}
-                  className={`w-full flex items-center gap-4 px-4 py-4 rounded-lg transition-all ${isActive
+                  className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all ${isActive
                     ? 'gradient-primary text-white shadow-lg'
                     : 'text-gray-700 hover:bg-gray-50'
                     }`}
                 >
-                  <Icon className="w-6 h-6" />
-                  <span className="font-semibold text-[16px]">{item.label}</span>
+                  <Icon className="w-5 h-5" />
+                  <span className="font-medium text-[14px]">{item.label}</span>
                 </button>
               </li>
             );

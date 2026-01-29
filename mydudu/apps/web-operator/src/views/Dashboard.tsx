@@ -1,214 +1,334 @@
-import { Users, Smartphone, FileCheck, FileText, Download, MapPin } from 'lucide-react';
+import { useState } from 'react';
+import { FileCheck, FileText, RefreshCcw, Smartphone, Users, Clipboard, Download } from 'lucide-react';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { OverviewCard } from '../components/OverviewCard';
-import { ReportChart } from '../components/ReportChart';
-import { mockStats, monthlyTrends, caseDistribution, villageData, mockChildren, mockDevices } from '../data/mockData';
 import { useAuth } from '../context/AuthContext';
-import { filterChildrenByUserRole, filterDevicesByUserRole } from '../utils/dataFilter';
-
-import { fetchWithAuth } from '../lib/api';
 import useSWR from 'swr';
+import { fetchWithAuth } from '../lib/api';
+import { OperatorDashboardOverview, NutritionCategory } from '../types/operator';
+
+const nutritionLabels: Record<NutritionCategory, string> = {
+  NORMAL: 'Normal',
+  STUNTED: 'Stunting',
+  WASTED: 'Gizi Kurang',
+  OBESE: 'Obesitas',
+};
 
 export function Dashboard() {
   const { user } = useAuth();
+  const { data, mutate, isLoading } = useSWR<OperatorDashboardOverview>(
+    user?.id ? `/operator/overview?userId=${user.id}` : null,
+    fetchWithAuth,
+  );
 
-  // Fetch Real Stats
-  const { data: stats } = useSWR('/telemetry/stats', fetchWithAuth, {
-    fallbackData: mockStats // use mock as initial/fallback
+  const overview = data;
+
+  const [manualForm, setManualForm] = useState({
+    motherName: '',
+    childName: '',
+    weight: '',
+    height: '',
+    temperature: '',
   });
+  const [reportPeriod, setReportPeriod] = useState('monthly');
 
-  // Use fetching results if available, else mock
-  const displayStats = stats || mockStats;
-
-  const filteredChildren = filterChildrenByUserRole(mockChildren, user);
-  const filteredDevices = filterDevicesByUserRole(mockDevices, user);
-
-  const handleDownloadReport = () => {
-    alert('Laporan bulanan akan diunduh dalam format PDF');
+  const handleManualSubmit = async () => {
+    if (!manualForm.motherName || !manualForm.childName) {
+      alert("Nama Ibu dan Anak wajib diisi");
+      return;
+    }
+    try {
+      await fetchWithAuth('/devices/manual-telemetry', {
+        method: 'POST',
+        body: JSON.stringify({
+          motherName: manualForm.motherName,
+          childName: manualForm.childName,
+          weight: manualForm.weight ? parseFloat(manualForm.weight) : undefined,
+          height: manualForm.height ? parseFloat(manualForm.height) : undefined,
+          temperature: manualForm.temperature ? parseFloat(manualForm.temperature) : undefined,
+        })
+      });
+      alert("Data berhasil dikirim!");
+      setManualForm({ motherName: '', childName: '', weight: '', height: '', temperature: '' });
+      mutate();
+    } catch (e: any) {
+      alert("Gagal mengirim data: " + e.message);
+    }
   };
 
-  // Group data by posyandu for Puskesmas view
-  const getDataByPosyandu = () => {
-    if (user?.role !== 'puskesmas') return [];
+  const handleDownloadReport = async () => {
+    try {
+      const query = new URLSearchParams({ period: reportPeriod, userId: user?.id?.toString() || '' }).toString();
+      // Trigger download (simulated or real endpoint)
+      window.open(`http://localhost:3000/reports/download?${query}`, '_blank');
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
-    const posyandus = Array.from(new Set(filteredChildren.map(c => c.posyandu)));
-    return posyandus.map(posyandu => {
-      const children = filteredChildren.filter(c => c.posyandu === posyandu);
-      const devices = filteredDevices.filter(d => d.posyandu === posyandu);
-      const village = children[0]?.village || '';
-
-      return {
-        posyandu,
-        village,
-        childrenCount: children.length,
-        devicesCount: devices.length,
-        normalCount: children.filter(c => c.nutritionStatus === 'Normal').length,
-        stuntingCount: children.filter(c => c.nutritionStatus === 'Stunting').length,
-        undernourishedCount: children.filter(c => c.nutritionStatus === 'Gizi Kurang').length,
-      };
+  const formatDate = (value: string | null) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+    return date.toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
     });
   };
 
-  const posyanduData = getDataByPosyandu();
+  const formatTime = (value: string | null) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+    return date.toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const headerDate = new Date().toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
 
   return (
     <div className="p-8 space-y-8">
-      {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1>Beranda Dashboard</h1>
           <p className="text-gray-600 text-[15px] mt-1">
-            Ringkasan data kesehatan anak - Senin, 19 Januari 2026
+            Ringkasan data kesehatan anak - {headerDate}
           </p>
           {user?.assignedLocation && user.role === 'posyandu' && (
             <p className="text-[13px] text-[#11998E] font-semibold mt-1">
-              📍 {user.assignedLocation.posyanduName}, {user.assignedLocation.village}
+              {user.assignedLocation.posyanduName}, {user.assignedLocation.village}
             </p>
           )}
           {user?.assignedLocation && user.role === 'puskesmas' && (
             <p className="text-[13px] text-blue-600 font-semibold mt-1">
-              📍 {user.assignedLocation.puskesmasName} • Mengelola {posyanduData.length} Posyandu di {user.assignedLocation.kecamatan}
+              {user.assignedLocation.puskesmasName} • {user.assignedLocation.kecamatan}
             </p>
           )}
         </div>
-        <button
-          onClick={handleDownloadReport}
-          className="gradient-primary text-white px-6 py-3 rounded-lg flex items-center gap-2 hover:opacity-90 transition-opacity"
-        >
-          <Download className="w-5 h-5" />
-          <span className="font-semibold">Unduh Laporan Bulanan</span>
-        </button>
+        <div className="flex gap-2">
+          <Select value={reportPeriod} onValueChange={setReportPeriod}>
+            <SelectTrigger className="w-[180px] bg-white">
+              <SelectValue placeholder="Pilih Periode" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="daily">Harian</SelectItem>
+              <SelectItem value="weekly">Mingguan</SelectItem>
+              <SelectItem value="monthly">Bulanan</SelectItem>
+              <SelectItem value="q1">Kuartal 1</SelectItem>
+              <SelectItem value="q2">Kuartal 2</SelectItem>
+              <SelectItem value="q3">Kuartal 3</SelectItem>
+              <SelectItem value="q4">Kuartal 4</SelectItem>
+              <SelectItem value="yearly">Tahunan</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" className="flex items-center gap-2" onClick={handleDownloadReport}>
+            <Download className="w-4 h-4" />
+            Unduh
+          </Button>
+        </div>
       </div>
 
-      {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <OverviewCard
-          title={user?.role === 'puskesmas' ? 'Total Anak Terdaftar' : 'Anak Diperiksa Hari Ini'}
-          value={user?.role === 'puskesmas' ? filteredChildren.length : displayStats.childrenMeasuredToday}
+          title={user?.role === 'puskesmas' ? 'Total Anak Terdata' : 'Pemeriksaan Hari Ini'}
+          value={user?.role === 'puskesmas' ? overview?.counts.uniqueChildren || 0 : overview?.counts.sessionsToday || 0}
           icon={Users}
           color="#11998E"
-          subtitle={user?.role === 'puskesmas' ? `Di ${user.assignedLocation?.kecamatan}` : 'Data terbaru'}
+          subtitle={user?.role === 'puskesmas' ? 'Berdasarkan pengukuran' : 'Sesi ter-record hari ini'}
         />
         <OverviewCard
-          title={user?.role === 'puskesmas' ? 'Total Alat Dudu' : 'Alat Dudu Aktif'}
-          value={user?.role === 'puskesmas' ? filteredDevices.length : displayStats.devicesOnline}
+          title="Total Alat Dudu"
+          value={overview?.counts.devicesTotal || 0}
           icon={Smartphone}
           color="#38EF7D"
-          subtitle={user?.role === 'puskesmas' ? `${filteredDevices.filter(d => d.status === 'Online').length} online` : 'Dari 10 total alat'}
+          subtitle={`${overview?.counts.devicesActive || 0} aktif`}
         />
         <OverviewCard
-          title="Menunggu Validasi Dokter"
-          value={displayStats.pendingReviews}
+          title="Menunggu Validasi"
+          value={overview?.counts.pendingValidations || 0}
           icon={FileCheck}
           color="#FF9800"
-          subtitle="Perlu persetujuan"
+          subtitle="Memerlukan tinjauan"
         />
         <OverviewCard
-          title="Laporan Dibuat Bulan Ini"
-          value={displayStats.reportsGenerated}
+          title="Laporan Bulan Ini"
+          value={overview?.counts.reportsThisMonth || 0}
           icon={FileText}
           color="#3B82F6"
-          subtitle="Januari 2026"
+          subtitle="Dokumen dihasilkan"
         />
       </div>
 
-      {/* Puskesmas-specific: Overview by Posyandu */}
-      {user?.role === 'puskesmas' && posyanduData.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <MapPin className="w-5 h-5 text-[#11998E]" />
-            <h3 className="text-[18px] font-bold">Ringkasan Data per Posyandu</h3>
+      {isLoading ? (
+        <div className="bg-white rounded-lg border border-gray-100 p-6 text-gray-500">
+          Memuat ringkasan terbaru...
+        </div>
+      ) : (
+        <>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[18px] font-bold">Pemeriksaan Terbaru</h3>
+              <span className="text-[13px] text-gray-500">
+                {overview?.recentSessions?.length || 0} sesi terbaru
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-[13px] font-bold text-gray-700">Anak</th>
+                    <th className="px-4 py-3 text-left text-[13px] font-bold text-gray-700">Tanggal</th>
+                    <th className="px-4 py-3 text-left text-[13px] font-bold text-gray-700">Alat</th>
+                    <th className="px-4 py-3 text-left text-[13px] font-bold text-gray-700">Status Gizi</th>
+                    <th className="px-4 py-3 text-left text-[13px] font-bold text-gray-700">Catatan</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {overview?.recentSessions?.map((session) => (
+                    <tr key={session.id} className="border-b border-gray-100">
+                      <td className="px-4 py-3 text-[14px] font-semibold">{session.child?.fullName || '-'}</td>
+                      <td className="px-4 py-3 text-[14px] text-gray-600">{formatDate(session.recordedAt)}</td>
+                      <td className="px-4 py-3 text-[14px] text-gray-600">
+                        {session.device?.name || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-[14px]">
+                        <span className="px-3 py-1 rounded-full text-[12px] font-semibold bg-gray-100 text-gray-700">
+                          {session.nutritionCategory ? nutritionLabels[session.nutritionCategory] : 'Belum Dinilai'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-[14px] text-gray-600">
+                        Berat {session.weight ?? '-'} kg, Tinggi {session.height ?? '-'} cm
+                      </td>
+                    </tr>
+                  ))}
+                  {!overview?.recentSessions?.length && (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-8 text-center text-gray-500 text-[14px]">
+                        Belum ada sesi pemeriksaan yang tercatat.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {posyanduData.map((data, idx) => (
-              <div key={idx} className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h4 className="font-bold text-[16px] text-gray-800">{data.posyandu}</h4>
-                    <p className="text-[13px] text-gray-500">{data.village}</p>
+
+          {user?.role === 'puskesmas' && overview?.posyanduSummary && overview.posyanduSummary.length > 0 && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-[18px] font-bold mb-4">Ringkasan per Posyandu</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {overview.posyanduSummary.map((item) => (
+                  <div key={item.posyanduId} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="text-[15px] font-semibold">{item.posyanduName}</h4>
+                        <p className="text-[12px] text-gray-500">{item.villageName || '-'}</p>
+                      </div>
+                      <span className="text-[20px] font-bold text-[#11998E]">{item.childrenCount}</span>
+                    </div>
+                    <div className="mt-3 text-[13px] text-gray-600 space-y-1">
+                      <p>Alat: {item.devicesCount} (aktif {item.activeDevicesCount})</p>
+                      <p>Normal: {item.nutrition.NORMAL}</p>
+                      <p>Stunting: {item.nutrition.STUNTED}</p>
+                      <p>Gizi Kurang: {item.nutrition.WASTED}</p>
+                      <p>Obesitas: {item.nutrition.OBESE}</p>
+                    </div>
                   </div>
-                  <span className="text-[24px] font-bold text-[#11998E]">{data.childrenCount}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Agenda Section */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-[18px] font-bold mb-4">Agenda Posyandu Mendatang (Februari 2026)</h3>
+              <div className="space-y-3">
+                {/* Hardcoded Example for Feb 2026 as requested */}
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[15px] font-semibold">Posyandu Rutin (Imunisasi)</p>
+                      <p className="text-[13px] text-gray-500">
+                        Posyandu Melati â€¢ Kelurahan Sehat
+                      </p>
+                    </div>
+                    <span className="text-[13px] font-semibold text-[#11998E]">
+                      10 Feb 2026
+                    </span>
+                  </div>
+                  <p className="text-[13px] text-gray-600 mt-2">Pemeriksaan rutin dan imunisasi dasar lengkap.</p>
+                  <p className="text-[12px] text-gray-500 mt-1">08:00 - 12:00</p>
                 </div>
-                <div className="space-y-2 text-[14px]">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Status Normal:</span>
-                    <span className="font-semibold text-green-600">{data.normalCount}</span>
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[15px] font-semibold">Penyuluhan Gizi Anak</p>
+                      <p className="text-[13px] text-gray-500">
+                        Balai Desa â€¢ Kecamatan Contoh
+                      </p>
+                    </div>
+                    <span className="text-[13px] font-semibold text-[#11998E]">
+                      24 Feb 2026
+                    </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Stunting:</span>
-                    <span className="font-semibold text-red-600">{data.stuntingCount}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Gizi Kurang:</span>
-                    <span className="font-semibold text-orange-600">{data.undernourishedCount}</span>
-                  </div>
-                  <div className="flex justify-between pt-2 border-t border-gray-200">
-                    <span className="text-gray-600">Alat Dudu:</span>
-                    <span className="font-semibold text-blue-600">{data.devicesCount} unit</span>
-                  </div>
+                  <p className="text-[13px] text-gray-600 mt-2">Edukasi gizi seimbang untuk balita dan ibu hamil.</p>
+                  <p className="text-[12px] text-gray-500 mt-1">09:00 - 11:30</p>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ReportChart
-          type="bar"
-          data={monthlyTrends}
-          title="Tren Status Gizi 7 Bulan Terakhir"
-        />
-        <ReportChart
-          type="pie"
-          data={caseDistribution}
-          title="Distribusi Kasus Januari 2026"
-        />
-      </div>
-
-      {/* Village Statistics - only for Puskesmas */}
-      {user?.role === 'puskesmas' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h3 className="text-[18px] font-bold mb-6">Jumlah Anak per Desa di {user.assignedLocation?.kecamatan}</h3>
-          <div className="space-y-4">
-            {villageData.map((item, index) => (
-              <div key={index}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[15px] font-semibold">{item.village}</span>
-                  <span className="text-[15px] font-bold text-[#11998E]">{item.children} anak</span>
+            {/* Manual Entry Section */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-[18px] font-bold mb-4 flex items-center gap-2">
+                <Clipboard className="w-5 h-5 text-[#11998E]" />
+                Input Pemeriksaan Manual
+              </h3>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Nama Ibu</Label>
+                    <Input placeholder="Cari nama ibu..." />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Nama Anak</Label>
+                    <Input placeholder="Nama anak..." />
+                  </div>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                  <div
-                    className="h-full gradient-primary rounded-full transition-all"
-                    style={{ width: `${(item.children / 50) * 100}%` }}
-                  />
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Berat (kg)</Label>
+                    <Input type="number" placeholder="0.0" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Tinggi (cm)</Label>
+                    <Input type="number" placeholder="0.0" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Suhu (Â°C)</Label>
+                    <Input type="number" placeholder="36.5" />
+                  </div>
                 </div>
+                <Button className="w-full bg-[#11998E] hover:bg-[#0e8076]">
+                  Kirim Data Pemeriksaan
+                </Button>
               </div>
-            ))}
+            </div>
           </div>
-        </div>
+        </>
       )}
-
-      {/* Information Banner */}
-      <div className="bg-gradient-to-r from-[#11998E] to-[#38EF7D] rounded-xl p-6 text-white">
-        <h3 className="text-[20px] font-bold mb-2">💡 Tips Penggunaan Dashboard</h3>
-        <ul className="space-y-2 text-[15px]">
-          {user?.role === 'posyandu' && (
-            <>
-              <li>• Data yang ditampilkan hanya untuk {user.assignedLocation?.posyanduName}</li>
-              <li>• Klik ikon notifikasi untuk melihat pembaruan terbaru dari sistem</li>
-              <li>• Gunakan menu "Validasi Dokter" untuk memeriksa pemeriksaan yang perlu persetujuan</li>
-            </>
-          )}
-          {user?.role === 'puskesmas' && (
-            <>
-              <li>• Anda dapat melihat data dari semua posyandu di {user.assignedLocation?.kecamatan}</li>
-              <li>• Gunakan menu "Validasi Dokter" untuk meninjau dan menyetujui hasil pemeriksaan</li>
-              <li>• Unduh laporan bulanan untuk diserahkan ke Dinas Kesehatan</li>
-            </>
-          )}
-        </ul>
-      </div>
     </div>
   );
 }

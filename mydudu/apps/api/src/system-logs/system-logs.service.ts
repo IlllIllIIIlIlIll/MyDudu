@@ -3,8 +3,10 @@ import { PrismaService } from '../prisma/prisma.service';
 
 export enum SystemLogAction {
     USER_LOGIN = 'USER_LOGIN',
+    USER_REGISTER = 'USER_REGISTER',
     DEVICE_REGISTER = 'DEVICE_REGISTER',
     DEVICE_UPDATE = 'DEVICE_UPDATE',
+    USER_UPDATE = 'USER_UPDATE',
     SESSION_CREATED = 'SESSION_CREATED',
     SESSION_VALIDATED = 'SESSION_VALIDATED',
 }

@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { ImageCropper } from '@/components/ImageCropper';
 import { getCroppedImg } from '@/utils/getCroppedImg';
 import { Area } from 'react-easy-crop';
+import { useAuth } from '@/context/AuthContext';
+import { auth } from '@/lib/firebase';
 
 interface UserAccount {
   id: string;
@@ -14,6 +16,8 @@ interface UserAccount {
   status: 'Active' | 'Suspended' | 'Pending';
   createdAt: string;
   lastLogin: string;
+  phoneNumber?: string; // Replaced passwordHash
+  profilePicture?: string;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -38,6 +42,33 @@ export function UserManagement() {
   const [isEditing, setIsEditing] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
+  const { user: currentUser } = useAuth();
+  const [posyanduName, setPosyanduName] = useState('');
+  const [villages, setVillages] = useState<{ id: number; name: string; district: { name: string } }[]>([]);
+  const [villageSearch, setVillageSearch] = useState('');
+  const [showVillageDropdown, setShowVillageDropdown] = useState(false);
+  const [selectedVillage, setSelectedVillage] = useState('');
+
+  // Debounced Village Search
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (villageSearch.length >= 2 && currentUser?.role === 'puskesmas') {
+        try {
+          const token = await auth.currentUser?.getIdToken();
+          const res = await fetch(`${API_URL}/users/villages?q=${villageSearch}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            setVillages(await res.json());
+          }
+        } catch (e) {
+          console.error("Failed to search villages", e);
+        }
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [villageSearch, currentUser?.role]);
+
   const filteredDistricts = districts.filter(d =>
     d.name.toLowerCase().includes(districtSearch.toLowerCase())
   );
@@ -46,7 +77,10 @@ export function UserManagement() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_URL}/users`);
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch(`${API_URL}/users`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       if (res.ok) {
         const data = await res.json();
         const formattedUsers = data.map((u: any) => {
@@ -60,7 +94,9 @@ export function UserManagement() {
             status: u.status === 'ACTIVE' ? 'Active' : u.status === 'PENDING' ? 'Pending' : 'Suspended',
             assignedLocation: role === 'admin' ? 'Indonesia' : role === 'puskesmas' ? (u.district?.name || 'Unknown District') : (u.posyandu?.village?.name || 'Unknown Village'),
             createdAt: new Date(u.createdAt).toLocaleDateString(),
-            lastLogin: u.lastLogin ? new Date(u.lastLogin).toLocaleString() : '-'
+            lastLogin: u.lastLogin ? new Date(u.lastLogin).toLocaleString() : '-',
+            phoneNumber: u.phoneNumber,
+            profilePicture: u.profilePicture
           };
         });
         setUsers(formattedUsers);
@@ -74,7 +110,10 @@ export function UserManagement() {
 
   const fetchDistricts = async () => {
     try {
-      const res = await fetch(`${API_URL}/districts`);
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch(`${API_URL}/districts`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       if (res.ok) {
         const data = await res.json();
         setDistricts(data);
@@ -188,7 +227,11 @@ export function UserManagement() {
   const handleDeleteUser = async (user: UserAccount) => {
     if (confirm(`Hapus user ${user.fullName}? Aksi ini tidak dapat dibatalkan.`)) {
       try {
-        const res = await fetch(`${API_URL}/users/${user.id}`, { method: 'DELETE' });
+        const token = await auth.currentUser?.getIdToken();
+        const res = await fetch(`${API_URL}/users/${user.id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
         if (res.ok) {
           setUsers(users.filter(u => u.id !== user.id));
         } else {
@@ -197,6 +240,46 @@ export function UserManagement() {
       } catch (error) {
         console.error('Error deleting user:', error);
         alert('Error occurring while deleting user');
+      }
+    }
+  };
+
+  const handleApproveUser = async (user: UserAccount) => {
+    if (confirm(`Approve registration for ${user.fullName}?`)) {
+      try {
+        const token = await auth.currentUser?.getIdToken();
+        const res = await fetch(`${API_URL}/users/${user.id}/approve`, {
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          fetchUsers();
+          alert(`User ${user.fullName} approved.`);
+        } else {
+          alert('Failed to approve user');
+        }
+      } catch (error) {
+        console.error('Error approving user:', error);
+      }
+    }
+  };
+
+  const handleRejectUser = async (user: UserAccount) => {
+    if (confirm(`Reject registration for ${user.fullName}? This will suspend the account.`)) {
+      try {
+        const token = await auth.currentUser?.getIdToken();
+        const res = await fetch(`${API_URL}/users/${user.id}/reject`, {
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          fetchUsers();
+          alert(`User ${user.fullName} rejected.`);
+        } else {
+          alert('Failed to reject user');
+        }
+      } catch (error) {
+        console.error('Error rejecting user:', error);
       }
     }
   };
@@ -227,13 +310,17 @@ export function UserManagement() {
             setFullName('');
             setEmail('');
             setDistrictSearch('');
+            setVillageSearch('');
+            setPosyanduName('');
             setProfilePicBase64(undefined);
             setShowRegisterModal(true);
           }}
           className="gradient-primary text-white px-6 py-3 rounded-lg flex items-center gap-2 hover:opacity-90 transition-opacity"
         >
           <UserPlus className="w-5 h-5" />
-          <span className="font-semibold">Register Puskesmas</span>
+          <span className="font-semibold">
+            {currentUser?.role === 'puskesmas' ? 'Register Posyandu' : 'Register Puskesmas'}
+          </span>
         </button>
       </div>
 
@@ -321,6 +408,8 @@ export function UserManagement() {
                 <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Role</th>
                 <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Assigned Location</th>
                 <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Status</th>
+                <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Phone Number</th>
+                <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Created At</th>
                 <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Last Login</th>
                 <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Actions</th>
               </tr>
@@ -329,9 +418,18 @@ export function UserManagement() {
               {filteredUsers.map((user) => (
                 <tr key={user.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
-                    <div>
-                      <p className="font-semibold text-[15px]">{user.fullName}</p>
-                      <p className="text-[13px] text-gray-500">{user.email}</p>
+                    <div className="flex items-center gap-3">
+                      {user.profilePicture ? (
+                        <img src={user.profilePicture} alt={user.fullName} className="w-10 h-10 rounded-full object-cover border border-gray-200" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 font-bold">
+                          {user.fullName.charAt(0)}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-semibold text-[15px]">{user.fullName}</p>
+                        <p className="text-[13px] text-gray-500">{user.email}</p>
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -350,42 +448,50 @@ export function UserManagement() {
                       {user.status}
                     </span>
                   </td>
+                  <td className="px-6 py-4">
+                    <span className="text-[14px] text-gray-600 font-medium">
+                      {user.phoneNumber || '-'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-[15px] text-gray-600">{user.createdAt}</td>
                   <td className="px-6 py-4 text-[15px] text-gray-600">{user.lastLogin}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       {user.status === 'Pending' ? (
                         <>
                           <button
-                            onClick={() => handleEditUser(user)} // Should be Approve
+                            onClick={() => handleApproveUser(user)}
                             className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
                           >
                             Approve
                           </button>
                           <button
-                            onClick={() => handleDeleteUser(user)} // Should be Reject
+                            onClick={() => handleRejectUser(user)}
                             className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-colors"
                           >
                             Reject
                           </button>
                         </>
                       ) : (
-                        <>
-                          <button
-                            onClick={() => handleEditUser(user)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Edit User"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteUser(user)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Delete User"
-                            disabled={user.role === 'admin'}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </>
+                        currentUser?.role === 'admin' && (
+                          <>
+                            <button
+                              onClick={() => handleEditUser(user)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Edit User"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(user)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Delete User"
+                              disabled={user.role === 'admin'}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )
                       )}
                     </div>
                   </td>
@@ -402,7 +508,7 @@ export function UserManagement() {
           </p>
         </div>
       </div>
-      
+
       {/* Simplified Modal for Registration (Demo) */}
       {/* In real app, make this a separate component */}
       {/* Simplified Modal for Registration (Demo) */}
@@ -411,7 +517,9 @@ export function UserManagement() {
         <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50 p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-t-2xl md:rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col animate-in slide-in-from-bottom-4 duration-300">
             <div className="flex justify-between items-center p-6 border-b border-gray-200">
-              <h3 className="text-lg font-bold">{isEditing ? 'Edit User' : 'Register Puskesmas Operator'}</h3>
+              <h3 className="text-lg font-bold">
+                {isEditing ? 'Edit User' : (currentUser?.role === 'puskesmas' ? 'Register Posyandu Operator' : 'Register Puskesmas Operator')}
+              </h3>
               <button
                 onClick={() => setShowRegisterModal(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -432,6 +540,8 @@ export function UserManagement() {
                 fullName,
                 email, // usually email isn't editable easily without re-verification, allowing specific fields 
                 district: districtSearch,
+                village: villageSearch,
+                posyanduName: posyanduName,
                 profilePicture: profilePicBase64
               };
 
@@ -442,12 +552,16 @@ export function UserManagement() {
                 if (isEditing && editingUserId) {
                   url = `${API_URL}/users/${editingUserId}`;
                   method = 'PATCH';
+                } else if (currentUser?.role === 'puskesmas') {
+                  url = `${API_URL}/users/posyandu`;
                 }
 
+                const token = await auth.currentUser?.getIdToken();
                 const res = await fetch(url, {
                   method: method,
                   headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                   },
                   body: JSON.stringify(payload),
                 });
@@ -462,6 +576,8 @@ export function UserManagement() {
                   setFullName('');
                   setEmail('');
                   setDistrictSearch('');
+                  setVillageSearch('');
+                  setPosyanduName('');
                   setProfilePicBase64(undefined);
 
                   // Refresh list
@@ -519,49 +635,105 @@ export function UserManagement() {
                 />
               </div>
 
-              {/* District Autocomplete Field */}
-              <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Kecamatan/District</label>
-                <input
-                  type="text"
-                  className="w-full border rounded-lg p-2"
-                  placeholder="Type to search kecamatan..."
-                  value={districtSearch}
-                  onChange={(e) => {
-                    setDistrictSearch(e.target.value);
-                    setShowDistrictDropdown(true);
-                    setSelectedDistrict(''); // Reset selection when typing
-                  }}
-                  onFocus={() => setShowDistrictDropdown(true)}
-                  required
-                />
+              {/* District Autocomplete Field - Only for Admin */}
+              {(currentUser?.role === 'admin' || !currentUser) && (
+                <div className="relative">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Kecamatan/District</label>
+                  <input
+                    type="text"
+                    className="w-full border rounded-lg p-2"
+                    placeholder="Type to search kecamatan..."
+                    value={districtSearch}
+                    onChange={(e) => {
+                      setDistrictSearch(e.target.value);
+                      setShowDistrictDropdown(true);
+                      setSelectedDistrict(''); // Reset selection when typing
+                    }}
+                    onFocus={() => setShowDistrictDropdown(true)}
+                    required
+                  />
 
-                {/* Autocomplete Dropdown */}
-                {showDistrictDropdown && districtSearch && (
-                  <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto mt-1">
-                    {filteredDistricts.length > 0 ? (
-                      filteredDistricts.map((district) => (
-                        <button
-                          key={district.id}
-                          type="button"
-                          className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
-                          onClick={() => {
-                            setDistrictSearch(district.name);
-                            setSelectedDistrict(district.name);
-                            setShowDistrictDropdown(false);
-                          }}
-                        >
-                          {district.name}
-                        </button>
-                      ))
-                    ) : (
-                      <div className="px-4 py-2 text-sm text-gray-500 italic">
-                        Kecamatan tidak ditemukan
+                  {/* Autocomplete Dropdown */}
+                  {showDistrictDropdown && districtSearch && (
+                    <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto mt-1">
+                      {filteredDistricts.length > 0 ? (
+                        filteredDistricts.map((district) => (
+                          <button
+                            key={district.id}
+                            type="button"
+                            className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
+                            onClick={() => {
+                              setDistrictSearch(district.name);
+                              setSelectedDistrict(district.name);
+                              setShowDistrictDropdown(false);
+                            }}
+                          >
+                            {district.name}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-4 py-2 text-sm text-gray-500 italic">
+                          Kecamatan tidak ditemukan
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Village & Posyandu Fields for Puskesmas */}
+              {currentUser?.role === 'puskesmas' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Posyandu Name</label>
+                    <input
+                      type="text"
+                      className="w-full border rounded-lg p-2"
+                      placeholder="e.g. Mawar Melati"
+                      value={posyanduName}
+                      onChange={(e) => setPosyanduName(e.target.value)}
+                      required={!isEditing}
+                    />
+                  </div>
+                  <div className="relative">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Kelurahan/Desa</label>
+                    <input
+                      type="text"
+                      className="w-full border rounded-lg p-2"
+                      placeholder="Type to search village..."
+                      value={villageSearch}
+                      onChange={(e) => {
+                        setVillageSearch(e.target.value);
+                        setShowVillageDropdown(true);
+                      }}
+                      onFocus={() => setShowVillageDropdown(true)}
+                      required={!isEditing}
+                    />
+                    {showVillageDropdown && villageSearch.length >= 2 && (
+                      <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto mt-1">
+                        {villages.length > 0 ? (
+                          villages.map((v) => (
+                            <button
+                              key={v.id}
+                              type="button"
+                              className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
+                              onClick={() => {
+                                setVillageSearch(v.name);
+                                setSelectedVillage(v.name);
+                                setShowVillageDropdown(false);
+                              }}
+                            >
+                              {v.name} ({v.district.name})
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-4 py-2 text-sm text-gray-500 italic">No villages found</div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
-              </div>
+                </>
+              )}
               <div className="pt-4 flex justify-end gap-3">
                 <button
                   type="button"

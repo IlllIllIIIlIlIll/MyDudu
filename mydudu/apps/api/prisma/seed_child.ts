@@ -11,18 +11,16 @@ async function main() {
                 email: 'parent@example.com',
                 fullName: 'Test Parent',
                 role: 'PARENT',
-                passwordHash: 'dummy',
+                phoneNumber: '08123456789',
                 parentProfile: {
-                    create: {
-                        phoneNumber: '08123456789'
-                    }
+                    create: {}
                 }
             }
         });
         console.log('Created parent user');
     }
 
-    let parentProfile = await prisma.parentProfile.findUnique({ where: { userId: user.id } });
+    let parentProfile = await prisma.parentProfile.findUnique({ where: { parentId: user.id } });
 
     // Create Child ID 1
     const child = await prisma.child.upsert({

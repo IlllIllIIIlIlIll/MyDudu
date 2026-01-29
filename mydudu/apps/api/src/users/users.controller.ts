@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, ParseIntPipe, Query, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, ParseIntPipe, Query, Delete, UseGuards, Req, UnauthorizedException } from '@nestjs/common';
+import { AuthGuard } from '../auth/auth.guard';
 import { UsersService } from './users.service';
 
 @Controller('users')
@@ -26,27 +27,50 @@ export class UsersController {
   }
 
   @Post('puskesmas')
-  createPuskesmas(@Body() body: { fullName: string; email: string; district: string; profilePicture?: string }) {
-    return this.usersService.createPuskesmas(body);
+  @UseGuards(AuthGuard)
+  async createPuskesmas(@Body() body: { fullName: string; email: string; district: string; profilePicture?: string }, @Req() req: any) {
+    const actorEmail = req.user?.email;
+    const actor = actorEmail ? await this.usersService.findByEmail(actorEmail) : null;
+    return this.usersService.createPuskesmas(body, actor?.id);
+  }
+
+  @Post('posyandu')
+  @UseGuards(AuthGuard)
+  async createPosyandu(@Body() body: { fullName: string; email: string; village: string; posyanduName: string; profilePicture?: string }, @Req() req: any) {
+    const actorEmail = req.user?.email;
+    const actor = actorEmail ? await this.usersService.findByEmail(actorEmail) : null;
+    return this.usersService.createPosyandu(body, actor?.id);
   }
 
   @Patch(':id')
-  updateProfile(@Param('id', ParseIntPipe) id: number, @Body() body: { fullName?: string; profilePicture?: string; district?: string }) {
-    return this.usersService.updateProfile(id, body);
+  @UseGuards(AuthGuard)
+  async updateProfile(@Param('id', ParseIntPipe) id: number, @Body() body: { fullName?: string; profilePicture?: string; district?: string; email?: string }, @Req() req: any) {
+    const actorEmail = req.user?.email;
+    const actor = actorEmail ? await this.usersService.findByEmail(actorEmail) : null;
+    return this.usersService.updateProfile(id, body, actor?.id);
   }
 
   @Delete(':id')
-  deleteUser(@Param('id', ParseIntPipe) id: number) {
-    return this.usersService.deleteUser(id);
+  @UseGuards(AuthGuard)
+  async deleteUser(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    const actorEmail = req.user?.email;
+    const actor = actorEmail ? await this.usersService.findByEmail(actorEmail) : null;
+    return this.usersService.deleteUser(id, actor?.id);
   }
 
   @Patch(':id/approve')
-  approveUser(@Param('id', ParseIntPipe) id: number) {
-    return this.usersService.approveUser(id);
+  @UseGuards(AuthGuard)
+  async approveUser(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    const actorEmail = req.user?.email;
+    const actor = actorEmail ? await this.usersService.findByEmail(actorEmail) : null;
+    return this.usersService.approveUser(id, actor?.id);
   }
 
   @Patch(':id/reject')
-  rejectUser(@Param('id', ParseIntPipe) id: number) {
-    return this.usersService.rejectUser(id);
+  @UseGuards(AuthGuard)
+  async rejectUser(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    const actorEmail = req.user?.email;
+    const actor = actorEmail ? await this.usersService.findByEmail(actorEmail) : null;
+    return this.usersService.rejectUser(id, actor?.id);
   }
 }

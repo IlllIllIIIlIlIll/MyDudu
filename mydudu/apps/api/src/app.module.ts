@@ -18,6 +18,8 @@ import { ValidationModule } from './validation/validation.module';
 import { CronModule } from './cron/cron.module';
 import { NutritionModule } from './telemetry/nutrition.module';
 import { AdminModule } from './admin/admin.module';
+import { OperatorModule } from './operator/operator.module';
+import { ReportsController } from './reports/reports.controller';
 
 @Module({
     imports: [
@@ -38,8 +40,10 @@ import { AdminModule } from './admin/admin.module';
         CronModule,
         NutritionModule,
         AdminModule,
+        OperatorModule,
     ],
-    controllers: [AppController],
+    controllers: [AppController, ReportsController],
     providers: [AppService],
 })
 export class AppModule { }
+

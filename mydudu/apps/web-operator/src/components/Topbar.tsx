@@ -15,14 +15,16 @@ export function Topbar({ onOpenProfile, onOpenNotifications }: TopbarProps) {
 
   if (!user) return null;
 
-  const getRoleBadge = () => {
+  const getRoleLabel = () => {
     switch (user.role) {
       case 'admin':
-        return <span className="text-[13px] px-2 py-1 bg-purple-100 text-purple-700 rounded-full font-semibold">IT Admin</span>;
+        return 'IT ADMIN';
       case 'puskesmas':
-        return <span className="text-[13px] px-2 py-1 bg-blue-100 text-blue-700 rounded-full font-semibold">Puskesmas</span>;
+        return 'OPERATOR PUSKESMAS';
       case 'posyandu':
-        return <span className="text-[13px] px-2 py-1 bg-green-100 text-green-700 rounded-full font-semibold">Posyandu</span>;
+        return 'OPERATOR POSYANDU';
+      default:
+        return user.role?.toUpperCase() || 'USER';
     }
   };
 
@@ -61,11 +63,12 @@ export function Topbar({ onOpenProfile, onOpenNotifications }: TopbarProps) {
           <User className="w-6 h-6 text-white" />
         </div> */}
         <div>
-          <div className="flex items-center gap-2">
-            <p className="font-semibold text-[24px]">{user.fullName}</p>
-            {getRoleBadge()}
+          <div className="flex flex-col">
+            <p className="font-semibold text-[20px] leading-tight text-gray-900">{user.fullName}</p>
+            <p className="text-[12px] font-bold text-gray-500 tracking-wider mt-0.5">{getRoleLabel()}</p>
           </div>
-          <div className="flex items-center gap-2 mt-0.5">
+          <div className="hidden">
+            {/* Location hidden as requested "just name [newline] role" */}
             {getLocationDisplay()}
           </div>
         </div>
