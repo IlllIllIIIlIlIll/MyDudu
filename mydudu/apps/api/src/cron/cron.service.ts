@@ -32,12 +32,13 @@ export class CronService {
                     lt: nextDay
                 }
             },
-            include: { posyandu: { include: { users: true } } }
+            include: { posyandu: { include: { village: { include: { users: true } } } } }
         });
 
         for (const schedule of schedules) {
-            if (schedule.posyandu?.users) {
-                for (const user of schedule.posyandu.users) {
+            // Updated Path: Schedule -> Posyandu -> Village -> Users
+            if (schedule.posyandu?.village?.users) {
+                for (const user of schedule.posyandu.village.users) {
                     await this.notificationService.notifyOperator(
                         user.id,
                         `Jadwal Posyandu ${schedule.posyandu.name} besok: ${schedule.title}`,

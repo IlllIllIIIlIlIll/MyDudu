@@ -42,6 +42,8 @@ export class MqttService implements OnModuleInit {
             password,
             clientId: `api-${Math.random().toString(16).substr(2, 8)}`,
             rejectUnauthorized: true, // Standard TLS for HiveMQ Cloud
+            connectTimeout: 30000,
+            reconnectPeriod: 1000,
         });
 
         this.client.on('connect', () => {
@@ -163,11 +165,23 @@ export class MqttService implements OnModuleInit {
                         // We don't have operatorID immediately here, but we can look up via device -> posyandu -> users.
                         // For simplicity in this step, I'll assume we can get it later or just notify via simpler method.
                         // Actually, let's fetch device's posyandu users.
-                        const posyanduUsers = await this.prisma.user.findMany({
-                            where: { posyanduId: device.posyanduId }
+                        // Updated Path: Device -> Posyandu -> Village -> Users
+                        // 1. Get Device -> Posyandu -> VillageId
+                        // Wait, we already have `device` which is basic findUnique. We need to fetch relation if not present.
+                        // But `device` is constrained. Let's do a fresh find.
+
+                        const deviceWithLoc = await this.prisma.device.findUnique({
+                            where: { id: device.id },
+                            include: { posyandu: true }
                         });
-                        for (const u of posyanduUsers) {
-                            await this.notificationService.notifyOperator(u.id, `Baterai alat lemah (${val}%)`, NotifType.SYSTEM);
+
+                        if (deviceWithLoc?.posyandu?.villageId) {
+                            const posyanduUsers = await this.prisma.user.findMany({
+                                where: { villageId: deviceWithLoc.posyandu.villageId }
+                            });
+                            for (const u of posyanduUsers) {
+                                await this.notificationService.notifyOperator(u.id, `Baterai alat lemah (${val}%)`, NotifType.SYSTEM);
+                            }
                         }
                     }
                     break;

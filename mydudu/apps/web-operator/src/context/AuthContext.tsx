@@ -69,7 +69,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         } catch (error) {
           console.error("Failed to fetch user details:", error);
-          setUser(currentUser);
+          // If network error, maybe keep them logged in? 
+          // But if it's a 401 from the earlier calls (which throw?), we should logout.
+          // Since the fetch calls inside try block might not throw on 4xx unless we check res.ok, 
+          // let's rely on the explicit signInWithGoogle check for the initial login.
+          // However, for persistent sessions, if validation fails, we should logout.
+          setUser(null);
+          // We don't force signOut here to avoid loops if API is just down, 
+          // but strictly, if the user is invalid, they shouldn't be here.
         }
       } else {
         setUser(currentUser);
@@ -82,7 +89,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const token = await result.user.getIdToken();
+
+      // Explicitly sync/validate with backend
+      const res = await fetch(`${API_URL}/auth/sync`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        // If backend rejects, sign out from Firebase immediately
+        await signOut(auth);
+        throw new Error(errorData.message || "Login ditolak oleh server.");
+      }
+
+      // If success, the useEffect listener will pick up the state change and set the user
+    } catch (error: any) {
+      console.error("Login validation failed", error);
+      // Ensure we are signed out if validation failed
+      if (auth.currentUser) {
+        await signOut(auth);
+      }
+      throw error;
+    }
   };
 
   const logout = async () => {

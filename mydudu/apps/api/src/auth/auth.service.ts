@@ -18,27 +18,35 @@ export class AuthService {
             const decoded = await this.firebaseAdmin.auth().verifyIdToken(token);
             const { email, name, uid } = decoded;
 
-            // Upsert user in database
-            const user = await this.prisma.user.upsert({
-                where: { email: email || `no-email-${uid}@mydudu.id` },
-                update: {
-                    lastLogin: new Date(),
-                    // Do NOT update role here, preserve existing
-                },
-                create: {
-                    email: email || `no-email-${uid}@mydudu.id`,
-                    fullName: name || 'Operator',
-                    phoneNumber: (decoded as any).phone_number || null, // Map from Firebase if available
-                    role: 'POSYANDU', // Default role for new users
-                    status: 'PENDING', // Default to PENDING for security
-                    lastLogin: new Date(),
-                },
+            // 1. Check if user exists
+            let user = await this.prisma.user.findUnique({
+                where: { email: email },
             });
 
-            // 3.1 [SYSTEM] User baru daftar (Status PENDING)
-            if (user.status === 'PENDING') {
-                await this.notificationService.notifyAdmin(`User ${user.email} menunggu persetujuan.`);
+            if (!user) {
+                // Determine logic: Do we auto-create? 
+                // User request: "user that has status = PENDING, INACTIVE, or dont have the email registered are not be able to login"
+                // So we do NOT create a user. We throw an error.
+                throw new UnauthorizedException('Email belum terdaftar. Silakan hubungi admin.');
             }
+
+            // 2. Check User Status
+            if (user.status === 'PENDING') {
+                throw new UnauthorizedException('Akun menunggu persetujuan admin.');
+            }
+
+            if (user.status === 'SUSPENDED') { // Using SUSPENDED as equivalent to INACTIVE based on schema
+                throw new UnauthorizedException('Akun dinonaktifkan. Silakan hubungi admin.');
+            }
+
+            // 3. Update Last Login
+            user = await this.prisma.user.update({
+                where: { id: user.id },
+                data: {
+                    lastLogin: new Date(),
+                    profilePicture: (decoded as any).picture || user.profilePicture // Optional: Update metadata if needed
+                }
+            });
 
             await this.systemLogsService.logEvent(SystemLogAction.USER_LOGIN, {
                 email: user.email,
@@ -48,6 +56,9 @@ export class AuthService {
             return user;
         } catch (error) {
             console.error("Auth Error", error);
+            if (error instanceof UnauthorizedException) {
+                throw error;
+            }
             throw new UnauthorizedException('Invalid Token');
         }
     }

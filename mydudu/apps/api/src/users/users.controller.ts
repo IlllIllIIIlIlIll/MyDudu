@@ -21,6 +21,11 @@ export class UsersController {
     return this.usersService.searchVillages(query || '');
   }
 
+  @Get('posyandus')
+  searchPosyandus(@Query('q') query: string) {
+    return this.usersService.searchPosyandus(query || '');
+  }
+
   @Get('details')
   findByEmail(@Query('email') email: string) {
     return this.usersService.findByEmail(email);
@@ -36,7 +41,7 @@ export class UsersController {
 
   @Post('posyandu')
   @UseGuards(AuthGuard)
-  async createPosyandu(@Body() body: { fullName: string; email: string; village: string; posyanduName: string; profilePicture?: string }, @Req() req: any) {
+  async createPosyandu(@Body() body: { fullName: string; email: string; village: string; profilePicture?: string }, @Req() req: any) {
     const actorEmail = req.user?.email;
     const actor = actorEmail ? await this.usersService.findByEmail(actorEmail) : null;
     return this.usersService.createPosyandu(body, actor?.id);

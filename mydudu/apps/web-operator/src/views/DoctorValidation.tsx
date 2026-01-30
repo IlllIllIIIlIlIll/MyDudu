@@ -52,13 +52,8 @@ export function DoctorValidation() {
       <div>
         <h1>Validasi Medis</h1>
         <p className="text-gray-600 text-[15px] mt-1">
-          Tinjau dan setujui hasil pemeriksaan yang memerlukan validasi medis
+          Tinjau dan setujui hasil pemeriksaan yang memerlukan validasi medis untuk Kecamatan {user?.assignedLocation?.kecamatan || ' '}
         </p>
-        {user?.assignedLocation && user.role === 'puskesmas' && (
-          <p className="text-[13px] text-[#11998E] font-semibold mt-1">
-            Validasi untuk {user.assignedLocation.kecamatan}
-          </p>
-        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -111,13 +106,6 @@ export function DoctorValidation() {
           canApprove={user?.role === 'puskesmas'}
         />
       )}
-
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <p className="text-[14px] text-blue-800">
-          <span className="font-semibold">â„¹ï¸ Petunjuk untuk Tenaga Medis:</span> Pastikan nilai pengukuran
-          konsisten sebelum menyetujui. Gunakan catatan saat menolak untuk memberi arahan ke operator.
-        </p>
-      </div>
     </div>
   );
 }

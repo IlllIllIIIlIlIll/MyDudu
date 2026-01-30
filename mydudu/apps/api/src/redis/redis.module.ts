@@ -8,8 +8,31 @@ import { RedisService } from './redis.service';
         {
             provide: 'REDIS_CLIENT',
             useFactory: () => {
-                return new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
-            },
+                const url = process.env.REDIS_URL;
+
+                const client = url
+                    ? new Redis(url, {
+                        tls: {}, // WAJIB untuk rediss:// (Upstash / Redis Cloud)
+                        connectTimeout: 10000,
+                        retryStrategy: (times) => Math.min(times * 500, 5000),
+                    })
+                    : new Redis({
+                        host: '127.0.0.1',
+                        port: 6379,
+                        connectTimeout: 10000,
+                        retryStrategy: (times) => Math.min(times * 500, 5000),
+                    });
+
+                client.on('connect', () => {
+                    console.log('Redis connected');
+                });
+
+                client.on('error', (err) => {
+                    console.error('Redis connection error:', err.message);
+                });
+
+                return client;
+                },
         },
         RedisService,
     ],

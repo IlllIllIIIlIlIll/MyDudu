@@ -89,7 +89,7 @@ export interface OperatorDeviceRecord {
   id: number;
   deviceUuid: string;
   name: string;
-  isActive: boolean;
+  status: 'AVAILABLE' | 'WAITING' | 'INACTIVE';
   posyanduName: string | null;
   villageName: string | null;
   districtName: string | null;

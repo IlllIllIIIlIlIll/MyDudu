@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notifications/notifications.service';
 import { NutritionCategory, NotifType } from '@prisma/client';
+import { NUTRITION_THRESHOLDS } from '../common/constants';
 
 @Injectable()
 export class NutritionService {
@@ -24,11 +25,11 @@ export class NutritionService {
 
         let category: NutritionCategory = NutritionCategory.NORMAL;
 
-        // Dummy Logic: If weight < 10 AND height < 80 => STUNTED (Just for triggering)
-        // You can adjust this to easily trigger the alert
-        if (Number(session.weight) < 10 && Number(session.height) < 80) {
+        // Logic using centralized constants
+        if (Number(session.weight) < NUTRITION_THRESHOLDS.STUNTED.WEIGHT &&
+            Number(session.height) < NUTRITION_THRESHOLDS.STUNTED.HEIGHT) {
             category = NutritionCategory.STUNTED;
-        } else if (Number(session.weight) < 5) {
+        } else if (Number(session.weight) < NUTRITION_THRESHOLDS.WASTED.WEIGHT) {
             category = NutritionCategory.WASTED;
         }
 

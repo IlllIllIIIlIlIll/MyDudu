@@ -37,7 +37,6 @@ export class DeviceService {
                 deviceUuid: deviceUuid,
                 name: createDeviceDto.name,
                 posyanduId: createDeviceDto.posyanduId,
-                isActive: true,
             },
         });
 
@@ -49,8 +48,40 @@ export class DeviceService {
         return device;
     }
 
-    async findAll() {
+    async findAll(userEmail?: string) {
+        let whereClause: any = {};
+
+        if (userEmail) {
+            const user = await this.prisma.user.findUnique({
+                where: { email: userEmail },
+                include: {
+                    village: { include: { district: true } },
+                    district: true
+                }
+            });
+
+            if (user) {
+                if (user.role === 'PUSKESMAS' && user.districtId) {
+                    whereClause = {
+                        posyandu: {
+                            village: {
+                                districtId: user.districtId
+                            }
+                        }
+                    };
+                } else if (user.role === 'POSYANDU' && user.villageId) {
+                    whereClause = {
+                        posyandu: {
+                            villageId: user.villageId
+                        }
+                    };
+                }
+                // Admin sees all, so empty whereClause
+            }
+        }
+
         return this.prisma.device.findMany({
+            where: whereClause,
             include: {
                 posyandu: true,
             },

@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, UseGuards, Req } from '@nestjs/common';
+import { AuthGuard } from '../auth/auth.guard';
 import { DeviceService } from './device.service';
 import { CreateDeviceDto } from './dto/create-device.dto';
 import { UpdateDeviceDto } from './dto/update-device.dto';
@@ -13,8 +14,9 @@ export class DeviceController {
     }
 
     @Get()
-    findAll() {
-        return this.deviceService.findAll();
+    @UseGuards(AuthGuard)
+    findAll(@Req() req: any) {
+        return this.deviceService.findAll(req.user?.email);
     }
 
     @Get(':id')
