@@ -7,6 +7,8 @@ type OperatorScope = {
   role: UserRole;
   posyanduIds: number[];
   isAdmin: boolean;
+  villageId?: number | null;
+  districtId?: number | null;
 };
 
 @Injectable()
@@ -52,6 +54,8 @@ export class OperatorService {
       role: user.role,
       posyanduIds,
       isAdmin,
+      villageId: user.villageId,
+      districtId: user.districtId,
     };
   }
 
@@ -305,73 +309,85 @@ export class OperatorService {
 
   async getChildren(userId: number) {
     const scope = await this.resolveScope(userId);
-    const sessionWhere = this.getSessionWhere(scope);
 
-    const sessions = await this.prisma.session.findMany({
-      where: sessionWhere,
-      orderBy: { recordedAt: 'desc' },
+    // Filter by location scope
+    const where: any = {};
+    if (!scope.isAdmin) {
+      if (scope.role === UserRole.POSYANDU && scope.villageId) {
+        where.parent = { villageId: scope.villageId };
+      } else if (scope.role === UserRole.PUSKESMAS && scope.districtId) {
+        where.parent = { village: { districtId: scope.districtId } };
+      } else {
+        // If strict location scoping is required but missing, return empty
+        return [];
+      }
+    }
+
+    const children = await this.prisma.child.findMany({
+      where,
+      orderBy: { fullName: 'asc' },
       include: {
-        child: {
+        parent: {
           include: {
-            parent: {
-              include: {
-                user: {
-                  select: { fullName: true },
-                },
-              },
+            user: {
+              select: { fullName: true },
             },
           },
         },
-        device: {
+        sessions: {
+          take: 1,
+          orderBy: { recordedAt: 'desc' },
           include: {
-            posyandu: {
+            nutritionStatuses: {
+              take: 1,
+              orderBy: { id: 'desc' },
+            },
+            device: {
               include: {
-                village: {
+                posyandu: {
                   include: {
-                    district: true,
+                    village: {
+                      include: {
+                        district: true,
+                      },
+                    },
                   },
                 },
               },
             },
           },
         },
-        nutritionStatuses: {
-          orderBy: { id: 'desc' },
-          take: 1,
-        },
       },
     });
 
-    const childMap = new Map<number, any>();
+    return children.map((child) => {
+      const lastSession = child.sessions?.[0];
 
-    sessions.forEach((session) => {
-      if (!session.child) return;
-      if (childMap.has(session.child.id)) return;
-
-      childMap.set(session.child.id, {
-        id: session.child.id,
-        fullName: session.child.fullName,
-        birthDate: session.child.birthDate,
-        gender: session.child.gender,
-        parentName: session.child.parent?.user?.fullName || null,
-        lastSession: {
-          id: session.id,
-          recordedAt: session.recordedAt,
-          status: session.status,
-          weight: session.weight,
-          height: session.height,
-          temperature: session.temperature,
-          nutritionCategory: session.nutritionStatuses?.[0]?.category || null,
-          deviceName: session.device?.name || null,
-          deviceUuid: session.device?.deviceUuid || null,
-          posyanduName: session.device?.posyandu?.name || null,
-          villageName: session.device?.posyandu?.village?.name || null,
-          districtName: session.device?.posyandu?.village?.district?.name || null,
-        },
-      });
+      return {
+        id: child.id,
+        fullName: child.fullName,
+        birthDate: child.birthDate,
+        gender: child.gender,
+        parentName: child.parent?.user?.fullName || null,
+        bloodType: child.bloodType,
+        lastSession: lastSession
+          ? {
+            id: lastSession.id,
+            recordedAt: lastSession.recordedAt,
+            status: lastSession.status,
+            weight: lastSession.weight,
+            height: lastSession.height,
+            temperature: lastSession.temperature,
+            nutritionCategory: lastSession.nutritionStatuses?.[0]?.category || null,
+            deviceName: lastSession.device?.name || null,
+            deviceUuid: lastSession.device?.deviceUuid || null,
+            posyanduName: lastSession.device?.posyandu?.name || null,
+            villageName: lastSession.device?.posyandu?.village?.name || null,
+            districtName: lastSession.device?.posyandu?.village?.district?.name || null,
+          }
+          : null,
+      };
     });
-
-    return Array.from(childMap.values());
   }
 
   async getDevices(userId: number) {
@@ -412,6 +428,54 @@ export class OperatorService {
       districtName: device.posyandu?.village?.district?.name || null,
       lastSessionAt: device.sessions?.[0]?.recordedAt || null,
       sessionsCount: device._count?.sessions || 0,
+    }));
+  }
+
+  async getParents(userId: number) {
+    const scope = await this.resolveScope(userId);
+    const where: any = {};
+
+    if (!scope.isAdmin) {
+      if (scope.role === UserRole.POSYANDU && scope.villageId) {
+        where.villageId = scope.villageId;
+      } else if (scope.role === UserRole.PUSKESMAS && scope.districtId) {
+        where.village = { districtId: scope.districtId };
+      } else {
+        console.log('getParents: No location scope found for role', scope.role);
+        return [];
+      }
+    }
+
+    console.log('getParents: querying with where', JSON.stringify(where));
+
+    const parents = await this.prisma.parent.findMany({
+      where,
+      orderBy: { user: { fullName: 'asc' } },
+      include: {
+        user: {
+          select: {
+            fullName: true,
+            phoneNumber: true,
+          },
+        },
+        _count: {
+          select: { children: true },
+        },
+        village: {
+          include: {
+            district: true,
+          },
+        },
+      },
+    });
+
+    return parents.map((parent) => ({
+      id: parent.id,
+      fullName: parent.user.fullName,
+      phoneNumber: parent.user.phoneNumber,
+      villageName: parent.village?.name || null,
+      districtName: parent.village?.district?.name || null,
+      childrenCount: parent._count.children,
     }));
   }
 

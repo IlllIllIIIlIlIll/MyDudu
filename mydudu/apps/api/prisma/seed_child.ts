@@ -20,7 +20,7 @@ async function main() {
         console.log('Created parent user');
     }
 
-    let parentProfile = await prisma.parentProfile.findUnique({ where: { parentId: user.id } });
+    let parentProfile = await prisma.parent.findUnique({ where: { parentId: user.id } });
 
     // Create Child ID 1
     const child = await prisma.child.upsert({

@@ -14,7 +14,7 @@ async function main() {
     await prisma.session.deleteMany();
     await prisma.child.deleteMany();
     await prisma.device.deleteMany();
-    await prisma.parentProfile.deleteMany();
+    await prisma.parent.deleteMany();
     await prisma.user.deleteMany();
     await prisma.posyandu.deleteMany();
     await prisma.village.deleteMany();
@@ -137,6 +137,63 @@ async function main() {
     });
     console.log('Created Puskesmas: Favian');
 
+    // Posyandu User (Buaran Mangga)
+    const buaranMangga = await prisma.village.findFirst({
+        where: { name: 'Buaran Mangga' }
+    });
+
+    if (buaranMangga) {
+        // Create User
+        await prisma.user.upsert({
+            where: { email: 'favbalhan@gmail.com' },
+            update: {
+                role: 'POSYANDU',
+                fullName: 'Abir Nurchiyah',
+                status: 'ACTIVE',
+                villageId: buaranMangga.id
+            },
+            create: {
+                fullName: 'Abir Nurchiyah',
+                email: 'favbalhan@gmail.com',
+                role: 'POSYANDU',
+                villageId: buaranMangga.id,
+                status: 'ACTIVE',
+            },
+        });
+        console.log('Created Posyandu User: Abir Nurchiyah');
+
+        // Create Devices for Buaran Mangga
+        // Find the Posyandu entity first
+        const posyanduBuaran = await prisma.posyandu.findFirst({
+            where: { villageId: buaranMangga.id }
+        });
+
+        if (posyanduBuaran) {
+            for (let i = 1; i <= 5; i++) {
+                const deviceName = `Burma ${i.toString().padStart(2, '0')}`;
+                const deviceUuid = `BURMA-${i.toString().padStart(3, '0')}`;
+
+                await prisma.device.upsert({
+                    where: { deviceUuid: deviceUuid },
+                    update: {
+                        posyanduId: posyanduBuaran.id
+                    },
+                    create: {
+                        deviceUuid: deviceUuid,
+                        name: deviceName,
+                        posyanduId: posyanduBuaran.id,
+                        status: 'AVAILABLE',
+                    },
+                });
+            }
+            console.log('Created 5 Burma devices for Posyandu Buaran Mangga');
+        } else {
+            console.warn('Posyandu Buaran Mangga not found, skipping devices.');
+        }
+    } else {
+        console.warn('Village Buaran Mangga not found!');
+    }
+
     // 4. Devices (Linked to the generated posyanduId for Pakuhaji/Kiara Payung if avail, else just first one)
     if (!posyanduId) {
         // Fallback if not found logic (should be found)
@@ -153,7 +210,7 @@ async function main() {
                 deviceUuid: `DEV-${i.toString().padStart(3, '0')}`,
                 name: `Dudu Scale ${i}`,
                 posyanduId: posyanduId,
-                status: 'AVAILABLE',
+                status: 'INACTIVE',
             },
         });
         devices.push(device);

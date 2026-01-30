@@ -7,8 +7,8 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) { }
 
   @Get()
-  findAll() {
-    return this.usersService.findAll();
+  findAll(@Query('role') role?: string) {
+    return this.usersService.findAll(role);
   }
 
   @Get('districts')
@@ -37,6 +37,14 @@ export class UsersController {
     const actorEmail = req.user?.email;
     const actor = actorEmail ? await this.usersService.findByEmail(actorEmail) : null;
     return this.usersService.createPuskesmas(body, actor?.id);
+  }
+
+  @Post('parent')
+  @UseGuards(AuthGuard)
+  async createParent(@Body() body: { fullName: string; phoneNumber: string; villageId: number; }, @Req() req: any) {
+    const actorEmail = req.user?.email;
+    const actor = actorEmail ? await this.usersService.findByEmail(actorEmail) : null;
+    return this.usersService.createParent(body, actor?.id);
   }
 
   @Post('posyandu')

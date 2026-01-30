@@ -16,6 +16,7 @@ enum UserRole {
   POSYANDU
   PUSKESMAS
   PARENT
+
   @@map("user_role")
 }
 
@@ -23,6 +24,7 @@ enum UserStatus {
   ACTIVE
   PENDING
   SUSPENDED
+
   @@map("user_status")
 }
 
@@ -30,6 +32,7 @@ enum DeviceStatus {
   AVAILABLE
   WAITING
   INACTIVE
+
   @@map("device_connectivity_status")
 }
 
@@ -38,6 +41,7 @@ enum SessionStatus {
   COMPLETE
   CLINICALLY_SUFFICIENT
   INSUFFICIENT
+
   @@map("session_status")
 }
 
@@ -46,6 +50,7 @@ enum NutritionCategory {
   STUNTED
   WASTED
   OBESE
+
   @@map("nutrition_category")
 }
 
@@ -53,6 +58,7 @@ enum ValidationStatus {
   OK
   WARN
   FAIL
+
   @@map("validation_status")
 }
 
@@ -60,12 +66,14 @@ enum NotifType {
   RESULT
   REMINDER
   SYSTEM
+
   @@map("notif_type")
 }
 
 enum NotifStatus {
   SENT
   READ
+
   @@map("notif_status")
 }
 
@@ -91,16 +99,17 @@ model Village {
   district   District   @relation(fields: [districtId], references: [id], onDelete: Cascade)
   posyandus  Posyandu[]
   users      User[]
+  Parent     Parent[]
 
   @@map("villages")
 }
 
 model Posyandu {
-  id        Int       @id @default(autoincrement())
-  villageId Int       @map("village_id")
-  name      String    @db.VarChar(100)
-  address   String?   @db.Text
-  village   Village   @relation(fields: [villageId], references: [id], onDelete: Cascade)
+  id        Int     @id @default(autoincrement())
+  villageId Int     @map("village_id")
+  name      String  @db.VarChar(100)
+  address   String? @db.Text
+  village   Village @relation(fields: [villageId], references: [id], onDelete: Cascade)
 
   devices   Device[]
   schedules Schedule[]
@@ -113,21 +122,21 @@ model Posyandu {
 // ============================================================
 
 model User {
-  id           Int        @id @default(autoincrement())
-  fullName     String     @map("full_name") @db.VarChar(100)
-  email        String     @unique @db.VarChar(100)
-  phoneNumber  String?    @map("phone_number") @db.VarChar(20)
-  role         UserRole   @default(PARENT)
-  status       UserStatus @default(ACTIVE)
-  profilePicture String?  @map("profile_picture") @db.Text
-  villageId    Int?       @map("village_id")
-  districtId   Int?       @map("district_id")
-  createdAt    DateTime?  @default(now()) @map("created_at") @db.Timestamp(6)
-  lastLogin    DateTime?  @map("last_login") @db.Timestamp(6)
+  id             Int        @id @default(autoincrement())
+  fullName       String     @map("full_name") @db.VarChar(100)
+  email          String?    @unique @db.VarChar(100)
+  phoneNumber    String?    @map("phone_number") @db.VarChar(20)
+  role           UserRole   @default(PARENT)
+  status         UserStatus @default(ACTIVE)
+  profilePicture String?    @map("profile_picture") @db.Text
+  villageId      Int?       @map("village_id")
+  districtId     Int?       @map("district_id")
+  createdAt      DateTime?  @default(now()) @map("created_at") @db.Timestamp(6)
+  lastLogin      DateTime?  @map("last_login") @db.Timestamp(6)
 
-  village      Village?   @relation(fields: [villageId], references: [id])
-  district     District?  @relation(fields: [districtId], references: [id])
-  parentProfile ParentProfile?
+  village           Village?           @relation(fields: [villageId], references: [id])
+  district          District?          @relation(fields: [districtId], references: [id])
+  parentProfile     Parent?
   assignedIncidents Incident[]
   operatorSessions  Session[]
   validatedRecords  ValidationRecord[]
@@ -135,25 +144,27 @@ model User {
   createdSchedules  Schedule[]
   auditLogs         AuditLog[]
 
-  @@map("users")
+  @@unique([fullName, phoneNumber], map: "idx_unique_fullname_phone")
   @@index([role], map: "idx_users_role")
+  @@map("users")
 }
 
 // ============================================================
 // PARENT PROFILES
 // ============================================================
 
-model ParentProfile {
-  id          Int      @id @default(autoincrement())
-  parentId    Int      @unique @map("parent_id")
-  address     String?  @db.Text
-  latitude    Decimal? @db.Decimal(9, 6)
-  longitude   Decimal? @db.Decimal(9, 6)
+model Parent {
+  id        Int      @id @default(autoincrement())
+  parentId  Int      @unique @map("parent_id")
+  villageId Int?     @map("village_id")
+  latitude  Decimal? @db.Decimal(9, 6)
+  longitude Decimal? @db.Decimal(9, 6)
 
-  user     User    @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  village  Village? @relation(fields: [villageId], references: [id])
   children Child[]
 
-  @@map("parent_profiles")
+  @@map("parents")
 }
 
 // ============================================================
@@ -161,15 +172,15 @@ model ParentProfile {
 // ============================================================
 
 model Child {
-  id        Int      @id @default(autoincrement())
-  parentId  Int      @map("parent_id")
-  fullName  String   @map("full_name") @db.VarChar(100)
-  birthDate DateTime @map("birth_date") @db.Date
-  gender    String?  @db.Char(1) // 'M' or 'F'
-  bloodType String?  @map("blood_type") @db.VarChar(3)
+  id        Int       @id @default(autoincrement())
+  parentId  Int       @map("parent_id")
+  fullName  String    @map("full_name") @db.VarChar(100)
+  birthDate DateTime  @map("birth_date") @db.Date
+  gender    String?   @db.Char(1) // 'M' or 'F'
+  bloodType String?   @map("blood_type") @db.VarChar(10) // A, B, AB, O, UNKNOWN
   createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
 
-  parent   ParentProfile @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  parent   Parent    @relation(fields: [parentId], references: [id], onDelete: Cascade)
   sessions Session[]
 
   @@map("children")
@@ -180,15 +191,15 @@ model Child {
 // ============================================================
 
 model Device {
-  id           Int          @id @default(autoincrement())
-  deviceUuid   String       @unique @map("device_uuid") @db.VarChar(64)
-  name         String       @db.VarChar(50)
-  posyanduId   Int?         @map("posyandu_id")
-  status       DeviceStatus @default(INACTIVE) @map("status")
+  id         Int          @id @default(autoincrement())
+  deviceUuid String       @unique @map("device_uuid") @db.VarChar(64)
+  name       String       @db.VarChar(50)
+  posyanduId Int?         @map("posyandu_id")
+  status     DeviceStatus @default(INACTIVE) @map("status")
   // batteryLevel Int?         @map("battery_level") @db.SmallInt // Removed
   // lastSync     DateTime?    @map("last_sync") @db.Timestamp(6) // Removed
 
-  posyandu  Posyandu? @relation(fields: [posyanduId], references: [id])
+  posyandu  Posyandu?  @relation(fields: [posyanduId], references: [id])
   // logs      DeviceLog[] // Removed
   incidents Incident[]
   sessions  Session[]
@@ -228,36 +239,36 @@ model Incident {
 // ============================================================
 
 model Session {
-  id            Int           @id @default(autoincrement())
-  sessionUuid   String        @unique @map("session_uuid") @db.VarChar(64)
-  childId       Int           @map("child_id")
-  deviceId      Int           @map("device_id")
-  operatorId    Int?          @map("operator_id")
-  recordedAt    DateTime?     @map("recorded_at") @db.Timestamp(6) 
-  status        SessionStatus @default(IN_PROGRESS)
+  id          Int           @id @default(autoincrement())
+  sessionUuid String        @unique @map("session_uuid") @db.VarChar(64)
+  childId     Int           @map("child_id")
+  deviceId    Int           @map("device_id")
+  operatorId  Int?          @map("operator_id")
+  recordedAt  DateTime?     @map("recorded_at") @db.Timestamp(6)
+  status      SessionStatus @default(IN_PROGRESS)
 
   // Metrics
-  weight       Decimal?      @db.Decimal(5, 2)
-  height       Decimal?      @db.Decimal(5, 2)
-  temperature  Decimal?      @db.Decimal(4, 2)
+  weight      Decimal? @db.Decimal(5, 2)
+  height      Decimal? @db.Decimal(5, 2)
+  temperature Decimal? @db.Decimal(4, 2)
   // headCirc     Decimal?      @map("head_circ") @db.Decimal(5, 2)
   // armCirc      Decimal?      @map("arm_circ") @db.Decimal(5, 2)
-  heartRate    Decimal?      @map("heart_rate") @db.Decimal(5, 2)
-  noiseLevel   Decimal?      @map("noise_level") @db.Decimal(5, 2)
+  heartRate   Decimal? @map("heart_rate") @db.Decimal(5, 2)
+  noiseLevel  Decimal? @map("noise_level") @db.Decimal(5, 2)
   // oxy          Decimal?      @db.Decimal(5, 2)
 
-  child    Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
-  device   Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  operator User?    @relation(fields: [operatorId], references: [id], onDelete: SetNull)
+  child    Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
+  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  operator User?  @relation(fields: [operatorId], references: [id], onDelete: SetNull)
 
   nutritionStatuses NutritionStatus[]
   validationRecords ValidationRecord[]
   reports           Report[]
   geotags           Geotag[]
 
-  @@map("sessions")
   @@index([childId], map: "idx_sessions_child_id")
   @@index([status], map: "idx_sessions_status")
+  @@map("sessions")
 }
 
 // ============================================================
@@ -381,8 +392,8 @@ model AuditLog {
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  @@map("audit_logs")
   @@index([userId, createdAt(sort: Desc)], map: "idx_audit_logs_user_time")
+  @@map("audit_logs")
 }
 
 // ============================================================
