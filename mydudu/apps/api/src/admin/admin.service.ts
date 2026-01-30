@@ -28,7 +28,7 @@ export class AdminService {
                 _count: true,
             }),
             this.prisma.device.count(),
-            this.prisma.device.count({ where: { isActive: true } }),
+            this.prisma.device.count({ where: { status: { in: ['AVAILABLE', 'WAITING'] } } }),
             this.prisma.session.count(),
             this.prisma.session.count({
                 where: {

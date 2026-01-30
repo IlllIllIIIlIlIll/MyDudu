@@ -68,7 +68,7 @@ async function main() {
                 deviceUuid: d.uuid,
                 name: d.name,
                 posyanduId: posyandu.id,
-                isActive: true,
+                status: 'AVAILABLE',
             },
         });
         console.log(`Device ensured: ${device.deviceUuid}`);

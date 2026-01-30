@@ -11,19 +11,16 @@ type OperatorScope = {
 
 @Injectable()
 export class OperatorService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   private async resolveScope(userId: number): Promise<OperatorScope> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
-        posyandu: {
+        village: {
           include: {
-            village: {
-              include: {
-                district: true,
-              },
-            },
+            district: true,
+            posyandus: true, // Fetch all posyandus in the village
           },
         },
         district: true,
@@ -37,8 +34,11 @@ export class OperatorService {
     const isAdmin = user.role === UserRole.ADMIN;
     let posyanduIds: number[] = [];
 
-    if (user.role === UserRole.POSYANDU && user.posyanduId) {
-      posyanduIds = [user.posyanduId];
+    if (user.role === UserRole.POSYANDU && user.villageId) {
+      // Operator is assigned to a Village, so they manage ALL Posyandus in that village
+      if (user.village?.posyandus) {
+        posyanduIds = user.village.posyandus.map(p => p.id);
+      }
     } else if (user.role === UserRole.PUSKESMAS && user.districtId) {
       const posyandus = await this.prisma.posyandu.findMany({
         where: { village: { districtId: user.districtId } },
@@ -85,7 +85,7 @@ export class OperatorService {
     const [devicesTotal, devicesActive, sessionsToday, pendingValidations, reportsThisMonth] =
       await Promise.all([
         this.prisma.device.count({ where: deviceWhere }),
-        this.prisma.device.count({ where: { ...deviceWhere, isActive: true } }),
+        this.prisma.device.count({ where: { ...deviceWhere, status: { in: ['AVAILABLE', 'WAITING'] } } }),
         this.prisma.session.count({
           where: {
             ...sessionWhere,
@@ -158,24 +158,24 @@ export class OperatorService {
     const upcomingSchedules =
       scope.isAdmin || scope.posyanduIds.length > 0
         ? await this.prisma.schedule.findMany({
-            where: {
-              ...(scope.isAdmin ? {} : { posyanduId: { in: scope.posyanduIds } }),
-              eventDate: { gte: startOfDay },
-            },
-            include: {
-              posyandu: {
-                include: {
-                  village: {
-                    include: {
-                      district: true,
-                    },
+          where: {
+            ...(scope.isAdmin ? {} : { posyanduId: { in: scope.posyanduIds } }),
+            eventDate: { gte: startOfDay },
+          },
+          include: {
+            posyandu: {
+              include: {
+                village: {
+                  include: {
+                    district: true,
                   },
                 },
               },
             },
-            orderBy: { eventDate: 'asc' },
-            take: 5,
-          })
+          },
+          orderBy: { eventDate: 'asc' },
+          take: 5,
+        })
         : [];
 
     let posyanduSummary: any[] = [];
@@ -187,7 +187,7 @@ export class OperatorService {
         }),
         this.prisma.device.findMany({
           where: deviceWhere,
-          select: { id: true, posyanduId: true, isActive: true },
+          select: { id: true, posyanduId: true, status: true },
         }),
         this.prisma.session.findMany({
           where: sessionWhere,
@@ -227,7 +227,7 @@ export class OperatorService {
         const entry = summaryMap.get(device.posyanduId);
         if (!entry) return;
         entry.devicesCount += 1;
-        if (device.isActive) {
+        if (device.status === 'AVAILABLE' || device.status === 'WAITING') {
           entry.activeDevicesCount += 1;
         }
       });
@@ -406,7 +406,7 @@ export class OperatorService {
       id: device.id,
       deviceUuid: device.deviceUuid,
       name: device.name,
-      isActive: device.isActive,
+      status: device.status,
       posyanduName: device.posyandu?.name || null,
       villageName: device.posyandu?.village?.name || null,
       districtName: device.posyandu?.village?.district?.name || null,
@@ -467,14 +467,14 @@ export class OperatorService {
           session.status === SessionStatus.CLINICALLY_SUFFICIENT
             ? 'approved'
             : session.status === SessionStatus.INSUFFICIENT
-            ? 'rejected'
-            : 'pending';
+              ? 'rejected'
+              : 'pending';
 
         const shouldShow =
           category !== null && category !== 'NORMAL'
             ? true
             : session.status === SessionStatus.INSUFFICIENT ||
-              session.status === SessionStatus.CLINICALLY_SUFFICIENT;
+            session.status === SessionStatus.CLINICALLY_SUFFICIENT;
 
         if (!shouldShow) return null;
 

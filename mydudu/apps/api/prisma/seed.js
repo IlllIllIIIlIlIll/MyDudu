@@ -153,7 +153,7 @@ async function main() {
                 deviceUuid: `DEV-${i.toString().padStart(3, '0')}`,
                 name: `Dudu Scale ${i}`,
                 posyanduId: posyanduId,
-                isActive: true,
+                status: 'AVAILABLE',
             },
         });
         devices.push(device);

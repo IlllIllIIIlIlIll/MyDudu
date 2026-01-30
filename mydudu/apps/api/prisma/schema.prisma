@@ -27,10 +27,10 @@ enum UserStatus {
 }
 
 enum DeviceStatus {
-  ONLINE
-  OFFLINE
-  ERROR
-  @@map("device_status")
+  AVAILABLE
+  WAITING
+  INACTIVE
+  @@map("device_connectivity_status")
 }
 
 enum SessionStatus {
@@ -90,6 +90,7 @@ model Village {
   code       String?    @unique @db.VarChar(20)
   district   District   @relation(fields: [districtId], references: [id], onDelete: Cascade)
   posyandus  Posyandu[]
+  users      User[]
 
   @@map("villages")
 }
@@ -100,7 +101,7 @@ model Posyandu {
   name      String    @db.VarChar(100)
   address   String?   @db.Text
   village   Village   @relation(fields: [villageId], references: [id], onDelete: Cascade)
-  users     User[]
+
   devices   Device[]
   schedules Schedule[]
 
@@ -119,12 +120,12 @@ model User {
   role         UserRole   @default(PARENT)
   status       UserStatus @default(ACTIVE)
   profilePicture String?  @map("profile_picture") @db.Text
-  posyanduId   Int?       @map("posyandu_id")
+  villageId    Int?       @map("village_id")
   districtId   Int?       @map("district_id")
   createdAt    DateTime?  @default(now()) @map("created_at") @db.Timestamp(6)
   lastLogin    DateTime?  @map("last_login") @db.Timestamp(6)
 
-  posyandu     Posyandu?  @relation(fields: [posyanduId], references: [id])
+  village      Village?   @relation(fields: [villageId], references: [id])
   district     District?  @relation(fields: [districtId], references: [id])
   parentProfile ParentProfile?
   assignedIncidents Incident[]
@@ -183,8 +184,7 @@ model Device {
   deviceUuid   String       @unique @map("device_uuid") @db.VarChar(64)
   name         String       @db.VarChar(50)
   posyanduId   Int?         @map("posyandu_id")
-  isActive     Boolean      @default(true) @map("is_active")
-  // status       DeviceStatus @default(OFFLINE) // Removed
+  status       DeviceStatus @default(INACTIVE) @map("status")
   // batteryLevel Int?         @map("battery_level") @db.SmallInt // Removed
   // lastSync     DateTime?    @map("last_sync") @db.Timestamp(6) // Removed
 

@@ -3,7 +3,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { Login } from "@/views/Login";
 
 export default function LoginPage() {
     const { user, signInWithGoogle, loading } = useAuth();
@@ -12,41 +12,18 @@ export default function LoginPage() {
     useEffect(() => {
         if (user && !loading) {
             router.push("/");
-            // Sync user to backend
-            user.getIdToken().then(token => {
-                fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/sync`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }).catch(err => console.error("Sync failed", err));
-            });
         }
     }, [user, loading, router]);
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <p>Loading...</p>
+            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#11998E] to-[#38EF7D]">
+                <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin" />
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-zinc-900">
-            <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md dark:bg-zinc-800">
-                <h1 className="mb-6 text-2xl font-bold text-center text-gray-900 dark:text-gray-100">
-                    Operator Login
-                </h1>
-                <p className="mb-8 text-center text-gray-600 dark:text-gray-400">
-                    Sign in to access the MyDudu Operator Portal
-                </p>
-                <Button
-                    onClick={signInWithGoogle}
-                    className="w-full"
-                    variant="outline"
-                >
-                    Sign in with Google
-                </Button>
-            </div>
-        </div>
+        <Login onLogin={signInWithGoogle} />
     );
 }

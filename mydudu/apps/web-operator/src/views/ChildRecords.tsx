@@ -1,9 +1,14 @@
+"use client";
+
 import { RefreshCcw } from 'lucide-react';
 import { ChildTable } from '../components/ChildTable';
 import { useAuth } from '../context/AuthContext';
 import useSWR from 'swr';
 import { fetchWithAuth } from '../lib/api';
 import { NutritionCategory, OperatorChildRecord } from '../types/operator';
+import { ManualEntryDialog } from '../components/ManualEntryDialog';
+import { Plus } from 'lucide-react';
+import { Button } from '../components/ui/button';
 
 export function ChildRecords() {
   const { user } = useAuth();
@@ -30,26 +35,24 @@ export function ChildRecords() {
         <div>
           <h1>Data Anak</h1>
           <p className="text-gray-600 text-[15px] mt-1">
-            Daftar anak berdasarkan pengukuran terbaru dari perangkat
+            Daftar anak berdasarkan pengukuran terbaru dari perangkat di{' '}
+            {user?.role === 'posyandu'
+              ? `Desa ${user?.assignedLocation?.village}`
+              : `Kecamatan ${user?.assignedLocation?.kecamatan}`}
           </p>
-          {user?.assignedLocation && user.role === 'posyandu' && (
-            <p className="text-[13px] text-[#11998E] font-semibold mt-1">
-              ðŸ“ Data untuk {user.assignedLocation.posyanduName}, {user.assignedLocation.village}
-            </p>
-          )}
-          {user?.assignedLocation && user.role === 'puskesmas' && (
-            <p className="text-[13px] text-blue-600 font-semibold mt-1">
-              ðŸ“ Menampilkan data dari seluruh posyandu di {user.assignedLocation.kecamatan}
-            </p>
-          )}
         </div>
-        <button
-          onClick={() => mutate()}
-          className="border border-[#11998E] text-[#11998E] px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-[#11998E] hover:text-white transition-colors"
-        >
-          <RefreshCcw className="w-5 h-5" />
-          <span className="font-semibold">Perbarui Data</span>
-        </button>
+
+        <div className="flex items-center gap-3">
+          <ManualEntryDialog
+            onSuccess={() => mutate()}
+            trigger={
+              <button className="bg-[#11998E] hover:bg-[#0e8076] text-white px-5 py-2.5 rounded-lg flex items-center gap-2 shadow-md active:scale-95 transition-all cursor-pointer">
+                <Plus className="w-5 h-5" />
+                <span className="font-semibold">Input Manual</span>
+              </button>
+            }
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -78,13 +81,6 @@ export function ChildRecords() {
       ) : (
         <ChildTable children={children} />
       )}
-
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <p className="text-[14px] text-blue-800">
-          <span className="font-semibold">â„¹ï¸ Petunjuk:</span> Data ini mengikuti pengukuran terakhir yang
-          tercatat. Gunakan pencarian dan filter untuk menemukan anak dengan cepat.
-        </p>
-      </div>
     </div>
   );
 }

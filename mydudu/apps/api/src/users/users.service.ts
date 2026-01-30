@@ -24,8 +24,8 @@ export class UsersService {
 
                 phoneNumber: true, // Replaced passwordHash
                 profilePicture: true,
-                posyandu: {
-                    select: { name: true, village: { select: { name: true } } }
+                village: {
+                    select: { name: true, district: { select: { name: true } } }
                 },
                 district: {
                     select: { name: true }
@@ -73,41 +73,24 @@ export class UsersService {
         return user;
     }
 
-    async createPosyandu(data: { fullName: string; email: string; village: string; posyanduName: string; profilePicture?: string }, actorId?: number) {
+    async createPosyandu(data: { fullName: string; email: string; village: string; profilePicture?: string }, actorId?: number) {
         // 1. Check for existing user
         const existingUser = await this.prisma.user.findUnique({ where: { email: data.email } });
         if (existingUser) {
             throw new ConflictException('Email already registered');
         }
 
-        // 2. Find Village
+        // 2. Find Village with District
         const village = await this.prisma.village.findFirst({
-            where: { name: { equals: data.village, mode: 'insensitive' } }
+            where: { name: { equals: data.village, mode: 'insensitive' } },
+            include: { district: true }
         });
 
         if (!village) {
             throw new NotFoundException(`Village '${data.village}' not found`);
         }
 
-        // 3. Find or Create Posyandu
-        let posyandu = await this.prisma.posyandu.findFirst({
-            where: {
-                name: { equals: data.posyanduName, mode: 'insensitive' },
-                villageId: village.id
-            }
-        });
-
-        if (!posyandu) {
-            posyandu = await this.prisma.posyandu.create({
-                data: {
-                    name: data.posyanduName,
-                    villageId: village.id
-                }
-            });
-        }
-
-        // 4. Create User linked to Posyandu
-        // 4. Create User linked to Posyandu
+        // 3. Create User linked to Village and District
         const user = await this.prisma.user.create({
             data: {
                 email: data.email,
@@ -115,7 +98,8 @@ export class UsersService {
                 role: UserRole.POSYANDU,
                 status: UserStatus.PENDING, // Pending Admin Approval
                 profilePicture: data.profilePicture,
-                posyanduId: posyandu.id
+                villageId: village.id,
+                districtId: village.district.id
             }
         });
 
@@ -146,7 +130,24 @@ export class UsersService {
                 name: { contains: query, mode: 'insensitive' }
             },
             take: 10,
-            include: { district: true }
+            include: { district: { select: { name: true } } }
+        });
+    }
+
+    async searchPosyandus(query: string) {
+        return this.prisma.posyandu.findMany({
+            where: {
+                name: { contains: query, mode: 'insensitive' }
+            },
+            take: 10,
+            include: {
+                village: {
+                    select: {
+                        name: true,
+                        district: { select: { name: true } }
+                    }
+                }
+            }
         });
     }
 
@@ -162,17 +163,12 @@ export class UsersService {
                 status: true,
                 phoneNumber: true,
                 profilePicture: true,
-                posyanduId: true,
+                villageId: true,
                 districtId: true,
-                posyandu: {
+                village: {
                     select: {
                         name: true,
-                        village: {
-                            select: {
-                                name: true,
-                                district: { select: { name: true } }
-                            }
-                        }
+                        district: { select: { name: true } }
                     }
                 },
                 district: { select: { name: true } }
@@ -190,9 +186,8 @@ export class UsersService {
         const assignedLocation: any = {};
 
         if (user.role === UserRole.POSYANDU) {
-            assignedLocation.posyanduName = user.posyandu?.name || null;
-            assignedLocation.village = user.posyandu?.village?.name || null;
-            assignedLocation.kecamatan = user.posyandu?.village?.district?.name || null;
+            assignedLocation.village = user.village?.name || null;
+            assignedLocation.kecamatan = user.village?.district?.name || null;
         }
 
         if (user.role === UserRole.PUSKESMAS) {

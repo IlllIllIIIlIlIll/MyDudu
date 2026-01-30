@@ -1,4 +1,4 @@
-import { UserPlus, Edit, Trash2, Shield, Search, Filter } from 'lucide-react';
+import { UserPlus, Edit, Trash2, Shield, Search, Filter, Check, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { ImageCropper } from '@/components/ImageCropper';
 import { getCroppedImg } from '@/utils/getCroppedImg';
@@ -43,11 +43,19 @@ export function UserManagement() {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
   const { user: currentUser } = useAuth();
-  const [posyanduName, setPosyanduName] = useState('');
+
+  // const [posyanduName, setPosyanduName] = useState(''); // Removed
   const [villages, setVillages] = useState<{ id: number; name: string; district: { name: string } }[]>([]);
   const [villageSearch, setVillageSearch] = useState('');
   const [showVillageDropdown, setShowVillageDropdown] = useState(false);
   const [selectedVillage, setSelectedVillage] = useState('');
+
+  // Derived state to check if district is selected (for enabling village field)
+  const isVillageDisabled = !selectedDistrict || selectedDistrict === '';
+
+  const [posyanduSearch, setPosyanduSearch] = useState('');
+  const [showPosyanduDropdown, setShowPosyanduDropdown] = useState(false);
+  const [posyandus, setPosyandus] = useState<{ id: number; name: string; village: { name: string; district: { name: string } } }[]>([]);
 
   // Debounced Village Search
   useEffect(() => {
@@ -59,7 +67,10 @@ export function UserManagement() {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (res.ok) {
-            setVillages(await res.json());
+            const data = await res.json();
+            // Filter on client side to ensure it belongs to selected district
+            const filtered = data.filter((v: any) => v.district.name.toLowerCase() === selectedDistrict.toLowerCase());
+            setVillages(filtered);
           }
         } catch (e) {
           console.error("Failed to search villages", e);
@@ -68,6 +79,9 @@ export function UserManagement() {
     }, 300);
     return () => clearTimeout(timer);
   }, [villageSearch, currentUser?.role]);
+
+  // Debounced Posyandu Search
+  // Removed Posyandu Search Effect
 
   const filteredDistricts = districts.filter(d =>
     d.name.toLowerCase().includes(districtSearch.toLowerCase())
@@ -92,7 +106,7 @@ export function UserManagement() {
             fullName: u.fullName,
             role: role,
             status: u.status === 'ACTIVE' ? 'Active' : u.status === 'PENDING' ? 'Pending' : 'Suspended',
-            assignedLocation: role === 'admin' ? 'Indonesia' : role === 'puskesmas' ? (u.district?.name || 'Unknown District') : (u.posyandu?.village?.name || 'Unknown Village'),
+            assignedLocation: role === 'admin' ? 'Indonesia' : role === 'puskesmas' ? (u.district?.name || 'Unknown District') : (u.village?.name ? `Desa ${u.village.name}` : 'Unknown Village'),
             createdAt: new Date(u.createdAt).toLocaleDateString(),
             lastLogin: u.lastLogin ? new Date(u.lastLogin).toLocaleString() : '-',
             phoneNumber: u.phoneNumber,
@@ -221,6 +235,17 @@ export function UserManagement() {
     // Note: In real app, we might need to fetch full details or store district name in UserAccount to pre-fill districtSearch
     // For now assuming we can use assignedLocation if it's not 'Unknown'
     setDistrictSearch(user.role === 'puskesmas' ? user.assignedLocation : '');
+    // For posyandu role, assignedLocation might have more info or just village name.
+    // If it's posyandu, we might want to pre-fill posyanduSearch
+    // For posyandu role, assignedLocation might have more info or just village name.
+    if (user.role === 'posyandu') {
+      // Assuming assignedLocation is "Desa [VillageName]" or just "[VillageName]"
+      // We might need to parse or fetch details. For now, cleared to force re-selection if editing critical info.
+      // But typically we want to prefill.
+      // If we had villageId in UserAccount we could use it.
+      // For now, let's just leave it blank or try to parse.
+      // setVillageSearch(user.assignedLocation.replace('Desa ', ''));
+    }
     setShowRegisterModal(true);
   };
 
@@ -265,7 +290,7 @@ export function UserManagement() {
   };
 
   const handleRejectUser = async (user: UserAccount) => {
-    if (confirm(`Reject registration for ${user.fullName}? This will suspend the account.`)) {
+    if (confirm(`Decline registration for ${user.fullName}? This will suspend the account.`)) {
       try {
         const token = await auth.currentUser?.getIdToken();
         const res = await fetch(`${API_URL}/users/${user.id}/reject`, {
@@ -274,9 +299,9 @@ export function UserManagement() {
         });
         if (res.ok) {
           fetchUsers();
-          alert(`User ${user.fullName} rejected.`);
+          alert(`User ${user.fullName} declined.`);
         } else {
-          alert('Failed to reject user');
+          alert('Failed to decline user');
         }
       } catch (error) {
         console.error('Error rejecting user:', error);
@@ -310,8 +335,11 @@ export function UserManagement() {
             setFullName('');
             setEmail('');
             setDistrictSearch('');
+            setSelectedDistrict('');
             setVillageSearch('');
-            setPosyanduName('');
+            setSelectedVillage('');
+            // setPosyanduName(''); // Removed
+            // setPosyanduSearch(''); // Removed
             setProfilePicBase64(undefined);
             setShowRegisterModal(true);
           }}
@@ -352,18 +380,26 @@ export function UserManagement() {
 
       {/* Tabs */}
       <div className="flex space-x-1 border-b border-gray-200">
-        {['active', 'pending'].map((tab) => (
+        <button
+          onClick={() => setRoleFilter('all')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${roleFilter !== 'pending'
+            ? 'border-[#11998E] text-[#11998E]'
+            : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+        >
+          Active Users
+        </button>
+        {currentUser?.role === 'admin' && (
           <button
-            key={tab}
-            onClick={() => setRoleFilter(tab === 'pending' ? 'pending' : 'all')} // Simplified tab logic for demo
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${(tab === 'pending' && roleFilter === 'pending') || (tab === 'active' && roleFilter !== 'pending')
+            onClick={() => setRoleFilter('pending')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${roleFilter === 'pending'
               ? 'border-[#11998E] text-[#11998E]'
               : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
           >
-            {tab === 'active' ? 'Active Users' : 'Pending Approvals'}
+            Pending Approvals
           </button>
-        ))}
+        )}
       </div>
 
       {/* User Table */}
@@ -458,20 +494,24 @@ export function UserManagement() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       {user.status === 'Pending' ? (
-                        <>
-                          <button
-                            onClick={() => handleApproveUser(user)}
-                            className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => handleRejectUser(user)}
-                            className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-colors"
-                          >
-                            Reject
-                          </button>
-                        </>
+                        currentUser?.role === 'admin' && (
+                          <>
+                            <button
+                              onClick={() => handleApproveUser(user)}
+                              className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
+                              title="Approve"
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleRejectUser(user)}
+                              className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                              title="Decline"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </>
+                        )
                       ) : (
                         currentUser?.role === 'admin' && (
                           <>
@@ -541,7 +581,7 @@ export function UserManagement() {
                 email, // usually email isn't editable easily without re-verification, allowing specific fields 
                 district: districtSearch,
                 village: villageSearch,
-                posyanduName: posyanduName,
+                // posyanduName: posyanduName, // Removed
                 profilePicture: profilePicBase64
               };
 
@@ -576,8 +616,11 @@ export function UserManagement() {
                   setFullName('');
                   setEmail('');
                   setDistrictSearch('');
+                  setSelectedDistrict('');
                   setVillageSearch('');
-                  setPosyanduName('');
+                  setSelectedVillage('');
+                  // setPosyanduName('');
+                  // setPosyanduSearch('');
                   setProfilePicBase64(undefined);
 
                   // Refresh list
@@ -635,82 +678,88 @@ export function UserManagement() {
                 />
               </div>
 
-              {/* District Autocomplete Field - Only for Admin */}
-              {(currentUser?.role === 'admin' || !currentUser) && (
-                <div className="relative">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Kecamatan/District</label>
-                  <input
-                    type="text"
-                    className="w-full border rounded-lg p-2"
-                    placeholder="Type to search kecamatan..."
-                    value={districtSearch}
-                    onChange={(e) => {
-                      setDistrictSearch(e.target.value);
-                      setShowDistrictDropdown(true);
-                      setSelectedDistrict(''); // Reset selection when typing
-                    }}
-                    onFocus={() => setShowDistrictDropdown(true)}
-                    required
-                  />
+              {/* District Selection (Visible for Admin AND Puskesmas now, or pre-filled for Puskesmas) */}
+              {/* Actually, user flow says: "when registering new posyandu operator... first the district has to be filled" */}
+              {/* If currentUser is Puskesmas, they are likely tied to a district. 
+                    If so, we should Auto-fill and Lock the district? 
+                    BUT, prompt says: "first the district has to be filled... then after choosing district... and if the user modify the district..."
+                    This implies the user (Operator Puskesmas) CAN choose/modify the district. 
+                    So we will show the District Input for Puskesmas too. 
+                */}
 
-                  {/* Autocomplete Dropdown */}
-                  {showDistrictDropdown && districtSearch && (
-                    <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto mt-1">
-                      {filteredDistricts.length > 0 ? (
-                        filteredDistricts.map((district) => (
-                          <button
-                            key={district.id}
-                            type="button"
-                            className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
-                            onClick={() => {
-                              setDistrictSearch(district.name);
-                              setSelectedDistrict(district.name);
-                              setShowDistrictDropdown(false);
-                            }}
-                          >
-                            {district.name}
-                          </button>
-                        ))
-                      ) : (
-                        <div className="px-4 py-2 text-sm text-gray-500 italic">
-                          Kecamatan tidak ditemukan
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+              <div className={`relative ${showDistrictDropdown ? 'z-50' : ''}`}>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Kecamatan/District {currentUser?.role === 'puskesmas' && '(Required for filtering Village)'}
+                </label>
+                <input
+                  type="text"
+                  className="w-full border rounded-lg p-2"
+                  placeholder="Type to search kecamatan..."
+                  value={districtSearch}
+                  onChange={(e) => {
+                    setDistrictSearch(e.target.value);
+                    setShowDistrictDropdown(true);
+                    setSelectedDistrict(''); // Reset selection when typing/modifying
+                    setVillageSearch(''); // Clear village when district changes
+                    setSelectedVillage('');
+                  }}
+                  onFocus={() => setShowDistrictDropdown(true)}
+                  required
+                />
 
-              {/* Village & Posyandu Fields for Puskesmas */}
-              {currentUser?.role === 'puskesmas' && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Posyandu Name</label>
-                    <input
-                      type="text"
-                      className="w-full border rounded-lg p-2"
-                      placeholder="e.g. Mawar Melati"
-                      value={posyanduName}
-                      onChange={(e) => setPosyanduName(e.target.value)}
-                      required={!isEditing}
-                    />
+                {/* Autocomplete Dropdown */}
+                {showDistrictDropdown && districtSearch && (
+                  <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto mt-1" style={{ backgroundColor: 'white' }}>
+                    {filteredDistricts.length > 0 ? (
+                      filteredDistricts.map((district) => (
+                        <button
+                          key={district.id}
+                          type="button"
+                          className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
+                          onClick={() => {
+                            setDistrictSearch(district.name);
+                            setSelectedDistrict(district.name);
+                            setShowDistrictDropdown(false);
+                            setVillageSearch(''); // Reset village when new district confirmed
+                          }}
+                        >
+                          {district.name}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-4 py-2 text-sm text-gray-500 italic">
+                        Kecamatan tidak ditemukan
+                      </div>
+                    )}
                   </div>
-                  <div className="relative">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Kelurahan/Desa</label>
+                )}
+              </div>
+
+              {/* Village Field for Puskesmas (and Admin if they want to create Posyandu user?) */}
+              {/* Assuming this flow is for creating Posyandu Operator */}
+              {(currentUser?.role === 'puskesmas' || roleFilter === 'posyandu' /* or context check */) && (
+                <>
+                  <div className={`relative ${showVillageDropdown ? 'z-50' : ''}`}>
+                    <label className={`block text-sm font-medium mb-1 ${isVillageDisabled ? 'text-gray-400' : 'text-gray-700'}`}>
+                      Kelurahan/Desa
+                    </label>
                     <input
                       type="text"
-                      className="w-full border rounded-lg p-2"
-                      placeholder="Type to search village..."
+                      className={`w-full border rounded-lg p-2 ${isVillageDisabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                      placeholder={isVillageDisabled ? "Please select a district first" : "Type to search village..."}
                       value={villageSearch}
                       onChange={(e) => {
                         setVillageSearch(e.target.value);
                         setShowVillageDropdown(true);
                       }}
-                      onFocus={() => setShowVillageDropdown(true)}
+                      onFocus={() => {
+                        if (!isVillageDisabled) setShowVillageDropdown(true);
+                      }}
+                      disabled={isVillageDisabled}
                       required={!isEditing}
                     />
-                    {showVillageDropdown && villageSearch.length >= 2 && (
-                      <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto mt-1">
+                    {showVillageDropdown && villageSearch.length >= 2 && !isVillageDisabled && (
+                      <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto mt-1" style={{ backgroundColor: 'white' }}>
                         {villages.length > 0 ? (
                           villages.map((v) => (
                             <button
@@ -723,17 +772,20 @@ export function UserManagement() {
                                 setShowVillageDropdown(false);
                               }}
                             >
-                              {v.name} ({v.district.name})
+                              {v.name}
                             </button>
                           ))
                         ) : (
-                          <div className="px-4 py-2 text-sm text-gray-500 italic">No villages found</div>
+                          <div className="px-4 py-2 text-sm text-gray-500 italic">
+                            No villages found in {selectedDistrict}
+                          </div>
                         )}
                       </div>
                     )}
                   </div>
                 </>
               )}
+
               <div className="pt-4 flex justify-end gap-3">
                 <button
                   type="button"
@@ -746,10 +798,10 @@ export function UserManagement() {
                   {isEditing ? 'Save Changes' : 'Register'}
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
+            </form >
+          </div >
+        </div >
       )}
-    </div>
+    </div >
   );
 }

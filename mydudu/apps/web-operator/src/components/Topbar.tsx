@@ -66,10 +66,13 @@ export function Topbar({ onOpenProfile, onOpenNotifications }: TopbarProps) {
           <div className="flex flex-col">
             <p className="font-semibold text-[20px] leading-tight text-gray-900">{user.fullName}</p>
             <p className="text-[12px] font-bold text-gray-500 tracking-wider mt-0.5">{getRoleLabel()}</p>
-          </div>
-          <div className="hidden">
-            {/* Location hidden as requested "just name [newline] role" */}
-            {getLocationDisplay()}
+            {user.role !== 'admin' && user.assignedLocation && (
+              <p className="text-[13px] text-gray-500 mt-1 flex items-center gap-1 font-medium italic">
+                {user.role === 'posyandu'
+                  ? `Desa ${user.assignedLocation.village}`
+                  : `Kecamatan ${user.assignedLocation.kecamatan}`}
+              </p>
+            )}
           </div>
         </div>
       </div>

@@ -1,5 +1,7 @@
+import { DeviceStatus } from '@prisma/client';
+
 export class UpdateDeviceDto {
     name?: string;
     posyanduId?: number;
-    isActive?: boolean;
+    status?: DeviceStatus;
 }

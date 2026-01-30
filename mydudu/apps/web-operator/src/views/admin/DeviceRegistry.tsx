@@ -13,7 +13,7 @@ interface Device {
   deviceUuid: string;
   name: string;
   posyanduId: number | null;
-  isActive: boolean;
+  status: 'AVAILABLE' | 'WAITING' | 'INACTIVE';
   posyandu?: {
     name: string;
   };
@@ -56,7 +56,7 @@ export function DeviceRegistry() {
   const [formData, setFormData] = useState({
     name: '',
     posyanduId: '',
-    isActive: true,
+    status: 'INACTIVE',
   });
 
   // Location Search State (Register)
@@ -96,7 +96,7 @@ export function DeviceRegistry() {
   }, []);
 
   const resetForm = () => {
-    setFormData({ name: '', posyanduId: '', isActive: true });
+    setFormData({ name: '', posyanduId: '', status: 'INACTIVE' });
     setPosyanduSearch('');
     setVillageSearch('');
     setIsNewPosyandu(false);
@@ -167,7 +167,7 @@ export function DeviceRegistry() {
         body: JSON.stringify({
           name: formData.name,
           posyanduId: formData.posyanduId ? parseInt(formData.posyanduId) : null,
-          isActive: formData.isActive,
+          status: formData.status,
         }),
       });
       if (res.ok) {
@@ -184,7 +184,7 @@ export function DeviceRegistry() {
     setFormData({
       name: device.name,
       posyanduId: device.posyanduId?.toString() || '',
-      isActive: device.isActive,
+      status: device.status,
     });
     setPosyanduSearch(device.posyandu?.name || '');
     setIsEditOpen(true);
@@ -269,8 +269,13 @@ export function DeviceRegistry() {
                   )}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={device.isActive ? "default" : "secondary"} className={device.isActive ? "bg-green-100 text-green-700 hover:bg-green-100" : "bg-gray-100 text-gray-600 hover:bg-gray-100"}>
-                    {device.isActive ? 'Active' : 'Inactive'}
+                  <Badge variant={device.status === 'AVAILABLE' ? "default" : "secondary"}
+                    className={
+                      device.status === 'AVAILABLE' ? "bg-green-100 text-green-700 hover:bg-green-100" :
+                        device.status === 'WAITING' ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-100" :
+                          "bg-gray-100 text-gray-600 hover:bg-gray-100"
+                    }>
+                    {device.status}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
@@ -438,7 +443,7 @@ export function DeviceRegistry() {
         </div>
       )}
 
-      {/* Edit Modal - Kept simplest for now */}
+      {/* Edit Modal */}
       {isEditOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50 p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-t-2xl md:rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col animate-in slide-in-from-bottom-4 duration-300">
@@ -503,17 +508,20 @@ export function DeviceRegistry() {
 
               <div className="flex items-center justify-between rounded-lg border p-4">
                 <div className="space-y-0.5">
-                  <Label htmlFor="active-mode" className="text-base cursor-pointer">Active Status</Label>
-                  <p className="text-sm text-gray-500">Inactive devices cannot authenticate.</p>
+                  <Label htmlFor="status-mode" className="text-base cursor-pointer">Device Status</Label>
+                  <p className="text-sm text-gray-500">Current connectivity status.</p>
                 </div>
-                <div className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    id="active-mode"
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={formData.isActive}
-                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  />
+                <div className="relative inline-flex items-center">
+                  <select
+                    id="status-mode"
+                    className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  >
+                    <option value="AVAILABLE">Available</option>
+                    <option value="WAITING">Waiting</option>
+                    <option value="INACTIVE">Inactive</option>
+                  </select>
                 </div>
               </div>
             </div>
