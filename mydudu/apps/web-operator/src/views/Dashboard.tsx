@@ -12,6 +12,10 @@ import { useAuth } from '../context/AuthContext';
 import useSWR from 'swr';
 import { fetchWithAuth } from '../lib/api';
 import { OperatorDashboardOverview, NutritionCategory } from '../types/operator';
+import { ManualEntryDialog } from '../components/ManualEntryDialog';
+import { RegisterParentDialog } from '../components/RegisterParentDialog';
+import { RegisterChildDialog } from '../components/RegisterChildDialog';
+import { Plus } from 'lucide-react';
 
 const nutritionLabels: Record<NutritionCategory, string> = {
   NORMAL: 'Normal',
@@ -80,6 +84,12 @@ export function Dashboard() {
             {headerDate}
           </p>
         </div>
+        {user?.role === 'posyandu' && (
+          <div className="flex items-center gap-3">
+            <RegisterParentDialog onSuccess={() => mutate()} />
+            <RegisterChildDialog onSuccess={() => mutate()} />
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -105,11 +115,11 @@ export function Dashboard() {
           subtitle="Memerlukan tinjauan"
         />
         <OverviewCard
-          title="Laporan Bulan Ini"
-          value={overview?.counts.reportsThisMonth || 0}
-          icon={FileText}
+          title="Total Anak"
+          value={overview?.counts.uniqueChildren || 0}
+          icon={Users}
           color="#3B82F6"
-          subtitle="Dokumen dihasilkan"
+          subtitle="Data anak terdaftar"
         />
       </div>
 
@@ -129,6 +139,17 @@ export function Dashboard() {
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
+                  {user?.role === 'posyandu' && (
+                    <ManualEntryDialog
+                      onSuccess={() => mutate()}
+                      trigger={
+                        <button className="bg-[#11998E] hover:bg-[#0e8076] text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm active:scale-95 transition-all cursor-pointer text-[14px]">
+                          <Plus className="w-4 h-4" />
+                          <span className="font-semibold">Input</span>
+                        </button>
+                      }
+                    />
+                  )}
                   <Select value={reportPeriod} onValueChange={setReportPeriod}>
                     <SelectTrigger className="w-[140px] bg-gray-50 border-gray-200">
                       <SelectValue placeholder="Periode" />

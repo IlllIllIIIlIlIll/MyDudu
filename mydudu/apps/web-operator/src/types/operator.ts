@@ -68,6 +68,7 @@ export interface OperatorChildRecord {
   fullName: string;
   birthDate: string;
   gender: string | null;
+  bloodType: string | null;
   parentName: string | null;
   lastSession: {
     id: number;
@@ -90,11 +91,11 @@ export interface OperatorDeviceRecord {
   deviceUuid: string;
   name: string;
   status: 'AVAILABLE' | 'WAITING' | 'INACTIVE';
-  posyanduName: string | null;
+  fullName: string;
+  phoneNumber: string | null;
   villageName: string | null;
   districtName: string | null;
-  lastSessionAt: string | null;
-  sessionsCount: number;
+  childrenCount: number;
 }
 
 export interface OperatorValidationRecord {

@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { Login } from "@/views/Login";
 
 export default function LoginPage() {
-    const { user, signInWithGoogle, loading } = useAuth();
     const router = useRouter();
+    const { user, signInWithGoogle, loading } = useAuth();
 
     useEffect(() => {
         if (user && !loading) {

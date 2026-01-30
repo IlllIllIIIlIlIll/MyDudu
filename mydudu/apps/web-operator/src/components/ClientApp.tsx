@@ -13,7 +13,6 @@ import { Dashboard } from '../views/Dashboard';
 import { ChildRecords } from '../views/ChildRecords';
 import { DeviceMonitoring } from '../views/DeviceMonitoring';
 import { DoctorValidation } from '../views/DoctorValidation';
-import { ReportsAnalytics } from '../views/ReportsAnalytics';
 
 // Admin Pages
 import { AdminDashboard } from '../views/admin/AdminDashboard';
@@ -95,8 +94,6 @@ function AppContent() {
                 return <DeviceMonitoring />;
             case 'validation':
                 return <DoctorValidation />;
-            case 'reports':
-                return <ReportsAnalytics />;
             case 'users':
                 if (user?.role === 'puskesmas') {
                     return <UserManagement />;

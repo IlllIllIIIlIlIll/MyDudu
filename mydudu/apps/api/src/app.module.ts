@@ -20,6 +20,7 @@ import { NutritionModule } from './telemetry/nutrition.module';
 import { AdminModule } from './admin/admin.module';
 import { OperatorModule } from './operator/operator.module';
 import { ReportsController } from './reports/reports.controller';
+import { ChildrenModule } from './children/children.module';
 
 @Module({
     imports: [
@@ -41,6 +42,7 @@ import { ReportsController } from './reports/reports.controller';
         NutritionModule,
         AdminModule,
         OperatorModule,
+        ChildrenModule,
     ],
     controllers: [AppController, ReportsController],
     providers: [AppService],

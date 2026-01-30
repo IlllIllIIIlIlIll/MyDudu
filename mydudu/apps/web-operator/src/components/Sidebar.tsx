@@ -11,7 +11,7 @@ const operatorMenuItems = [
   { id: 'children', label: 'Data Anak', icon: Users },
   { id: 'devices', label: 'Alat Dudu', icon: Smartphone },
   { id: 'validation', label: 'Validasi Medis', icon: FileCheck },
-  { id: 'reports', label: 'Laporan', icon: BarChart3 }
+
 ];
 
 const adminMenuItems = [

@@ -10,8 +10,14 @@ export class UsersService {
         private systemLogsService: SystemLogsService
     ) { }
 
-    async findAll() {
+    async findAll(role?: string) {
+        const where: any = {};
+        if (role) {
+            where.role = role.toUpperCase() as UserRole;
+        }
+
         return this.prisma.user.findMany({
+            where,
             orderBy: { createdAt: 'desc' },
             select: {
                 id: true,
@@ -69,8 +75,57 @@ export class UsersService {
             role: UserRole.PUSKESMAS,
             email: data.email
         }, actorId || user.id);
-
         return user;
+    }
+
+    async createParent(data: { fullName: string; phoneNumber: string; villageId: number }, actorId?: number) {
+        // 1. Get Village to find District and validate
+        const village = await this.prisma.village.findUnique({
+            where: { id: Number(data.villageId) },
+            include: { district: true }
+        });
+
+        if (!village) {
+            throw new NotFoundException('Desa tidak ditemukan');
+        }
+
+        try {
+            // 2. Create User and Parent record
+            // Email is optional (null), unique constraint is on (fullName + phoneNumber)
+            const user = await this.prisma.user.create({
+                data: {
+                    fullName: data.fullName,
+                    phoneNumber: data.phoneNumber,
+                    role: UserRole.PARENT,
+                    status: UserStatus.ACTIVE,
+                    villageId: village.id,
+                    districtId: village.districtId,
+                    // Create Parent relation
+                    parentProfile: {
+                        create: {
+                            village: { connect: { id: village.id } }
+                        }
+                    }
+                },
+                include: {
+                    parentProfile: true
+                }
+            });
+
+            await this.systemLogsService.logEvent(SystemLogAction.USER_REGISTER, {
+                event: 'USER_REGISTERED',
+                role: UserRole.PARENT,
+                name: data.fullName
+            }, actorId || user.id);
+
+            return user;
+        } catch (e: any) {
+            if (e.code === 'P2002') {
+                // Unique constraint violation
+                throw new ConflictException('Orang tua dengan nama dan nomor telepon ini sudah terdaftar.');
+            }
+            throw e;
+        }
     }
 
     async createPosyandu(data: { fullName: string; email: string; village: string; profilePicture?: string }, actorId?: number) {

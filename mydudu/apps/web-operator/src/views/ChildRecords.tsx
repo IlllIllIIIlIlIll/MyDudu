@@ -5,9 +5,8 @@ import { ChildTable } from '../components/ChildTable';
 import { useAuth } from '../context/AuthContext';
 import useSWR from 'swr';
 import { fetchWithAuth } from '../lib/api';
-import { NutritionCategory, OperatorChildRecord } from '../types/operator';
-import { ManualEntryDialog } from '../components/ManualEntryDialog';
-import { Plus } from 'lucide-react';
+import { NutritionCategory, OperatorChildRecord, OperatorParentRecord } from '../types/operator';
+import { ParentTable } from '../components/ParentTable';
 import { Button } from '../components/ui/button';
 
 export function ChildRecords() {
@@ -16,6 +15,13 @@ export function ChildRecords() {
     user?.id ? `/operator/children?userId=${user.id}` : null,
     fetchWithAuth,
   );
+
+  const { data: parentsData, isLoading: isLoadingParents } = useSWR<OperatorParentRecord[]>(
+    user?.id ? `/operator/parents?userId=${user.id}` : null,
+    fetchWithAuth,
+  );
+
+  const parents = parentsData || [];
 
   const children = data || [];
 
@@ -42,17 +48,6 @@ export function ChildRecords() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <ManualEntryDialog
-            onSuccess={() => mutate()}
-            trigger={
-              <button className="bg-[#11998E] hover:bg-[#0e8076] text-white px-5 py-2.5 rounded-lg flex items-center gap-2 shadow-md active:scale-95 transition-all cursor-pointer">
-                <Plus className="w-5 h-5" />
-                <span className="font-semibold">Input Manual</span>
-              </button>
-            }
-          />
-        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -80,6 +75,14 @@ export function ChildRecords() {
         </div>
       ) : (
         <ChildTable children={children} />
+      )}
+
+      {isLoadingParents ? (
+        <div className="bg-white rounded-lg border border-gray-100 p-6 text-gray-500">
+          Memuat data orang tua...
+        </div>
+      ) : (
+        <ParentTable parents={parents} />
       )}
     </div>
   );

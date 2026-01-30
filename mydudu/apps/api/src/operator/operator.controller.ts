@@ -3,7 +3,7 @@ import { OperatorService } from './operator.service';
 
 @Controller('operator')
 export class OperatorController {
-  constructor(private readonly operatorService: OperatorService) {}
+  constructor(private readonly operatorService: OperatorService) { }
 
   @Get('overview')
   getOverview(@Query('userId', ParseIntPipe) userId: number) {
@@ -13,6 +13,11 @@ export class OperatorController {
   @Get('children')
   getChildren(@Query('userId', ParseIntPipe) userId: number) {
     return this.operatorService.getChildren(userId);
+  }
+
+  @Get('parents')
+  getParents(@Query('userId', ParseIntPipe) userId: number) {
+    return this.operatorService.getParents(userId);
   }
 
   @Get('devices')
