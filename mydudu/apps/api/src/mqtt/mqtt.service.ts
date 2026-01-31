@@ -98,17 +98,38 @@ export class MqttService implements OnModuleInit {
             return;
         }
 
-        // 3. Replay Protection
+        // 3. Replay Protection & Session Merging Strategy
         const payloadTime = new Date(ts * 1000);
 
-        const lastSession = await this.prisma.session.findFirst({
-            where: { deviceId: device.id },
-            orderBy: { recordedAt: 'desc' }
+        // Strategy: "Split-Device Merging"
+        // Look for an existing session for this CHILD that is IN_PROGRESS and created recently (< 1 hour).
+        // If found, we MERGE the new data into it.
+        // If not found, we ensure this isn't an old replay (replay protection) and create new.
+
+        const existingSession = await this.prisma.session.findFirst({
+            where: {
+                childId: Number(childId),
+                status: 'IN_PROGRESS',
+                recordedAt: {
+                    gte: new Date(Date.now() - 60 * 60 * 1000) // Last 1 hour
+                }
+            },
+            orderBy: { recordedAt: 'desc' }, // Get the latest one
+            include: { device: true } // Just in case we want to log which device started it
         });
 
-        if (lastSession && lastSession.recordedAt && payloadTime <= lastSession.recordedAt) {
-            this.logger.warn(`Dropping replay/old data. Payload: ${payloadTime}, Last: ${lastSession.recordedAt}`);
-            return;
+        // If merged session found, we skip replay protection check because we WANT to add to it.
+        // If NO merged session found, then we do replay protection against CLOSED sessions.
+        if (!existingSession) {
+            const lastClosedSession = await this.prisma.session.findFirst({
+                where: { deviceId: device.id },
+                orderBy: { recordedAt: 'desc' }
+            });
+
+            if (lastClosedSession && lastClosedSession.recordedAt && payloadTime <= lastClosedSession.recordedAt) {
+                this.logger.warn(`Dropping replay/old data. Payload: ${payloadTime}, Last: ${lastClosedSession.recordedAt}`);
+                return;
+            }
         }
 
         // 4. Transform Measurements -> Session Columns
@@ -118,7 +139,7 @@ export class MqttService implements OnModuleInit {
             childId: Number(childId),
             deviceId: device.id,
             recordedAt: payloadTime,
-            status: 'COMPLETE',
+            // status: 'COMPLETE', // REMOVED: Keep IN_PROGRESS to allow merging from second device
         };
 
         let hasData = false;
@@ -199,18 +220,43 @@ export class MqttService implements OnModuleInit {
             return;
         }
 
-        // 5. Save Data
+        // 5. Save Data (Create or Update)
         try {
-            const session = await this.prisma.session.create({
-                data: sessionData
-            });
+            let session;
 
-            this.logger.log(`Session saved for ${deviceUuid} at ${payloadTime}`);
+            if (existingSession) {
+                // UPDATE existing session
+                // We only update fields that are defined in `sessionData`.
+                // Note: sessionData has `sessionUuid`, `deviceId`, etc. we might not want to overwrite UUID.
 
-            await this.systemLogsService.logEvent(SystemLogAction.SESSION_CREATED, {
-                sessionId: session.id,
-                childId: session.childId
-            }, undefined, deviceUuid);
+                // Remove fixed fields from update payload
+                delete sessionData.sessionUuid;
+                delete sessionData.recordedAt; // Keep original time
+                delete sessionData.deviceId;   // Keep original device ID (or update if we want to track last writer?)
+                delete sessionData.childId;
+                delete sessionData.status;
+
+                session = await this.prisma.session.update({
+                    where: { id: existingSession.id },
+                    data: sessionData
+                });
+
+                this.logger.log(`Session MERGED/UPDATED for ${deviceUuid}. ID: ${session.id}`);
+            } else {
+                // CREATE new session
+                session = await this.prisma.session.create({
+                    data: sessionData
+                });
+                this.logger.log(`Session CREATED for ${deviceUuid} at ${payloadTime}`);
+            }
+
+            await this.systemLogsService.logEvent(
+                existingSession ? SystemLogAction.SESSION_UPDATED : SystemLogAction.SESSION_CREATED,
+                {
+                    sessionId: session.id,
+                    childId: session.childId
+                }, undefined, deviceUuid
+            );
 
             // Trigger Nutrition Analysis & Potential Alerts
             await this.nutritionService.computeStatus(session.id);
