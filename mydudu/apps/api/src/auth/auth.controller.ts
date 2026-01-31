@@ -1,4 +1,4 @@
-import { Controller, Post, Headers, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Headers, UnauthorizedException, Body } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
 
 @Controller('auth')
@@ -18,5 +18,12 @@ export class AuthController {
         }
 
         return this.authService.syncUser(token);
+    }
+    @Post('verify-phone')
+    async verifyPhone(@Body('phoneNumber') phoneNumber: string) {
+        if (!phoneNumber) {
+            throw new UnauthorizedException('Phone number is required');
+        }
+        return this.authService.verifyPhone(phoneNumber);
     }
 }
