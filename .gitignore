@@ -47,3 +47,4 @@ serviceAccountKey.json
 # Temporary / Test Scripts
 test_api.js
 test_debug_posyandu.js
+!mydudu/apps/web-operator/src/lib
