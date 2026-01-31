@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { OverviewCard } from '../components/OverviewCard';
 import { useAuth } from '../context/AuthContext';
 import useSWR from 'swr';
-import { fetchWithAuth } from '../lib/api';
+import { fetchWithAuth } from '@/lib/api';
 import { OperatorDashboardOverview, NutritionCategory } from '../types/operator';
 import { ManualEntryDialog } from '../components/ManualEntryDialog';
 import { RegisterParentDialog } from '../components/RegisterParentDialog';

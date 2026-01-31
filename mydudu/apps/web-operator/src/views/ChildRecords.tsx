@@ -4,7 +4,7 @@ import { RefreshCcw } from 'lucide-react';
 import { ChildTable } from '../components/ChildTable';
 import { useAuth } from '../context/AuthContext';
 import useSWR from 'swr';
-import { fetchWithAuth } from '../lib/api';
+import { fetchWithAuth } from '@/lib/api';
 import { NutritionCategory, OperatorChildRecord, OperatorParentRecord } from '../types/operator';
 import { ParentTable } from '../components/ParentTable';
 import { Button } from '../components/ui/button';
