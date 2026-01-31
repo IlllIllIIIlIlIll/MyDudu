@@ -101,7 +101,7 @@ export function UserManagement() {
           const role = u.role.toLowerCase();
           return {
             id: u.id,
-            username: u.email.split('@')[0],
+            username: (u.email || '').split('@')[0],
             email: u.email,
             fullName: u.fullName,
             role: role,
