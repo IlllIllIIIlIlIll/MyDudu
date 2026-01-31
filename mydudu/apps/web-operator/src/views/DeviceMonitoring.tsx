@@ -2,7 +2,7 @@ import { AlertTriangle, RefreshCcw } from 'lucide-react';
 import { DeviceStatusList } from '../components/DeviceStatusList';
 import { useAuth } from '../context/AuthContext';
 import useSWR from 'swr';
-import { fetchWithAuth } from '../lib/api';
+import { fetchWithAuth } from '@/lib/api';
 import { OperatorDeviceRecord } from '../types/operator';
 
 export function DeviceMonitoring() {

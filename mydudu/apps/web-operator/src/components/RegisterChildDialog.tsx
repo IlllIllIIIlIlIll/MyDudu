@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Baby } from 'lucide-react';
-import { fetchWithAuth } from '../lib/api';
+import { fetchWithAuth } from '@/lib/api';
 
 interface RegisterChildDialogProps {
     onSuccess?: () => void;

@@ -2,7 +2,7 @@ import { Clock, CheckCircle, XCircle } from 'lucide-react';
 import { ValidationPanel } from '../components/ValidationPanel';
 import { useAuth } from '../context/AuthContext';
 import useSWR from 'swr';
-import { fetchWithAuth } from '../lib/api';
+import { fetchWithAuth } from '@/lib/api';
 import { OperatorValidationRecord } from '../types/operator';
 
 export function DoctorValidation() {

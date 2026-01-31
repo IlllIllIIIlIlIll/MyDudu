@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { X, UserPlus } from 'lucide-react';
-import { fetchWithAuth } from '../lib/api';
+import { fetchWithAuth } from '@/lib/api';
 
 interface RegisterParentDialogProps {
     onSuccess?: () => void;

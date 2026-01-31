@@ -1,7 +1,7 @@
 import { Download, FileText } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import useSWR from 'swr';
-import { fetchWithAuth } from '../lib/api';
+import { fetchWithAuth } from '@/lib/api';
 import { OperatorReportsResponse } from '../types/operator';
 
 export function ReportsAnalytics() {

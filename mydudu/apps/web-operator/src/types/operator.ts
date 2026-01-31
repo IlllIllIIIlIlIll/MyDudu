@@ -135,6 +135,15 @@ export interface OperatorReportRecord {
   districtName: string | null;
 }
 
+
+export interface OperatorParentRecord {
+  id: number;
+  fullName: string;
+  phoneNumber: string | null;
+  villageName: string | null;
+  childrenCount: number;
+}
+
 export interface OperatorReportsResponse {
   summary: OperatorReportSummary;
   reports: OperatorReportRecord[];
