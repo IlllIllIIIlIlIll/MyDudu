@@ -1,0 +1,49 @@
+# System & Editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+api_logs.txt
+firebase-debug.log
+
+# Dependencies & Build
+node_modules/
+dist/
+build/
+out/
+coverage/
+.next/
+.nuxt/
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Environment & Credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Firebase
+firebase.json
+.firebase/
+google-services.json
+serviceAccountKey.json
+
+# Temporary / Test Scripts
+test_api.js
+test_debug_posyandu.js
