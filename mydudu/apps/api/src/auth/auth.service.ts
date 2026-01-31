@@ -62,4 +62,54 @@ export class AuthService {
             throw new UnauthorizedException('Invalid Token');
         }
     }
+    async verifyPhone(phoneNumber: string) {
+        // 1. Check if user exists with this phone number
+        const user = await this.prisma.user.findFirst({
+            where: { phoneNumber: phoneNumber },
+            include: {
+                parentProfile: {
+                    include: {
+                        children: {
+                            include: {
+                                sessions: {
+                                    orderBy: { recordedAt: 'desc' },
+                                    take: 5, // Get latest 5 sessions for history
+                                    include: {
+                                        device: {
+                                            include: {
+                                                posyandu: true
+                                            }
+                                        },
+                                        validationRecords: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!user) {
+            // "if it is not then dont login, saying the phone number hasnt been registered yet in bahasa indonesia"
+            throw new UnauthorizedException('Nomor telepon belum terdaftar');
+        }
+
+        // 2. Check User Status
+        if (user.status === 'PENDING') {
+            throw new UnauthorizedException('Akun menunggu persetujuan admin.');
+        }
+
+        if (user.status === 'SUSPENDED') {
+            throw new UnauthorizedException('Akun dinonaktifkan. Silakan hubungi admin.');
+        }
+
+        // 3. Update Last Login
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: { lastLogin: new Date() }
+        });
+
+        return user;
+    }
 }

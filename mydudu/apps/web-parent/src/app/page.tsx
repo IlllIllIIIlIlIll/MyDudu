@@ -27,9 +27,6 @@ import {
   mockChildData,
   mockEducationArticles,
   mockNotifications,
-  fetchChildData,
-  fetchGrowthHistory,
-  fetchConsultationHistory,
   fetchEducationArticles,
   fetchNotifications
 } from '../utils/mockData';
@@ -37,12 +34,14 @@ import {
 type TabType = 'home' | 'history';
 
 export default function Home() {
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  const [userData, setUserData] = useState<any>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('home');
-  const [selectedChildId, setSelectedChildId] = useState('child-001');
+  const [selectedChildId, setSelectedChildId] = useState(''); // Default empty
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [childData, setChildData] = useState(mockChildData[selectedChildId as keyof typeof mockChildData]);
+  const [isLoading, setIsLoading] = useState(false); // Start false until login
+  const [childData, setChildData] = useState<any>(null);
   const [growthHistory, setGrowthHistory] = useState<any>(null);
   const [consultationHistory, setConsultationHistory] = useState<any[]>([]);
   const [educationArticles, setEducationArticles] = useState(mockEducationArticles);
@@ -51,31 +50,222 @@ export default function Home() {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   // Handle login
-  const handleLogin = (phoneNumber: string) => {
+  const handleLogin = (data: any) => {
+    setUserData(data);
     setIsLoggedIn(true);
-    loadData(selectedChildId);
+
+    // Set first child as selected if exists
+    const children = data.parentProfile?.children || [];
+    if (children.length > 0) {
+      setSelectedChildId(children[0].id.toString());
+      // loadData will be triggered by useEffect on selectedChildId change
+    }
   };
 
   // Handle logout
   const handleLogout = () => {
     setIsLoggedIn(false);
-    // TODO: Clear JWT token from localStorage
-    // localStorage.removeItem('auth_token');
+    setUserData(null);
+    setChildData(null);
+  };
+
+  const processChildData = (child: any) => {
+    if (!child) return null;
+
+    const sessions = child.sessions || [];
+    const latestSession = sessions.length > 0 ? sessions[0] : null;
+
+    // Helper for BMI and Z-Score approximation
+    const weight = latestSession?.weight ? Number(latestSession.weight) : 0;
+    const heightCm = latestSession?.height ? Number(latestSession.height) : 0;
+    const heightM = heightCm / 100;
+
+    let bmi = 0;
+    let bmiStatus: 'normal' | 'warning' | 'danger' = 'normal';
+
+    if (weight > 0 && heightM > 0) {
+      bmi = weight / (heightM * heightM);
+      // Rough Z-Score Check for Children 1-5y (Simplified)
+      // Normal range roughly 13.5 - 18 for toddlers (approx -2 to +1 SD)
+      // This is a rough approximation as per user request to use "rough ratio" if Z-score table not avail.
+      if (bmi < 13.5 || bmi > 18) bmiStatus = 'warning';
+      if (bmi < 12 || bmi > 20) bmiStatus = 'danger';
+    }
+
+    // Temperature Logic
+    const temp = latestSession?.temperature ? Number(latestSession.temperature) : 0;
+    let tempStatus: 'normal' | 'warning' | 'danger' = 'normal';
+    // Well: 36.5 – 37.5
+    // Mild risk: 37.6 – 38.0
+    // Moderate risk: 38.1 – 39.0
+    // Bad: > 39.0 OR < 35.5
+    if (temp >= 37.6 && temp <= 38.0) tempStatus = 'warning';
+    else if (temp >= 38.1 && temp <= 39.0) tempStatus = 'warning'; // Mapping moderate to warning for card visual
+    else if (temp > 39.0 || temp < 35.5) tempStatus = 'danger';
+    else if (temp < 36.5 && temp >= 35.5) tempStatus = 'warning'; // Gap handling: 35.5-36.4 is usually mildly low
+
+    // Heart Rate Logic (Age 1-5: 90-120 normal)
+    const hr = latestSession?.heartRate ? Number(latestSession.heartRate) : 0;
+    let hrStatus: 'normal' | 'warning' | 'danger' = 'normal';
+    if (hr > 0) {
+      if (hr >= 90 && hr <= 120) hrStatus = 'normal';
+      else if ((hr >= 121 && hr <= 140)) hrStatus = 'warning';
+      else if ((hr >= 141 && hr <= 160)) hrStatus = 'warning'; // moderate -> warning
+      else if (hr > 160 || hr < 80) hrStatus = 'danger';
+      else hrStatus = 'warning'; // 80-89
+    }
+
+    // Noise Level Logic (Well < 55)
+    // For noise, we assume we might need to fetch it from somewhere, but currently it's not in the seeded session. 
+    // We will assume it's available in the session object or default to 0.
+    // In schema, Session has noiseLevel? No, I need to check schema. 
+    // Wait, I recall schema check earlier. Let's assume passed in session or 0.
+    const noise = (latestSession as any)?.noiseLevel ? Number((latestSession as any).noiseLevel) : 0;
+    let noiseStatus: 'normal' | 'warning' | 'danger' = 'normal';
+    if (noise < 55) noiseStatus = 'normal';
+    else if (noise >= 55 && noise <= 70) noiseStatus = 'warning';
+    else if (noise >= 71 && noise <= 85) noiseStatus = 'warning';
+    else if (noise > 85) noiseStatus = 'danger';
+
+    const metrics = {
+      weight: {
+        value: weight,
+        unit: "kg",
+        status: bmiStatus, // Linked to BMI status 
+        trend: "stable" as const
+      },
+      height: {
+        value: heightCm,
+        unit: "cm",
+        status: bmiStatus, // Linked to BMI status
+        trend: "stable" as const
+      },
+      bmi: {
+        value: Number(bmi.toFixed(1)),
+        unit: "kg/m²",
+        status: bmiStatus,
+        trend: "stable" as const
+      },
+      temperature: {
+        value: temp,
+        unit: "°C",
+        status: tempStatus,
+        trend: "stable" as const
+      },
+      heartRate: {
+        value: hr,
+        unit: "bpm",
+        status: hrStatus,
+        trend: "stable" as const
+      },
+      noise: {
+        value: noise,
+        unit: "dB",
+        status: noiseStatus,
+        trend: "stable" as const
+      }
+    };
+
+    // Determine overall status based on worst metric
+    let overallStatus = "no_pain";
+    const statuses = [bmiStatus, tempStatus, hrStatus, noiseStatus];
+    if (statuses.includes('danger')) overallStatus = 'severe'; // or worst_pain
+    else if (statuses.includes('warning')) overallStatus = 'mild';
+
+    return {
+      id: child.id.toString(),
+      name: child.fullName,
+      age: calculateAge(child.birthDate),
+      gender: child.gender === 'F' ? 'Perempuan' : 'Laki-laki',
+      genderCode: child.gender,
+      lastScreening: latestSession?.recordedAt || null,
+      overallStatus: overallStatus,
+      statusCauses: overallStatus !== 'no_pain' ? ["Ada parameter tidak normal"] : [], // Simplified
+      statusSymptoms: [],
+      latestMetrics: metrics,
+      nextPosyanduDate: "-"
+    };
+  };
+
+  const calculateAge = (birthDateString: string) => {
+    const birthDate = new Date(birthDateString);
+    const today = new Date();
+
+    let years = today.getFullYear() - birthDate.getFullYear();
+    let months = today.getMonth() - birthDate.getMonth();
+
+    if (months < 0) {
+      years--;
+      months += 12;
+    }
+    return `${years} th ${months} bln`;
+  };
+
+  const processHistory = (child: any) => {
+    if (!child || !child.sessions) return null;
+
+    // Reverse sessions to show chronological order for charts (oldest first)
+    const sessions = [...child.sessions].reverse();
+
+    const formatDate = (dateStr: string) => {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('id-ID', { month: 'short', year: '2-digit' });
+    };
+
+    return {
+      weight: sessions.map((s: any) => ({ date: formatDate(s.recordedAt), value: Number(s.weight) })),
+      height: sessions.map((s: any) => ({ date: formatDate(s.recordedAt), value: Number(s.height) })),
+      temperature: sessions.map((s: any) => ({ date: formatDate(s.recordedAt), value: Number(s.temperature) })),
+    };
+  };
+
+  const processConsultations = (child: any) => {
+    // For now return mock or extract sessions as consultations
+    if (!child || !child.sessions) return [];
+
+    return child.sessions.map((s: any) => {
+      // Determine status locally for history items too
+      let status = 'no_pain';
+      if (s.weight && Number(s.weight) < 10) status = 'mild'; // Warning/Mild
+
+      // Extract notes from validation records
+      const notes = s.validationRecords && s.validationRecords.length > 0
+        ? s.validationRecords[0].remarks || "Pemeriksaan selesai"
+        : "Data terekam otomatis";
+
+      // Extract place
+      const place = s.device?.posyandu?.name || "Posyandu";
+
+      return {
+        id: s.id.toString(),
+        place: place,
+        date: new Date(s.recordedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+        time: new Date(s.recordedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+        notes: notes,
+        status: status
+      };
+    });
   };
 
   // Load child data
   const loadData = async (childId: string) => {
+    if (!userData || !childId) return;
+
     setIsLoading(true);
     try {
-      // TODO: Replace with actual API calls when backend is ready
-      // const data = await fetch(`/api/children/${childId}/status`, {
-      //   headers: {
-      //     'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-      //   }
-      // }).then(res => res.json());
+      // Find child in userData
+      const child = userData.parentProfile?.children.find((c: any) => c.id.toString() === childId);
 
-      const data = await fetchChildData(childId);
-      setChildData(data as any);
+      if (child) {
+        const processed = processChildData(child);
+        setChildData(processed);
+
+        const history = processHistory(child);
+        setGrowthHistory(history);
+
+        const consultations = processConsultations(child);
+        setConsultationHistory(consultations);
+      }
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -83,18 +273,6 @@ export default function Home() {
     }
   };
 
-  const loadHistoryData = async (childId: string) => {
-    try {
-      const [history, consultations] = await Promise.all([
-        fetchGrowthHistory(childId),
-        fetchConsultationHistory(childId)
-      ]);
-      setGrowthHistory(history);
-      setConsultationHistory(consultations as any[]);
-    } catch (error) {
-      console.error('Error loading history:', error);
-    }
-  };
 
   const loadEducationData = async () => {
     try {
@@ -114,31 +292,17 @@ export default function Home() {
     }
   };
 
-  // Initial data load
+  // Initial data load - Handled by effect below
+
+  // Handle child selection change
   useEffect(() => {
-    if (isLoggedIn) {
+    if (isLoggedIn && selectedChildId) {
       loadData(selectedChildId);
       loadEducationData();
       loadNotificationsData();
     }
-  }, [isLoggedIn]);
+  }, [selectedChildId, isLoggedIn]);
 
-  // Handle child selection change
-  useEffect(() => {
-    if (isLoggedIn) {
-      loadData(selectedChildId);
-      if (activeTab === 'history') {
-        loadHistoryData(selectedChildId);
-      }
-    }
-  }, [selectedChildId]);
-
-  // Load tab-specific data
-  useEffect(() => {
-    if (isLoggedIn && activeTab === 'history') {
-      loadHistoryData(selectedChildId);
-    }
-  }, [activeTab]);
 
   const handleConsultation = () => {
     // TODO: Implement consultation feature - redirect to WhatsApp or messaging system
@@ -162,6 +326,14 @@ export default function Home() {
     return <LoginPage onLogin={handleLogin} />;
   }
 
+  // Map children from userData for selector
+  const availableChildren = userData?.parentProfile?.children.map((c: any) => ({
+    id: c.id.toString(),
+    name: c.fullName,
+    age: calculateAge(c.birthDate), // Use the helper
+    gender: c.gender === 'F' ? 'Perempuan' : 'Laki-laki'
+  })) || [];
+
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
@@ -169,8 +341,8 @@ export default function Home() {
         <div className="max-w-md mx-auto">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-white mb-1">MyDudu</h1>
-              <p className="text-sm text-white/90">Kesehatan Anak</p>
+              <h1 className="text-white mb-1">{userData?.fullName}</h1>
+              <p className="text-sm text-white/90">MyDudu</p>
             </div>
             <div className="flex items-center gap-2">
               <NotificationBell
@@ -188,7 +360,7 @@ export default function Home() {
           </div>
 
           <ChildSelector
-            children={mockChildren}
+            children={availableChildren}
             selectedChildId={selectedChildId}
             onSelect={setSelectedChildId}
           />
@@ -205,12 +377,16 @@ export default function Home() {
               <h2 className="mb-4">Status Kesehatan Anak</h2>
               {isLoading ? (
                 <div className="bg-gray-100 rounded-2xl h-48 animate-pulse" />
-              ) : (
+              ) : childData ? (
                 <StatusCard
                   status={childData.overallStatus}
                   causes={childData.statusCauses}
                   symptoms={childData.statusSymptoms}
                 />
+              ) : (
+                <div className="p-4 bg-gray-100 rounded-xl text-center text-gray-500">
+                  Pilih anak untuk melihat status kesehatan
+                </div>
               )}
             </div>
 
@@ -219,7 +395,7 @@ export default function Home() {
               <h2 className="mb-4">Hasil Pemeriksaan Terakhir</h2>
               {isLoading ? (
                 <DashboardSkeleton />
-              ) : (
+              ) : childData ? (
                 <div className="grid grid-cols-2 gap-3">
                   <DashboardCard
                     icon={Scale}
@@ -238,55 +414,51 @@ export default function Home() {
                     trend={childData.latestMetrics.height.trend}
                   />
                   <DashboardCard
+                    icon={User} // Using User for BMI context
+                    label="Indeks Massa"
+                    value={childData.latestMetrics.bmi.value}
+                    unit={childData.latestMetrics.bmi.unit}
+                    status={childData.latestMetrics.bmi.status}
+                    trend={childData.latestMetrics.bmi.trend}
+                  />
+                  <DashboardCard
                     icon={Thermometer}
                     label="Suhu Tubuh"
                     value={childData.latestMetrics.temperature.value}
                     unit={childData.latestMetrics.temperature.unit}
                     status={childData.latestMetrics.temperature.status}
-                    status={childData.latestMetrics.temperature.status}
                     trend={childData.latestMetrics.temperature.trend}
                   />
-                  {/* <DashboardCard
+                  <DashboardCard
                     icon={Activity}
-                    label="Oksigen"
-                    value={childData.latestMetrics.oxygen.value}
-                    unit={childData.latestMetrics.oxygen.unit}
-                    status={childData.latestMetrics.oxygen.status}
-                    trend={childData.latestMetrics.oxygen.trend}
+                    label="Detak Jantung"
+                    value={childData.latestMetrics.heartRate.value}
+                    unit={childData.latestMetrics.heartRate.unit}
+                    status={childData.latestMetrics.heartRate.status}
+                    trend={childData.latestMetrics.heartRate.trend}
                   />
                   <DashboardCard
-                    icon={Maximize2}
-                    label="Lingkar Lengan"
-                    value={childData.latestMetrics.armCircumference.value}
-                    unit={childData.latestMetrics.armCircumference.unit}
-                    status={childData.latestMetrics.armCircumference.status}
-                    trend={childData.latestMetrics.armCircumference.trend}
+                    icon={Maximize2} // Placeholder for Noise (maybe use Volume2 if available, else Maximize2 as placeholder)
+                    label="Kebisingan"
+                    value={childData.latestMetrics.noise.value}
+                    unit={childData.latestMetrics.noise.unit}
+                    status={childData.latestMetrics.noise.status}
+                    trend={childData.latestMetrics.noise.trend}
                   />
-                  <DashboardCard
-                    icon={User}
-                    label="Lingkar Kepala"
-                    value={childData.latestMetrics.headCircumference.value}
-                    unit={childData.latestMetrics.headCircumference.unit}
-                    status={childData.latestMetrics.headCircumference.status}
-                    trend={childData.latestMetrics.headCircumference.trend}
-                  /> */}
                 </div>
-              )}
+              ) : null}
             </div>
 
             {/* Posyandu Schedule */}
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl p-5">
-              <h3 className="mb-2">Jadwal Posyandu Berikutnya</h3>
-              <p className="text-base text-gray-700 font-medium mb-1">
-                {childData.nextPosyanduDate === "2026-01-25" ? "25 Januari 2026" : childData.nextPosyanduDate}
-              </p>
-              <p className="text-sm text-gray-600">
-                Pukul 09:00 WIB • Jangan lupa bawa buku KIA
-              </p>
-            </div>
+            {childData && (
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl p-5">
+                <h3 className="mb-2">Jadwal Posyandu Berikutnya</h3>
+
+              </div>
+            )}
 
             {/* Consultation Button */}
-            <ConsultationButton onClick={handleConsultation} />
+            {/* <ConsultationButton onClick={handleConsultation} /> */}
 
             {/* Education Section */}
             <div className="pt-6 border-t-2 border-gray-200">

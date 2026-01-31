@@ -245,64 +245,39 @@ export const mockEducationArticles = [
   }
 ];
 
-export const mockNotifications = [
-  {
-    id: "notif-001",
-    type: "screening" as const,
-    title: "Hasil Pemeriksaan Baru",
-    message: "Pemeriksaan kesehatan Aisyah pada 18 Jan 2026 sudah tersedia. Perlu perhatian khusus.",
-    time: "1 jam yang lalu",
-    isRead: false
-  },
-  {
-    id: "notif-002",
-    type: "schedule" as const,
-    title: "Jadwal Posyandu Minggu Depan",
-    message: "Jangan lupa datang ke Posyandu pada 25 Jan 2026 pukul 09:00 WIB.",
-    time: "5 jam yang lalu",
-    isRead: false
-  },
-  {
-    id: "notif-003",
-    type: "success" as const,
-    title: "Pemeriksaan Budi Normal",
-    message: "Hasil pemeriksaan Budi pada 17 Jan 2026 menunjukkan kondisi sehat dan normal.",
-    time: "Kemarin",
-    isRead: true
-  }
-];
+export const mockNotifications: any[] = [];
 
 // Simulated API calls - Replace with actual fetch to backend
-export async function fetchChildData(childId: string) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(mockChildData[childId]);
-    }, 800);
-  });
-}
+// export async function fetchChildData(childId: string) {
+//   return new Promise((resolve) => {
+//     setTimeout(() => {
+//       resolve(mockChildData[childId]);
+//     }, 800);
+//   });
+// }
 
-export async function fetchGrowthHistory(childId: string) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        weight: mockWeightHistory[childId],
-        height: mockHeightHistory[childId],
-        temperature: mockTemperatureHistory[childId],
-        // oxygen: mockOxygenHistory[childId],
-        // armCircumference: mockArmCircumferenceHistory[childId],
-        // headCircumference: mockHeadCircumferenceHistory[childId]
-      });
-    }, 1000);
-  });
-}
+// export async function fetchGrowthHistory(childId: string) {
+//   return new Promise((resolve) => {
+//     setTimeout(() => {
+//       resolve({
+//         weight: mockWeightHistory[childId],
+//         height: mockHeightHistory[childId],
+//         temperature: mockTemperatureHistory[childId],
+//         // oxygen: mockOxygenHistory[childId],
+//         // armCircumference: mockArmCircumferenceHistory[childId],
+//         // headCircumference: mockHeadCircumferenceHistory[childId]
+//       });
+//     }, 1000);
+//   });
+// }
 
-export async function fetchConsultationHistory(childId: string) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(mockConsultationHistory[childId] || []);
-    }, 800);
-  });
-}
+// export async function fetchConsultationHistory(childId: string) {
+//   return new Promise((resolve) => {
+//     setTimeout(() => {
+//       resolve(mockConsultationHistory[childId] || []);
+//     }, 800);
+//   });
+// }
 
 export async function fetchEducationArticles() {
   return new Promise((resolve) => {

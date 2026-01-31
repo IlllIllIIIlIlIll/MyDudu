@@ -152,7 +152,7 @@ unsigned long get_unix_time() {
 
 void reconnectMQTT() {
   if (!client.connected()) {
-    if (client.connect(device_uuid, mqtt_user, mqtt_pass)) {
+    if (client.connect("MD-0001-Sensor", mqtt_user, mqtt_pass)) {
       client.subscribe(topic_command);
     }
   }
