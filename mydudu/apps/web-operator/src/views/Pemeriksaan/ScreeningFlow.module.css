@@ -1,0 +1,493 @@
+@import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&display=swap");
+
+.pedsScope {
+  font-family: "Nunito Sans", sans-serif;
+  font-size: 16px;
+  color: #0b1020;
+  background: #f7fafc;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.pedsScope * {
+  border-color: #d6e0ee;
+  outline: none;
+}
+
+.pedsScope h1 {
+  color: #0b1020;
+  font-weight: 700;
+}
+
+.pedsScope h2,
+.pedsScope h3 {
+  color: #0b1020;
+  font-weight: 600;
+}
+
+.pedsScope button {
+  font-weight: 600;
+}
+
+.pedsAccent {
+  background: linear-gradient(135deg, #6a5cff 0%, #4c34ff 45%, #3b5bff 100%);
+  color: #ffffff;
+}
+
+.pedsAccentShadow {
+  box-shadow: 0 12px 24px -10px rgba(91, 75, 255, 0.45);
+}
+
+.gradientPrimary {
+  background: linear-gradient(135deg, #6a5cff 0%, #4c34ff 45%, #3b5bff 100%);
+  color: #ffffff;
+}
+
+.gradientShadow {
+  box-shadow: 0 16px 30px -18px rgba(90, 76, 255, 0.7);
+}
+
+.appRail {
+  background: #0c1630;
+  border-right: 1px solid #111c3a;
+}
+
+.appRailLogo {
+  box-shadow: 0 16px 30px -18px rgba(91, 75, 255, 0.7);
+}
+
+.appRailButton {
+  color: #8190ab;
+}
+
+.appRailButton:hover {
+  background: #141f3f;
+  color: #ffffff;
+}
+
+.appRailActive {
+  box-shadow: 0 12px 20px -14px rgba(91, 75, 255, 0.8);
+}
+
+.headerBar {
+  background: #ffffff;
+  border-bottom: 1px solid #dbe5f2;
+  height: 72px;
+}
+
+.headerTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0b1020;
+}
+
+.headerSubtitle {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #9aa3b2;
+  font-weight: 600;
+}
+
+.statusPill {
+  background: #f6f8fb;
+  border: 1px solid #e1e9f4;
+  border-radius: 999px;
+}
+
+.mainContent {
+  padding: 32px;
+}
+
+.vitalsWrap {
+  max-width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 120px);
+}
+
+.vitalsTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0b1020;
+}
+
+.vitalsSubtitle {
+  color: #8c97ab;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.sensorPill {
+  padding: 6px 18px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.vitalsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+  margin-bottom: 32px;
+}
+
+.vitalCard {
+  background: #ffffff;
+  border: 2px dashed #d7e0ee;
+  border-radius: 22px;
+  min-height: 140px;
+  padding: 18px 20px;
+}
+
+.vitalIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #f2f6fb;
+  border: 1px solid #e3eaf5;
+  color: #97a3b8;
+}
+
+.vitalLabel {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  font-weight: 700;
+  color: #9aa3b2;
+}
+
+.vitalValuePlaceholder {
+  width: 92px;
+  height: 36px;
+  border-radius: 12px;
+  background: #f3f6fb;
+}
+
+.vitalUnit {
+  color: #b4bdcc;
+  font-weight: 600;
+}
+
+.kmsCard {
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1px solid #dbe5f2;
+  padding: 28px 30px;
+  box-shadow: 0 20px 30px -26px rgba(15, 23, 42, 0.35);
+}
+
+.kmsTitle {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  font-weight: 700;
+  color: #9aa3b2;
+}
+
+.ctaPrimary {
+  background: #0b1020;
+  color: #ffffff;
+  border-radius: 20px;
+  padding: 18px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  box-shadow: 0 20px 30px -22px rgba(15, 23, 42, 0.5);
+  margin-top: auto;
+}
+
+.ctaPrimary:hover {
+  background: #0a0f1d;
+  transform: translateY(-1px);
+}
+
+.sidebarToggle {
+  width: 44px;
+  height: 44px;
+}
+
+.sidebarPanel {
+  background: #ffffff;
+  border-right: 1px solid #e1e9f4;
+}
+
+.sidebarAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 18px;
+  border: 2px solid #e9eff8;
+}
+
+.sidebarTag {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #6a5cff;
+}
+
+.sidebarCard {
+  background: #f8fbff;
+  border-radius: 18px;
+  border: 1px solid #e1e9f4;
+  padding: 16px 18px;
+}
+
+.sidebarCardTitle {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #9aa3b2;
+}
+
+.sidebarRowLabel {
+  color: #8c97ab;
+  font-weight: 600;
+}
+
+.sidebarRowValue {
+  color: #1f2a44;
+  font-weight: 700;
+}
+
+.sidebarGuardian {
+  background: #f1f5ff;
+  border: 1px solid #dde6ff;
+}
+
+.sidebarGuardianTitle {
+  color: #6a7bb6;
+}
+
+.sidebarGuardianName {
+  color: #1c2a55;
+}
+
+.sidebarButton {
+  border: 1px solid #e1e9f4;
+  background: #ffffff;
+  color: #5b6473;
+  border-radius: 16px;
+}
+
+.sidebarButtonDanger {
+  background: #ffeef0;
+  color: #e11d48;
+  border-radius: 16px;
+}
+
+.miniAction {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  border: 1px solid #e1e9f4;
+  background: #ffffff;
+  color: #64748b;
+}
+
+.miniDanger {
+  background: #ffeef0;
+  color: #e11d48;
+}
+
+.kmsTrack {
+  flex: 1;
+  height: 8px;
+  background: #eef2f7;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.kmsFill {
+  background: #dbe5f2;
+}
+
+.quizFrame {
+  padding: 6px;
+  background: #f4f7fb;
+  border: 2px solid #e3eaf5;
+  border-radius: 30px;
+}
+
+.quizPlaceholder {
+  background: #ffffff;
+}
+
+.quizGrid {
+  width: 100%;
+  max-width: 100%;
+  align-items: center;
+  gap: 2.5rem;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.quizTitleText {
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.quizSubtitleText {
+  font-size: 1.4rem;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.quizCard {
+  border-radius: 32px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  box-shadow: 0 18px 30px -22px rgba(15, 23, 42, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, filter 0.2s ease;
+  aspect-ratio: 1 / 1;
+  height: auto;
+}
+
+.quizYes {
+  border-color: #ff3b5f;
+  box-shadow: 0 24px 36px -26px rgba(255, 59, 95, 0.45);
+}
+
+.quizNo {
+  border-color: #3ad29f;
+  box-shadow: 0 24px 36px -26px rgba(58, 210, 159, 0.45);
+}
+
+.quizCard:hover {
+  transform: translateY(-2px) scale(1.01);
+  filter: brightness(1.02);
+}
+
+.quizCard:active {
+  transform: scale(0.98);
+}
+
+.quizBadge {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 12px 24px -16px rgba(15, 23, 42, 0.45);
+}
+
+.quizBadgeYes {
+  background: #ff2f55;
+}
+
+.quizBadgeNo {
+  background: #19b87a;
+}
+
+.quizTitle {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.quizHint {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.statCard {
+  min-height: 96px;
+  border-radius: 22px;
+  border: 1px solid #dbe5f2;
+  box-shadow: 0 10px 20px -16px rgba(15, 23, 42, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.statIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+}
+
+.statCard:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 24px -18px rgba(15, 23, 42, 0.4);
+}
+
+.queueCard {
+  border-radius: 26px;
+  border: 1px solid #dbe5f2;
+  box-shadow: 0 18px 30px -24px rgba(15, 23, 42, 0.35);
+}
+
+.queueRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 1.25rem;
+  transition: background 0.2s ease;
+}
+
+.queueRow:hover {
+  background: #f8faff;
+}
+
+.searchInput {
+  background: #f6f8fb;
+  border: 1px solid #dfe7f2;
+  border-radius: 999px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.searchInput:focus {
+  border-color: #cdd8ea;
+}
+
+.primaryButton {
+  border-radius: 16px;
+  box-shadow: 0 12px 24px -16px rgba(91, 75, 255, 0.6);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.primaryButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 30px -18px rgba(91, 75, 255, 0.7);
+  filter: brightness(0.98);
+}
+
+@media (max-width: 1024px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .vitalsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .statsGrid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
+  .queueRow {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .vitalsGrid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
+  .mainContent {
+    padding: 20px;
+  }
+}

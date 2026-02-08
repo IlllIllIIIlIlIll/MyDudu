@@ -13,6 +13,7 @@ import { Dashboard } from '../views/Dashboard';
 import { ChildRecords } from '../views/ChildRecords';
 import { DeviceMonitoring } from '../views/DeviceMonitoring';
 import { DoctorValidation } from '../views/DoctorValidation';
+import { ScreeningFlow } from '../views/Pemeriksaan/ScreeningFlow';
 
 // Admin Pages
 import { AdminDashboard } from '../views/admin/AdminDashboard';
@@ -61,9 +62,14 @@ function AppContent() {
         return <Login onLogin={signInWithGoogle} />;
     }
 
+    // Standalone Full-Screen Pages
+    if (activePage === 'pemeriksaan') {
+        return (
+            <ScreeningFlow onExit={() => setActivePage('dashboard')} />
+        );
+    }
+
     const renderPage = () => {
-
-
         // Admin pages
         if (isAdmin) {
             switch (activePage) {
