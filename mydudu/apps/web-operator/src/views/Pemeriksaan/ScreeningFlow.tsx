@@ -1,8 +1,8 @@
 import { useState, useEffect, type ReactNode } from 'react';
-import { 
-  Users, 
-  Activity, 
-  ChevronRight, 
+import {
+  Users,
+  Activity,
+  ChevronRight,
   CheckCircle2,
   XCircle,
   Thermometer,
@@ -209,7 +209,7 @@ const Sidebar = ({
   setIsMinimized: (m: boolean) => void;
   onExit: () => void;
 }) => (
-  <motion.aside 
+  <motion.aside
     animate={{ width: isMinimized ? '80px' : '280px' }}
     className={`h-full flex flex-col relative z-20 transition-all duration-300 shadow-sm ${styles.sidebarPanel}`}
     onClick={() => setIsMinimized(!isMinimized)}
@@ -276,8 +276,8 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(MOCK_QUEUE[0]);
   const [isMinimized, setIsMinimized] = useState(false);
   const [currentNodeId, setCurrentNodeId] = useState<string>('start');
-  const [quizHistory, setQuizHistory] = useState<{question: string, answer: string}[]>([]);
-  
+  const [quizHistory, setQuizHistory] = useState<{ question: string, answer: string }[]>([]);
+
   const [vitalsData] = useState<Record<string, { value: number; unit: string; icon: ReactNode; status?: 'normal' | 'danger' }>>({
     weight: { value: 12.8, unit: 'kg', icon: <Weight className="w-4 h-4" /> },
     height: { value: 89.2, unit: 'cm', icon: <Ruler className="w-4 h-4" /> },
@@ -302,7 +302,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
     const node = DECISION_TREE[currentNodeId];
     setQuizHistory(prev => [...prev, { question: node.question, answer: choice === 'yes' ? 'Ya' : 'Tidak' }]);
     const nextId = choice === 'yes' ? node.yesNodeId : node.noNodeId;
-    
+
     if (nextId) {
       const nextNode = DECISION_TREE[nextId];
       if (nextNode.finalDiagnosis) {
@@ -322,7 +322,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
 
   return (
     <div className={`${styles.pedsScope} fixed inset-0 z-50 h-screen w-screen flex overflow-hidden font-sans`}>
-      
+
       {/* 2. Patient Sidebar */}
       {selectedPatient && (
         <Sidebar
@@ -338,10 +338,10 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
 
         <div className={`flex-1 overflow-y-auto bg-transparent ${styles.mainContent}`}>
           <AnimatePresence mode="wait">
-            
+
             {/* --- PHASE 2: VITALS (AUTO) --- */}
             {phase === 'VITALS' && selectedPatient && (
-              <motion.div 
+              <motion.div
                 key="vitals" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
                 className={styles.vitalsWrap}
               >
@@ -352,28 +352,28 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
 
                 <div className={styles.vitalsGrid}>
                   {Object.entries(vitalsData).map(([key, data]) => (
-                    <VitalDisplay 
+                    <VitalDisplay
                       key={key}
-                      label={key === 'weight' ? 'Berat Badan' : key === 'height' ? 'Tinggi Badan' : key === 'temp' ? 'Suhu Tubuh' : key === 'spo2' ? 'Saturasi O2' : 'Detak Jantung'} 
-                      value={data.value} 
-                      unit={data.unit} 
-                      icon={data.icon} 
-                      loading={vitalsStatus === 'FETCHING'} 
+                      label={key === 'weight' ? 'Berat Badan' : key === 'height' ? 'Tinggi Badan' : key === 'temp' ? 'Suhu Tubuh' : key === 'spo2' ? 'Saturasi O2' : 'Detak Jantung'}
+                      value={data.value}
+                      unit={data.unit}
+                      icon={data.icon}
+                      loading={vitalsStatus === 'FETCHING'}
                       status={data.status || (key === 'temp' && data.value > 37.5 ? 'danger' : key === 'spo2' && data.value < 95 ? 'danger' : 'normal')}
                     />
                   ))}
                 </div>
 
                 <div className={`${styles.kmsCard} mb-8`}>
-                   <h3 className={`mb-6 ${styles.kmsTitle}`}>Analisis Pertumbuhan (KMS)</h3>
-                   <div className="space-y-6">
-                      <ProgressLine label="BB/U (Berat/Umur)" value={85} color="blue" labelValue="+0.4" />
-                      <ProgressLine label="TB/U (Tinggi/Umur)" value={62} color="orange" labelValue="-1.2" />
-                      <ProgressLine label="Proporsional BB/TB" value={78} color="green" labelValue="+0.2" />
-                   </div>
+                  <h3 className={`mb-6 ${styles.kmsTitle}`}>Analisis Pertumbuhan (KMS)</h3>
+                  <div className="space-y-6">
+                    <ProgressLine label="BB/U (Berat/Umur)" value={85} color="blue" labelValue="+0.4" />
+                    <ProgressLine label="TB/U (Tinggi/Umur)" value={62} color="orange" labelValue="-1.2" />
+                    <ProgressLine label="Proporsional BB/TB" value={78} color="green" labelValue="+0.2" />
+                  </div>
                 </div>
 
-                <button 
+                <button
                   onClick={() => setPhase('QUIZ')}
                   className={`w-full transition-all flex items-center justify-center gap-3 ${styles.ctaPrimary}`}
                 >
@@ -384,25 +384,25 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
 
             {/* --- PHASE 3: AKINATOR QUIZ --- */}
             {phase === 'QUIZ' && (
-              <motion.div 
+              <motion.div
                 key="quiz" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, y: -20 }}
                 className="max-w-6xl mx-auto h-full flex flex-col items-center justify-center py-6"
               >
                 <div className="w-full flex flex-col items-center mb-14">
-                   <h2 className={`text-slate-900 text-center mb-2 max-w-5xl ${styles.quizTitleText}`}>
-                     {currentNode.question}
-                   </h2>
-                   <p className={`text-center max-w-3xl ${styles.quizSubtitleText}`}>{currentNode.layman}</p>
+                  <h2 className={`text-slate-900 text-center mb-2 max-w-5xl ${styles.quizTitleText}`}>
+                    {currentNode.question}
+                  </h2>
+                  <p className={`text-center max-w-3xl ${styles.quizSubtitleText}`}>{currentNode.layman}</p>
                 </div>
 
                 <div className={`grid grid-cols-2 ${styles.quizGrid}`}>
-                  <QuizCard 
+                  <QuizCard
                     label="YA, DITEMUKAN"
                     type="yes"
                     image="/placeholder1.png"
                     onClick={() => handleDecision('yes')}
                   />
-                  <QuizCard 
+                  <QuizCard
                     label="TIDAK ADA"
                     type="no"
                     image="/placeholder2.png"
@@ -411,7 +411,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                 </div>
 
                 <div className="mt-10 h-1.5 w-40 bg-slate-100 rounded-full overflow-hidden">
-                  <motion.div 
+                  <motion.div
                     className={`h-full ${styles.pedsAccent}`}
                     initial={{ width: '0%' }}
                     animate={{ width: currentNodeId === 'start' ? '10%' : '60%' }}
@@ -428,10 +428,8 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
               >
                 <style dangerouslySetInnerHTML={{ __html: `
                   @media print {
-                    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                     body * { visibility: hidden; }
                     .print-section, .print-section * { visibility: visible; }
-                    .print-avoid { break-inside: avoid; page-break-inside: avoid; }
                     .print-section { 
                       position: absolute; 
                       left: 0; top: 0; 
@@ -440,7 +438,6 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                       background: white !important; 
                       padding: 20mm !important;
                       margin: 0 !important;
-                      box-sizing: border-box;
                     }
                     .no-print { display: none !important; }
                     @page { size: A4; margin: 0; }
@@ -456,7 +453,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                     <Activity className="w-10 h-10 text-indigo-600" />
                   </div>
 
-                  <div className={`p-8 rounded-[32px] text-white shadow-xl relative overflow-hidden print:bg-white print:text-slate-900 print:shadow-none print:border-2 print:rounded-2xl print-avoid ${
+                  <div className={`p-8 rounded-[32px] text-white shadow-xl relative overflow-hidden print:bg-white print:text-slate-900 print:shadow-none print:border-2 print:rounded-2xl ${
                     currentNode.finalDiagnosis.severity === 'Merah' ? 'bg-rose-600 print:border-rose-600' : 
                     currentNode.finalDiagnosis.severity === 'Kuning' ? 'bg-amber-500 print:border-amber-500' : 'bg-emerald-600 print:border-emerald-600'
                   }`}>
@@ -470,7 +467,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 print:grid-cols-2">
-                    <div className="bg-white rounded-[24px] p-6 border border-slate-200 shadow-sm print:rounded-xl print:p-5 print-avoid">
+                    <div className="bg-white rounded-[24px] p-6 border border-slate-200 shadow-sm print:rounded-xl print:p-5">
                       <h3 className="font-bold text-slate-400 text-[9px] uppercase tracking-widest mb-4">Biodata Pasien</h3>
                       <div className="space-y-2.5">
                         <div className="flex justify-between border-b border-slate-50 pb-1.5"><span className="text-xs text-slate-500">Nama</span><span className="text-xs font-bold text-slate-700">{selectedPatient.name}</span></div>
@@ -478,7 +475,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                         <div className="flex justify-between"><span className="text-xs text-slate-500">Wali</span><span className="text-xs font-bold text-slate-700">{selectedPatient.parentName}</span></div>
                       </div>
                     </div>
-                    <div className="bg-white rounded-[24px] p-6 border border-slate-200 shadow-sm print:rounded-xl print:p-5 print-avoid">
+                    <div className="bg-white rounded-[24px] p-6 border border-slate-200 shadow-sm print:rounded-xl print:p-5">
                       <h3 className="font-bold text-slate-400 text-[9px] uppercase tracking-widest mb-4">Metrik Vitals</h3>
                       <div className="grid grid-cols-2 gap-y-3 gap-x-6">
                         {Object.entries(vitalsData).map(([key, v]) => (
@@ -491,7 +488,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-[24px] p-6 border border-slate-200 shadow-sm print:rounded-xl print:p-5 print-avoid">
+                  <div className="bg-white rounded-[24px] p-6 border border-slate-200 shadow-sm print:rounded-xl print:p-5">
                     <h3 className="font-bold text-slate-400 text-[9px] uppercase tracking-widest mb-5">Riwayat Gejala (Review)</h3>
                     <div className="space-y-3">
                       {quizHistory.map((step, i) => (
@@ -505,7 +502,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                     </div>
                   </div>
 
-                  <div className="bg-slate-900 text-white rounded-[24px] p-8 print:bg-white print:text-slate-900 print:border-2 print:border-slate-900 print:rounded-xl print-avoid">
+                  <div className="bg-slate-900 text-white rounded-[24px] p-8 print:bg-white print:text-slate-900 print:border-2 print:border-slate-900 print:rounded-xl">
                     <h3 className="font-bold text-base mb-4 flex items-center gap-2">
                       <div className="w-1.5 h-5 bg-indigo-500 rounded-full" /> 
                       Instruksi SOP Penanganan
@@ -543,13 +540,13 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                       </button>
                       <button 
                         onClick={() => { 
-                          setPhase('VITALS'); 
-                          setSelectedPatient(prev => prev ?? MOCK_QUEUE[0]); 
+                          setPhase('QUEUE'); 
+                          setSelectedPatient(null); 
                           setCurrentNodeId('start'); 
                           setVitalsStatus('IDLE');
                           setQuizHistory([]);
                         }} 
-                        className={`w-full py-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${styles.primaryButton} ${styles.gradientPrimary} ${styles.gradientShadow}`}
+                        className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-sm shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
                       >
                         Pasien Baru
                       </button>
@@ -597,10 +594,10 @@ function ProgressLine({ label, value, color, labelValue }: { label: string; valu
     <div className="flex items-center gap-4">
       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest w-40">{label}</span>
       <div className={styles.kmsTrack}>
-        <motion.div 
-          initial={{ width: 0 }} 
-          animate={{ width: `${value}%` }} 
-          className={`h-full rounded-full ${barColors[color]}`} 
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${value}%` }}
+          className={`h-full rounded-full ${barColors[color]}`}
         />
       </div>
       <span className={`text-xs font-bold w-10 text-right ${color === 'orange' ? 'text-amber-600' : 'text-slate-900'}`}>{labelValue}</span>
@@ -612,11 +609,10 @@ function QuizCard({ label, type, image, onClick }: { label: string; type: 'yes' 
   const isPlaceholder = image.includes('placeholder');
   const resolvedImage = isPlaceholder ? getPublicAsset(image) : image;
   return (
-    <button 
+    <button
       onClick={onClick}
-      className={`group relative flex-1 h-full transition-all active:scale-95 ${styles.quizCard} ${
-        type === 'yes' ? styles.quizYes : styles.quizNo
-      }`}
+      className={`group relative flex-1 h-full transition-all active:scale-95 ${styles.quizCard} ${type === 'yes' ? styles.quizYes : styles.quizNo
+        }`}
     >
       <div className={`absolute inset-0 transition-transform duration-700 group-hover:scale-105 ${styles.quizFrame} ${isPlaceholder ? styles.quizPlaceholder : ''}`}>
         <ImageWithFallback

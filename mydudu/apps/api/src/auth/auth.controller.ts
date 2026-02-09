@@ -17,6 +17,9 @@ export class AuthController {
             throw new UnauthorizedException('Invalid authorization header format');
         }
 
+        // Debug: normal Firebase ID token is ~1200 chars; if < 100, token is broken
+        console.log('TOKEN LENGTH:', token?.length ?? 0);
+
         return this.authService.syncUser(token);
     }
     @Post('verify-phone')

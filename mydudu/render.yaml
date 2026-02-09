@@ -12,10 +12,10 @@ services:
           property: connectionString
       - key: REDIS_URL
         sync: false
-      - key: FIREBASE_CREDENTIALS_PATH
-        value: "/etc/secrets/google-credentials.json"
+      # Firebase: set FIREBASE_SERVICE_ACCOUNT_BASE64 in Render Dashboard (Base64 of service account JSON).
+      # Ephemeral filesystem = no file upload; env var is the only option.
       - key: FIREBASE_SERVICE_ACCOUNT_BASE64
-        sync: false # User must provide this in Render Dashboard
+        sync: false
 
   # Python IoT Gateway (Worker)
   - type: worker

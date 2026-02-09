@@ -33,18 +33,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      console.log("Auth State Changed:", currentUser);
-
       if (currentUser && currentUser.email) {
         try {
-          const token = await currentUser.getIdToken();
+          const token = await currentUser.getIdToken(true);
           const res = await fetch(`${API_URL}/users/details?email=${currentUser.email}`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }
           })
-            .catch(err => {
-              console.warn("AuthContext: Failed to fetch user details (API might be down)", err);
+            .catch(() => {
               return null;
             });
 
@@ -67,8 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             });
             setUser(currentUser);
           }
-        } catch (error) {
-          console.error("Failed to fetch user details:", error);
+        } catch {
           // If network error, maybe keep them logged in? 
           // But if it's a 401 from the earlier calls (which throw?), we should logout.
           // Since the fetch calls inside try block might not throw on 4xx unless we check res.ok, 
@@ -94,7 +90,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
     try {
       const result = await signInWithPopup(auth, provider);
-      const token = await result.user.getIdToken();
+      const token = await result.user.getIdToken(true);
 
       // Explicitly sync/validate with backend
       const res = await fetch(`${API_URL}/auth/sync`, {
@@ -113,7 +109,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // If success, the useEffect listener will pick up the state change and set the user
     } catch (error: any) {
-      console.error("Login validation failed", error);
       // Ensure we are signed out if validation failed
       if (auth.currentUser) {
         await signOut(auth);
