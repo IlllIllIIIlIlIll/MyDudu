@@ -43,6 +43,7 @@ firebase.json
 .firebase/
 google-services.json
 serviceAccountKey.json
+service-account.json
 
 # Temporary / Test Scripts
 test_api.js
