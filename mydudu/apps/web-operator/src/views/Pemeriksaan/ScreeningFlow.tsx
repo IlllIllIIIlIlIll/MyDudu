@@ -92,6 +92,15 @@ interface QueueSession {
   lockToken?: string;
 }
 
+interface QuizStepHistory {
+  stepOrder: number;
+  nodeId: string;
+  question: string;
+  answer: 'Ya' | 'Tidak';
+  answerYes: boolean;
+  nextNodeId?: string;
+}
+
 // --- Akinator-like Logic Tree (Consistent Paths) ---
 
 const DECISION_TREE: Record<string, DecisionNode> = {
@@ -273,7 +282,7 @@ const Sidebar = ({
 
 interface ScreeningResultViewProps {
   diagnosis: DiagnosisResult;
-  quizHistory: { question: string; answer: string }[];
+  quizHistory: QuizStepHistory[];
   vitalsLeft: { label: string; value: number; unit: string; icon: ReactNode }[];
   vitalsRight: { label: string; value: number; unit: string; icon: ReactNode }[];
   onPrint: () => void;
@@ -381,7 +390,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
   const [selectedSession, setSelectedSession] = useState<QueueSession | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
   const [currentNodeId, setCurrentNodeId] = useState<string>('start');
-  const [quizHistory, setQuizHistory] = useState<{ question: string, answer: string }[]>([]);
+  const [quizHistory, setQuizHistory] = useState<QuizStepHistory[]>([]);
   const [queueLoading, setQueueLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -510,8 +519,18 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
 
   const handleDecision = (choice: 'yes' | 'no') => {
     const node = DECISION_TREE[currentNodeId];
-    setQuizHistory(prev => [...prev, { question: node.question, answer: choice === 'yes' ? 'Ya' : 'Tidak' }]);
     const nextId = choice === 'yes' ? node.yesNodeId : node.noNodeId;
+    setQuizHistory(prev => [
+      ...prev,
+      {
+        stepOrder: prev.length + 1,
+        nodeId: node.id,
+        question: node.question,
+        answer: choice === 'yes' ? 'Ya' : 'Tidak',
+        answerYes: choice === 'yes',
+        nextNodeId: nextId,
+      }
+    ]);
 
     if (nextId) {
       const nextNode = DECISION_TREE[nextId];
@@ -563,6 +582,14 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
           diagnosisCode,
           version: selectedSession.version,
           lockToken: selectedSession.lockToken,
+          quizSteps: quizHistory.map((step) => ({
+            stepOrder: step.stepOrder,
+            nodeId: step.nodeId,
+            question: step.question,
+            answerYes: step.answerYes,
+            nextNodeId: step.nextNodeId,
+            treeVersion: 'decision-tree-v1',
+          })),
         }),
       });
       await loadQueue();

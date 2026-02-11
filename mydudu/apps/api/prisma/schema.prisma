@@ -295,6 +295,7 @@ model Session {
   validationRecords ValidationRecord[]
   reports           Report[]
   geotags           Geotag[]
+  quizSteps         SessionQuizStep[]
 
   @@index([childId], map: "idx_sessions_child_id")
   @@index([status], map: "idx_sessions_status")
@@ -302,6 +303,24 @@ model Session {
   @@index([lockedByOperatorId], map: "idx_sessions_lock_owner")
   @@index([measurementCompletedAt], map: "idx_sessions_measurement_completed_at")
   @@map("sessions")
+}
+
+model SessionQuizStep {
+  id         Int      @id @default(autoincrement())
+  sessionId  Int      @map("session_id")
+  stepOrder  Int      @map("step_order")
+  nodeId     String   @map("node_id") @db.VarChar(64)
+  question   String   @db.Text
+  answerYes  Boolean  @map("answer_yes")
+  nextNodeId String?  @map("next_node_id") @db.VarChar(64)
+  treeVersion String  @default("decision-tree-v1") @map("tree_version") @db.VarChar(64)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, stepOrder], map: "uq_session_quiz_steps_order")
+  @@index([sessionId], map: "idx_session_quiz_steps_session")
+  @@map("session_quiz_steps")
 }
 
 // ============================================================

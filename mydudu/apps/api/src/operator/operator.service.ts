@@ -670,29 +670,63 @@ export class OperatorService {
     if (dto.diagnosisCode === DiagnosisCode.OTHER && !dto.diagnosisText) {
       throw new ConflictException('diagnosisText is required when diagnosisCode is OTHER');
     }
-
-    const update = await this.prisma.session.updateMany({
-      where: {
-        id: sessionId,
-        examOutcome: ExamOutcome.PENDING,
-        lockedByOperatorId: userId,
-        lockToken: dto.lockToken,
-        version: dto.version,
-      },
-      data: {
-        examOutcome: ExamOutcome.DIAGNOSED,
-        diagnosisCode: dto.diagnosisCode,
-        diagnosisText: dto.diagnosisCode === DiagnosisCode.OTHER ? dto.diagnosisText : null,
-        lockedByOperatorId: null,
-        lockedAt: null,
-        lockToken: null,
-        version: { increment: 1 },
-      },
-    });
-
-    if (update.count !== 1) {
-      throw new ConflictException('Diagnose failed due to stale version/lock/session state');
+    const stepKeys = new Set<number>();
+    for (const step of dto.quizSteps) {
+      if (stepKeys.has(step.stepOrder)) {
+        throw new ConflictException('quizSteps stepOrder must be unique per session');
+      }
+      stepKeys.add(step.stepOrder);
     }
+
+    await this.prisma.$transaction(async (tx) => {
+      const txClient = tx as any;
+      const session = await tx.session.findFirst({
+        where: {
+          id: sessionId,
+          examOutcome: ExamOutcome.PENDING,
+          lockedByOperatorId: userId,
+          lockToken: dto.lockToken,
+          version: dto.version,
+        },
+        select: { id: true },
+      });
+
+      if (!session) {
+        throw new ConflictException('Diagnose failed due to stale version/lock/session state');
+      }
+
+      await txClient.sessionQuizStep.deleteMany({
+        where: { sessionId },
+      });
+
+      await txClient.sessionQuizStep.createMany({
+        data: dto.quizSteps
+          .slice()
+          .sort((a, b) => a.stepOrder - b.stepOrder)
+          .map((step) => ({
+            sessionId,
+            stepOrder: step.stepOrder,
+            nodeId: step.nodeId,
+            question: step.question,
+            answerYes: step.answerYes,
+            nextNodeId: step.nextNodeId ?? null,
+            treeVersion: step.treeVersion || 'decision-tree-v1',
+          })),
+      });
+
+      await tx.session.update({
+        where: { id: sessionId },
+        data: {
+          examOutcome: ExamOutcome.DIAGNOSED,
+          diagnosisCode: dto.diagnosisCode,
+          diagnosisText: dto.diagnosisCode === DiagnosisCode.OTHER ? dto.diagnosisText : null,
+          lockedByOperatorId: null,
+          lockedAt: null,
+          lockToken: null,
+          version: { increment: 1 },
+        },
+      });
+    });
 
     return { success: true, sessionId };
   }
