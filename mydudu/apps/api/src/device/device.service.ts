@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDeviceDto } from './dto/create-device.dto';
 import { UpdateDeviceDto } from './dto/update-device.dto';
@@ -122,22 +122,73 @@ export class DeviceService {
         });
     }
 
-    async processManualEntry(data: { motherName: string; childName: string; weight?: number; height?: number; temperature?: number }) {
-        // 1. Find Child
-        const child = await this.prisma.child.findFirst({
-            where: {
-                fullName: { contains: data.childName, mode: 'insensitive' },
-                parent: {
-                    user: {
-                        fullName: { contains: data.motherName, mode: 'insensitive' }
+    async processManualEntry(data: {
+        parentId?: number;
+        childId?: number;
+        motherName: string;
+        childName: string;
+        villageId?: number;
+        deviceId?: number;
+        weight?: number;
+        height?: number;
+        temperature?: number;
+        heartRate?: number;
+        noiseLevel?: number;
+    }) {
+        // 1. Find Child + Parent (prefer strict ID-based matching)
+        let child = null as any;
+
+        if (data.childId) {
+            child = await this.prisma.child.findFirst({
+                where: {
+                    id: data.childId,
+                    ...(data.parentId ? { parentId: data.parentId } : {}),
+                },
+                include: { parent: true },
+            });
+        } else {
+            child = await this.prisma.child.findFirst({
+                where: {
+                    fullName: { contains: data.childName, mode: 'insensitive' },
+                    parent: {
+                        ...(data.parentId ? { id: data.parentId } : {}),
+                        user: {
+                            fullName: { contains: data.motherName, mode: 'insensitive' }
+                        }
                     }
-                }
-            },
-            include: { parent: true }
-        });
+                },
+                include: { parent: true }
+            });
+        }
 
         if (!child) {
             throw new Error('Child not found. Please check Mother Name and Child Name.');
+        }
+
+        const targetVillageId = data.villageId || child.parent?.villageId;
+        if (!targetVillageId) {
+            throw new NotFoundException('Village not found for this child.');
+        }
+
+        let selectedDevice = null as any;
+        if (data.deviceId) {
+            selectedDevice = await this.prisma.device.findFirst({
+                where: {
+                    id: data.deviceId,
+                    posyandu: { villageId: targetVillageId },
+                },
+                select: { id: true },
+            });
+        } else {
+            selectedDevice = await this.prisma.device.findFirst({
+                where: { posyandu: { villageId: targetVillageId } },
+                orderBy: [{ name: 'asc' }, { id: 'asc' }],
+                select: { id: true },
+            });
+        }
+
+        if (!selectedDevice) {
+            throw new NotFoundException('No device found in selected village.');
         }
 
         // 2. Create Session (Manual)
@@ -153,12 +204,14 @@ export class DeviceService {
             data: {
                 sessionUuid: `manual-${Date.now()}`,
                 childId: child.id,
-                deviceId: 1, // Fallback to a default/virtual device ID or find one
+                deviceId: selectedDevice.id,
                 status: 'COMPLETE',
                 examOutcome: 'PENDING',
                 weight: data.weight,
                 height: data.height,
                 temperature: data.temperature,
+                heartRate: data.heartRate,
+                noiseLevel: data.noiseLevel,
                 measurementCompleted,
                 measurementCompletedAt: measurementCompleted ? new Date() : null,
                 recordedAt: new Date(),

@@ -26,7 +26,7 @@ Notes:
 - Use `examOutcome` as workflow source of truth.
 - `diagnosisCode` is only set when `examOutcome = DIAGNOSED`.
 - Replaces fragile literal `"TIDAK PERIKSA"` with `examOutcome = CANCELED`.
-- Server clock is source of truth for lock and TTL checks.
+- Server clock is source of truth for lock and TTL checks.  
 - Enum growth policy: new diagnosis values are added only via migration; use `OTHER + diagnosisText` as temporary fallback.
 
 ## Business Rules

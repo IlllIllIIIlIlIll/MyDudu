@@ -7,6 +7,8 @@ export interface OperatorSessionSummary {
   weight: number | null;
   height: number | null;
   temperature: number | null;
+  heartRate: number | null;
+  noiseLevel: number | null;
   nutritionCategory: NutritionCategory | null;
   child: {
     id: number;

@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
 import { OperatorService } from './operator.service';
-import { CancelSessionDto, DiagnoseSessionDto, RenewLockDto } from './dto/pemeriksaan.dto';
+import { CancelSessionDto, DiagnoseSessionDto, ReleaseLockDto, RenewLockDto } from './dto/pemeriksaan.dto';
 
 @Controller('operator')
 export class OperatorController {
@@ -21,9 +21,26 @@ export class OperatorController {
     return this.operatorService.getParents(userId);
   }
 
+  @Get('parents/:parentId/children')
+  getChildrenByParent(
+    @Query('userId', ParseIntPipe) userId: number,
+    @Param('parentId', ParseIntPipe) parentId: number,
+  ) {
+    return this.operatorService.getChildrenByParent(userId, parentId);
+  }
+
   @Get('devices')
   getDevices(@Query('userId', ParseIntPipe) userId: number) {
     return this.operatorService.getDevices(userId);
+  }
+
+  @Get('devices/by-village')
+  getDevicesByVillage(
+    @Query('userId', ParseIntPipe) userId: number,
+    @Query('villageId', ParseIntPipe) villageId: number,
+    @Query('q') query?: string,
+  ) {
+    return this.operatorService.getDevicesByVillage(userId, villageId, query || '');
   }
 
   @Get('validations')
@@ -56,6 +73,15 @@ export class OperatorController {
     @Body() dto: RenewLockDto,
   ) {
     return this.operatorService.renewPemeriksaanLock(userId, sessionId, dto);
+  }
+
+  @Post('pemeriksaan/:sessionId/release-lock')
+  releasePemeriksaanLock(
+    @Query('userId', ParseIntPipe) userId: number,
+    @Param('sessionId', ParseIntPipe) sessionId: number,
+    @Body() dto: ReleaseLockDto,
+  ) {
+    return this.operatorService.releasePemeriksaanLock(userId, sessionId, dto);
   }
 
   @Post('pemeriksaan/:sessionId/diagnose')

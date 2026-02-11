@@ -2,7 +2,6 @@ import { useState, useEffect, type ReactNode } from 'react';
 import {
   Activity,
   ChevronRight,
-  XCircle,
   Thermometer,
   Weight,
   Ruler,
@@ -87,8 +86,12 @@ interface QueueSession {
     parentName: string | null;
   };
   lock?: {
+    lockedByOperatorId?: number | null;
     ttlSecondsRemaining: number;
+    lockExpired?: boolean;
   };
+  claimable?: boolean;
+  isStale?: boolean;
   lockToken?: string;
 }
 
@@ -204,14 +207,22 @@ const DECISION_TREE: Record<string, DecisionNode> = {
 
 const Sidebar = ({
   patient,
+  queue,
+  activeSessionId,
   isMinimized,
   setIsMinimized,
+  isSwitching,
+  onSwitchPatient,
   onCancel,
   onExit
 }: {
   patient: Patient;
+  queue: QueueSession[];
+  activeSessionId: number | null;
   isMinimized: boolean;
   setIsMinimized: (m: boolean) => void;
+  isSwitching: boolean;
+  onSwitchPatient: (sessionId: number) => void;
   onCancel: () => void;
   onExit: () => void;
 }) => (
@@ -251,6 +262,34 @@ const Sidebar = ({
             <div className="flex items-center gap-3">
               <div className="p-2 bg-white rounded-lg shadow-sm border border-indigo-100"><User className="w-4 h-4 text-indigo-500" /></div>
               <span className={`text-sm font-bold ${styles.sidebarGuardianName}`}>{patient.parentName}</span>
+            </div>
+          </div>
+
+          <div className={styles.sidebarCard}>
+            <p className={`mb-3 ${styles.sidebarCardTitle}`}>Antrian Pemeriksaan</p>
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+              {queue.length === 0 && (
+                <p className="text-xs text-slate-500">Tidak ada pasien menunggu.</p>
+              )}
+              {queue.map((item) => {
+                const isActive = item.sessionId === activeSessionId;
+                return (
+                  <button
+                    key={item.sessionId}
+                    type="button"
+                    disabled={isSwitching || isActive || item.claimable === false}
+                    onClick={() => onSwitchPatient(item.sessionId)}
+                    className={`w-full text-left px-2 py-2 rounded-lg border text-xs transition-colors ${
+                      isActive
+                        ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-60'
+                    }`}
+                  >
+                    <p className="font-semibold truncate">{item.child.fullName}</p>
+                    <p className="text-[10px] text-slate-500">Sesi #{item.sessionId}</p>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -387,12 +426,15 @@ function ScreeningResultView({
 export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
   const { user } = useAuth();
   const [phase, setPhase] = useState<'VITALS' | 'QUIZ' | 'RESULT'>('VITALS');
+  const [queue, setQueue] = useState<QueueSession[]>([]);
   const [selectedSession, setSelectedSession] = useState<QueueSession | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
   const [currentNodeId, setCurrentNodeId] = useState<string>('start');
   const [quizHistory, setQuizHistory] = useState<QuizStepHistory[]>([]);
   const [queueLoading, setQueueLoading] = useState(false);
+  const [queueInitialized, setQueueInitialized] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [isSwitchingPatient, setIsSwitchingPatient] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
   const selectedPatient: Patient | null = selectedSession
@@ -441,45 +483,61 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
     return fetchWithAuth(`/operator/pemeriksaan/${sessionId}/claim?userId=${user.id}`, { method: 'POST' }) as Promise<QueueSession>;
   };
 
-  const loadQueue = async () => {
+  const loadQueue = async (autoClaim = false) => {
     if (!user?.id) return;
     setQueueLoading(true);
     setApiError(null);
     try {
       const queue = await fetchWithAuth(`/operator/pemeriksaan/queue?userId=${user.id}`) as QueueSession[];
+      setQueue(queue);
       if (!queue.length) {
         setSelectedSession(null);
         return;
       }
 
-      for (const candidate of queue) {
-        try {
-          const claimed = await claimSession(candidate.sessionId);
-          setSelectedSession(claimed);
-          setPhase('VITALS');
-          setCurrentNodeId('start');
-          setQuizHistory([]);
-          setVitalsStatus('IDLE');
-          return;
-        } catch {
-          continue;
+      const shouldAutoClaim = autoClaim || !selectedSession;
+      if (shouldAutoClaim) {
+        for (const candidate of queue) {
+          try {
+            const claimed = await claimSession(candidate.sessionId);
+            setSelectedSession(claimed);
+            setPhase('VITALS');
+            setCurrentNodeId('start');
+            setQuizHistory([]);
+            setVitalsStatus('IDLE');
+            return;
+          } catch {
+            continue;
+          }
         }
+
+        setSelectedSession(null);
+        setApiError('Tidak ada sesi yang bisa di-claim saat ini.');
+        return;
       }
 
-      setSelectedSession(null);
-      setApiError('Tidak ada sesi yang bisa di-claim saat ini.');
+      if (!queue.find((q) => q.sessionId === selectedSession?.sessionId)) {
+        setSelectedSession(null);
+      }
     } catch (error: any) {
       setSelectedSession(null);
       setApiError(error?.message || 'Gagal memuat antrean pemeriksaan');
     } finally {
       setQueueLoading(false);
+      setQueueInitialized(true);
     }
   };
 
   useEffect(() => {
-    loadQueue();
+    loadQueue(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
+
+  useEffect(() => {
+    if (queueInitialized && !queueLoading && !selectedSession) {
+      onExit();
+    }
+  }, [queueInitialized, queueLoading, selectedSession, onExit]);
 
   useEffect(() => {
     if (!selectedSession) return;
@@ -545,6 +603,44 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
 
   const handlePrint = () => window.print();
 
+  const releaseCurrentLock = async () => {
+    if (!selectedSession?.lockToken || !user?.id) return;
+    try {
+      await fetchWithAuth(`/operator/pemeriksaan/${selectedSession.sessionId}/release-lock?userId=${user.id}`, {
+        method: 'POST',
+        body: JSON.stringify({ lockToken: selectedSession.lockToken }),
+      });
+    } catch {
+    }
+  };
+
+  const handleSwitchPatient = async (sessionId: number) => {
+    if (!user?.id) return;
+    if (selectedSession?.sessionId === sessionId) return;
+    setIsSwitchingPatient(true);
+    setApiError(null);
+    try {
+      if (selectedSession) {
+        await releaseCurrentLock();
+      }
+      const claimed = await claimSession(sessionId);
+      if (!claimed) {
+        throw new Error('Sesi tidak dapat di-claim');
+      }
+      setSelectedSession(claimed);
+      setPhase('VITALS');
+      setCurrentNodeId('start');
+      setQuizHistory([]);
+      setVitalsStatus('IDLE');
+      await loadQueue(false);
+    } catch (error: any) {
+      setApiError(error?.message || 'Gagal mengganti pasien');
+      await loadQueue(false);
+    } finally {
+      setIsSwitchingPatient(false);
+    }
+  };
+
   const handleCancelSession = async () => {
     if (!selectedSession?.lockToken || !user?.id) return;
     if (!window.confirm('Batalkan sesi ini?')) return;
@@ -558,7 +654,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
           lockToken: selectedSession.lockToken,
         }),
       });
-      await loadQueue();
+      await loadQueue(false);
     } catch (error: any) {
       setApiError(error?.message || 'Gagal membatalkan sesi');
     } finally {
@@ -592,7 +688,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
           })),
         }),
       });
-      await loadQueue();
+      await loadQueue(false);
     } catch (error: any) {
       setApiError(error?.message || 'Gagal menyimpan diagnosis');
     } finally {
@@ -620,8 +716,12 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
       {selectedPatient && (
         <Sidebar
           patient={selectedPatient}
+          queue={queue}
+          activeSessionId={selectedSession?.sessionId || null}
           isMinimized={isMinimized}
           setIsMinimized={setIsMinimized}
+          isSwitching={isSwitchingPatient}
+          onSwitchPatient={handleSwitchPatient}
           onCancel={handleCancelSession}
           onExit={onExit}
         />
@@ -631,20 +731,6 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
       <main className="flex-1 flex flex-col overflow-hidden">
 
         <div className={`flex-1 flex flex-col min-h-0 bg-transparent ${phase === 'RESULT' ? 'overflow-hidden' : `overflow-y-auto ${styles.mainContent}`}`}>
-          {!selectedSession && (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <p className="text-slate-700 font-semibold text-lg">{queueLoading ? 'Memuat antrean pemeriksaan...' : 'Tidak ada sesi pemeriksaan tersedia.'}</p>
-                {apiError && <p className="text-rose-600 text-sm mt-2">{apiError}</p>}
-                {!queueLoading && (
-                  <button onClick={loadQueue} className="mt-4 px-4 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50">
-                    Muat Ulang
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
           {phase === 'RESULT' && selectedPatient && currentNode.finalDiagnosis ? (
             <div className="flex-1 min-h-0 flex flex-col px-4 py-3">
               <ScreeningResultView

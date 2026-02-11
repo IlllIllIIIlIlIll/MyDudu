@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { X } from 'lucide-react';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { Login } from '../views/Login';
 import { Sidebar } from '../components/Sidebar';
 import { Topbar } from '../components/Topbar';
 import { ProfileModal } from '../components/ProfileModal';
 import { NotificationPanel } from '../components/NotificationPanel';
+import { fetchWithAuth } from '../lib/api';
 
 // Operator Pages
 import { Dashboard } from '../views/Dashboard';
@@ -39,6 +41,8 @@ function AppContent() {
 
     const [showProfile, setShowProfile] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
+    const [pemeriksaanGateOpen, setPemeriksaanGateOpen] = useState(false);
+    const [pemeriksaanGateMessage, setPemeriksaanGateMessage] = useState('');
 
     if (loading) {
         return (
@@ -61,6 +65,32 @@ function AppContent() {
     if (!isAuthenticated) {
         return <Login onLogin={signInWithGoogle} />;
     }
+
+    const handleNavigate = async (page: string) => {
+        if (page !== 'pemeriksaan') {
+            setActivePage(page);
+            return;
+        }
+
+        if (!user?.id) {
+            setPemeriksaanGateMessage('Sesi pengguna tidak ditemukan. Silakan login ulang.');
+            setPemeriksaanGateOpen(true);
+            return;
+        }
+
+        try {
+            const queue = await fetchWithAuth(`/operator/pemeriksaan/queue?userId=${user.id}`) as unknown[];
+            if (!Array.isArray(queue) || queue.length === 0) {
+                setPemeriksaanGateMessage('Belum ada sesi pemeriksaan yang tersedia saat ini.');
+                setPemeriksaanGateOpen(true);
+                return;
+            }
+            setActivePage('pemeriksaan');
+        } catch (error: any) {
+            setPemeriksaanGateMessage(error?.message || 'Gagal memeriksa antrian pemeriksaan.');
+            setPemeriksaanGateOpen(true);
+        }
+    };
 
     // Standalone Full-Screen Pages
     if (activePage === 'pemeriksaan') {
@@ -113,7 +143,7 @@ function AppContent() {
     return (
         <>
             <div className="flex h-screen bg-[#F7F9FA] overflow-hidden">
-                <Sidebar activePage={activePage} onNavigate={setActivePage} />
+                <Sidebar activePage={activePage} onNavigate={handleNavigate} />
                 <div className="flex-1 flex flex-col overflow-hidden">
                     <Topbar
                         onOpenProfile={() => setShowProfile(true)}
@@ -128,6 +158,22 @@ function AppContent() {
             {/* Modals */}
             <ProfileModal isOpen={showProfile} onClose={() => setShowProfile(false)} />
             <NotificationPanel isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
+            {pemeriksaanGateOpen && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/35 px-4">
+                    <div className="relative w-full max-w-md rounded-2xl bg-white border border-gray-200 shadow-2xl p-5 text-left">
+                        <button
+                            type="button"
+                            onClick={() => setPemeriksaanGateOpen(false)}
+                            className="absolute top-3 right-3 rounded-md p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                            aria-label="Tutup"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                        <h3 className="text-lg font-bold text-slate-900 pr-8">Pemeriksaan Tidak Tersedia</h3>
+                        <p className="text-sm text-slate-600 mt-2">{pemeriksaanGateMessage}</p>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

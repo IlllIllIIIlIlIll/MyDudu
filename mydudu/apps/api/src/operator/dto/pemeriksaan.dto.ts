@@ -9,6 +9,12 @@ export class RenewLockDto {
   lockToken: string;
 }
 
+export class ReleaseLockDto {
+  @IsString()
+  @MaxLength(64)
+  lockToken: string;
+}
+
 export class DiagnoseSessionDto {
   @IsEnum(DiagnosisCode)
   diagnosisCode: DiagnosisCode;

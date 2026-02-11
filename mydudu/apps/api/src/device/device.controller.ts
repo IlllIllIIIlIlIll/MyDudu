@@ -35,7 +35,19 @@ export class DeviceController {
     }
 
     @Post('manual-telemetry')
-    submitManualTelemetry(@Body() body: { motherName: string; childName: string; weight?: number; height?: number; temperature?: number }) {
+    submitManualTelemetry(@Body() body: {
+        parentId?: number;
+        childId?: number;
+        motherName: string;
+        childName: string;
+        villageId?: number;
+        deviceId?: number;
+        weight?: number;
+        height?: number;
+        temperature?: number;
+        heartRate?: number;
+        noiseLevel?: number;
+    }) {
         return this.deviceService.processManualEntry(body);
     }
 }

@@ -2,7 +2,7 @@ import { ConflictException, HttpException, Injectable, NotFoundException } from 
 import { PrismaService } from '../prisma/prisma.service';
 import { DiagnosisCode, ExamOutcome, SessionStatus, UserRole } from '@prisma/client';
 import { randomUUID } from 'crypto';
-import { CancelSessionDto, DiagnoseSessionDto, RenewLockDto } from './dto/pemeriksaan.dto';
+import { CancelSessionDto, DiagnoseSessionDto, ReleaseLockDto, RenewLockDto } from './dto/pemeriksaan.dto';
 
 type OperatorScope = {
   userId: number;
@@ -284,6 +284,8 @@ export class OperatorService {
         weight: session.weight,
         height: session.height,
         temperature: session.temperature,
+        heartRate: session.heartRate,
+        noiseLevel: session.noiseLevel,
         child: {
           id: session.child?.id,
           fullName: session.child?.fullName,
@@ -440,6 +442,59 @@ export class OperatorService {
     }));
   }
 
+  async getDevicesByVillage(userId: number, villageId: number, query = '') {
+    const scope = await this.resolveScope(userId);
+
+    if (!scope.isAdmin) {
+      if (scope.role === UserRole.POSYANDU && scope.villageId !== villageId) {
+        return [];
+      }
+      if (scope.role === UserRole.PUSKESMAS && scope.districtId) {
+        const village = await this.prisma.village.findUnique({
+          where: { id: villageId },
+          select: { districtId: true },
+        });
+        if (!village || village.districtId !== scope.districtId) {
+          return [];
+        }
+      }
+    }
+
+    const where: any = {
+      posyandu: { villageId },
+    };
+    if (!scope.isAdmin) {
+      where.posyanduId = { in: scope.posyanduIds.length ? scope.posyanduIds : [-1] };
+    }
+    if (query.trim()) {
+      where.OR = [
+        { name: { contains: query.trim(), mode: 'insensitive' } },
+        { deviceUuid: { contains: query.trim(), mode: 'insensitive' } },
+      ];
+    }
+
+    const devices = await this.prisma.device.findMany({
+      where,
+      orderBy: [{ name: 'asc' }, { id: 'asc' }],
+      include: {
+        posyandu: {
+          include: {
+            village: true,
+          },
+        },
+      },
+      take: 20,
+    });
+
+    return devices.map((device) => ({
+      id: device.id,
+      name: device.name,
+      deviceUuid: device.deviceUuid,
+      posyanduName: device.posyandu?.name || null,
+      villageName: device.posyandu?.village?.name || null,
+    }));
+  }
+
   async getParents(userId: number) {
     const scope = await this.resolveScope(userId);
     const where: any = {};
@@ -485,6 +540,47 @@ export class OperatorService {
       villageName: parent.village?.name || null,
       districtName: parent.village?.district?.name || null,
       childrenCount: parent._count.children,
+    }));
+  }
+
+  async getChildrenByParent(userId: number, parentId: number) {
+    const scope = await this.resolveScope(userId);
+    const where: any = { id: parentId };
+
+    if (!scope.isAdmin) {
+      if (scope.role === UserRole.POSYANDU && scope.villageId) {
+        where.villageId = scope.villageId;
+      } else if (scope.role === UserRole.PUSKESMAS && scope.districtId) {
+        where.village = { districtId: scope.districtId };
+      } else {
+        return [];
+      }
+    }
+
+    const parent = await this.prisma.parent.findFirst({
+      where,
+      include: {
+        children: {
+          orderBy: { fullName: 'asc' },
+          select: {
+            id: true,
+            fullName: true,
+            birthDate: true,
+            gender: true,
+          },
+        },
+      },
+    });
+
+    if (!parent) {
+      return [];
+    }
+
+    return parent.children.map((child) => ({
+      id: child.id,
+      fullName: child.fullName,
+      birthDate: child.birthDate,
+      gender: child.gender,
     }));
   }
 
@@ -661,6 +757,29 @@ export class OperatorService {
 
     const fresh = await this.getScopedSession(userId, sessionId);
     return this.toQueueItem(fresh);
+  }
+
+  async releasePemeriksaanLock(userId: number, sessionId: number, dto: ReleaseLockDto) {
+    const session = await this.getScopedSession(userId, sessionId);
+
+    if (session.examOutcome !== ExamOutcome.PENDING) {
+      return { success: true, sessionId, released: false };
+    }
+    if (session.lockedByOperatorId !== userId || session.lockToken !== dto.lockToken) {
+      throw new HttpException('Session lock is not owned by this operator', 423);
+    }
+
+    await this.prisma.session.update({
+      where: { id: session.id },
+      data: {
+        lockedByOperatorId: null,
+        lockedAt: null,
+        lockToken: null,
+        version: { increment: 1 },
+      },
+    });
+
+    return { success: true, sessionId, released: true };
   }
 
   async diagnosePemeriksaanSession(userId: number, sessionId: number, dto: DiagnoseSessionDto) {

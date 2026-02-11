@@ -197,7 +197,7 @@ export function Dashboard() {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-[14px] text-gray-600">
-                          Berat {session.weight ?? '-'} kg, Tinggi {session.height ?? '-'} cm
+                          Berat {session.weight ?? '-'} kg, Tinggi {session.height ?? '-'} cm, Suhu {session.temperature ?? '-'} °C, Detak {session.heartRate ?? '-'} bpm, Kebisingan {session.noiseLevel ?? '-'} dB
                         </td>
                       </tr>
                     ))}
@@ -263,4 +263,3 @@ export function Dashboard() {
     </div>
   );
 }
-
