@@ -45,6 +45,24 @@ enum SessionStatus {
   @@map("session_status")
 }
 
+enum ExamOutcome {
+  PENDING
+  DIAGNOSED
+  CANCELED
+
+  @@map("exam_outcome")
+}
+
+enum DiagnosisCode {
+  PNEUMONIA
+  DENGUE
+  DIARRHEA_SEVERE
+  HEALTHY
+  OTHER
+
+  @@map("diagnosis_code")
+}
+
 enum NutritionCategory {
   NORMAL
   STUNTED
@@ -138,7 +156,8 @@ model User {
   district          District?          @relation(fields: [districtId], references: [id])
   parentProfile     Parent?
   assignedIncidents Incident[]
-  operatorSessions  Session[]
+  operatorSessions  Session[]          @relation("session_operator")
+  lockedSessions    Session[]          @relation("session_lock_owner")
   validatedRecords  ValidationRecord[]
   notifications     Notification[]
   createdSchedules  Schedule[]
@@ -246,6 +265,16 @@ model Session {
   operatorId  Int?          @map("operator_id")
   recordedAt  DateTime?     @map("recorded_at") @db.Timestamp(6)
   status      SessionStatus @default(IN_PROGRESS)
+  examOutcome ExamOutcome   @default(PENDING) @map("exam_outcome")
+  diagnosisCode DiagnosisCode? @map("diagnosis_code")
+  diagnosisText String?     @map("diagnosis_text") @db.VarChar(255)
+  measurementCompleted Boolean   @default(false) @map("measurement_completed")
+  measurementCompletedAt DateTime? @map("measurement_completed_at") @db.Timestamp(6)
+  lockedByOperatorId Int?   @map("locked_by_operator_id")
+  lockedAt   DateTime?      @map("locked_at") @db.Timestamp(6)
+  lockToken  String?        @map("lock_token") @db.VarChar(64)
+  version    Int            @default(1)
+  updatedAt  DateTime       @updatedAt @map("updated_at") @db.Timestamp(6)
 
   // Metrics
   weight      Decimal? @db.Decimal(5, 2)
@@ -259,7 +288,8 @@ model Session {
 
   child    Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
   device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  operator User?  @relation(fields: [operatorId], references: [id], onDelete: SetNull)
+  operator User?  @relation("session_operator", fields: [operatorId], references: [id], onDelete: SetNull)
+  lockedByOperator User? @relation("session_lock_owner", fields: [lockedByOperatorId], references: [id], onDelete: SetNull)
 
   nutritionStatuses NutritionStatus[]
   validationRecords ValidationRecord[]
@@ -268,6 +298,9 @@ model Session {
 
   @@index([childId], map: "idx_sessions_child_id")
   @@index([status], map: "idx_sessions_status")
+  @@index([examOutcome, measurementCompleted, recordedAt], map: "idx_sessions_queue")
+  @@index([lockedByOperatorId], map: "idx_sessions_lock_owner")
+  @@index([measurementCompletedAt], map: "idx_sessions_measurement_completed_at")
   @@map("sessions")
 }
 

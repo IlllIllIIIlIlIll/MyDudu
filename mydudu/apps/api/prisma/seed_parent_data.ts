@@ -52,7 +52,7 @@ async function main() {
 
 
     // 2. Create Child
-    const childName = 'Budi Kecil';
+    const childName = 'Anak Demo Kecil';
     let child = await prisma.child.findFirst({
         where: { parentId: parentProfile.id, fullName: childName }
     });

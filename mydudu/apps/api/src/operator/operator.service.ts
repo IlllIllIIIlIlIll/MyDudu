@@ -1,6 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, HttpException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { SessionStatus, UserRole } from '@prisma/client';
+import { DiagnosisCode, ExamOutcome, SessionStatus, UserRole } from '@prisma/client';
+import { randomUUID } from 'crypto';
+import { CancelSessionDto, DiagnoseSessionDto, RenewLockDto } from './dto/pemeriksaan.dto';
 
 type OperatorScope = {
   userId: number;
@@ -13,7 +15,14 @@ type OperatorScope = {
 
 @Injectable()
 export class OperatorService {
+  private readonly LOCK_TTL_MS = 5 * 60 * 1000;
+
   constructor(private readonly prisma: PrismaService) { }
+
+  private isLockExpired(lockedAt?: Date | null) {
+    if (!lockedAt) return true;
+    return lockedAt.getTime() < Date.now() - this.LOCK_TTL_MS;
+  }
 
   private async resolveScope(userId: number): Promise<OperatorScope> {
     const user = await this.prisma.user.findUnique({
@@ -477,6 +486,247 @@ export class OperatorService {
       districtName: parent.village?.district?.name || null,
       childrenCount: parent._count.children,
     }));
+  }
+
+  private toQueueItem(session: any) {
+    const lockExpired = this.isLockExpired(session.lockedAt);
+    const isLockedByOther = !!session.lockedByOperatorId && !lockExpired;
+    const staleThresholdMs = 6 * 60 * 60 * 1000;
+    const isStale = !!session.recordedAt && session.recordedAt.getTime() <= Date.now() - staleThresholdMs;
+    const ttlSecondsRemaining = session.lockedAt
+      ? Math.max(0, Math.ceil((session.lockedAt.getTime() + this.LOCK_TTL_MS - Date.now()) / 1000))
+      : 0;
+
+    return {
+      sessionId: session.id,
+      recordedAt: session.recordedAt,
+      version: session.version,
+      weight: session.weight,
+      height: session.height,
+      temperature: session.temperature,
+      heartRate: session.heartRate,
+      noiseLevel: session.noiseLevel,
+      child: {
+        id: session.child?.id,
+        fullName: session.child?.fullName || null,
+        birthDate: session.child?.birthDate || null,
+        gender: session.child?.gender || null,
+        parentName: session.child?.parent?.user?.fullName || null,
+      },
+      device: {
+        id: session.device?.id,
+        name: session.device?.name || null,
+        deviceUuid: session.device?.deviceUuid || null,
+        posyanduName: session.device?.posyandu?.name || null,
+      },
+      lock: {
+        lockedByOperatorId: session.lockedByOperatorId,
+        lockedAt: session.lockedAt,
+        lockExpired,
+        ttlSecondsRemaining,
+      },
+      claimable: !isLockedByOther,
+      isStale,
+    };
+  }
+
+  private async getScopedSession(userId: number, sessionId: number) {
+    const scope = await this.resolveScope(userId);
+    const sessionWhere = this.getSessionWhere(scope);
+
+    const session = await this.prisma.session.findFirst({
+      where: {
+        id: sessionId,
+        ...sessionWhere,
+      },
+      include: {
+        child: {
+          include: {
+            parent: {
+              include: {
+                user: {
+                  select: { fullName: true },
+                },
+              },
+            },
+          },
+        },
+        device: {
+          include: {
+            posyandu: true,
+          },
+        },
+      },
+    });
+
+    if (!session) {
+      throw new NotFoundException('Session not found in your scope');
+    }
+
+    return session;
+  }
+
+  async getPemeriksaanQueue(userId: number) {
+    const scope = await this.resolveScope(userId);
+    const sessionWhere = this.getSessionWhere(scope);
+
+    const sessions = await this.prisma.session.findMany({
+      where: {
+        ...sessionWhere,
+        examOutcome: ExamOutcome.PENDING,
+        measurementCompleted: true,
+      },
+      orderBy: [{ recordedAt: 'asc' }, { id: 'asc' }],
+      include: {
+        child: {
+          include: {
+            parent: {
+              include: {
+                user: {
+                  select: { fullName: true },
+                },
+              },
+            },
+          },
+        },
+        device: {
+          include: {
+            posyandu: true,
+          },
+        },
+      },
+    });
+
+    return sessions.map((session) => this.toQueueItem(session));
+  }
+
+  async claimPemeriksaanSession(userId: number, sessionId: number) {
+    const session = await this.getScopedSession(userId, sessionId);
+
+    if (session.examOutcome !== ExamOutcome.PENDING) {
+      throw new ConflictException('Session is no longer pending');
+    }
+
+    const lockExpired = this.isLockExpired(session.lockedAt);
+    const lockOwnedByOther = !!session.lockedByOperatorId && session.lockedByOperatorId !== userId && !lockExpired;
+    if (lockOwnedByOther) {
+      throw new HttpException('Session locked by another operator', 423);
+    }
+
+    const now = new Date();
+    const lockToken = randomUUID();
+
+    const updated = await this.prisma.session.updateMany({
+      where: {
+        id: session.id,
+        version: session.version,
+      },
+      data: {
+        lockedByOperatorId: userId,
+        lockedAt: now,
+        lockToken,
+        version: { increment: 1 },
+      },
+    });
+
+    if (updated.count !== 1) {
+      throw new ConflictException('Session changed, please retry');
+    }
+
+    const fresh = await this.getScopedSession(userId, sessionId);
+    return {
+      ...this.toQueueItem(fresh),
+      lockToken: fresh.lockToken,
+    };
+  }
+
+  async renewPemeriksaanLock(userId: number, sessionId: number, dto: RenewLockDto) {
+    const session = await this.getScopedSession(userId, sessionId);
+
+    if (session.examOutcome !== ExamOutcome.PENDING) {
+      throw new ConflictException('Session is no longer pending');
+    }
+    if (session.lockedByOperatorId !== userId || session.lockToken !== dto.lockToken) {
+      throw new HttpException('Session lock is not owned by this operator', 423);
+    }
+    if (this.isLockExpired(session.lockedAt)) {
+      throw new HttpException('Session lock expired, claim again', 423);
+    }
+
+    const now = new Date();
+    await this.prisma.session.update({
+      where: { id: session.id },
+      data: { lockedAt: now },
+    });
+
+    const fresh = await this.getScopedSession(userId, sessionId);
+    return this.toQueueItem(fresh);
+  }
+
+  async diagnosePemeriksaanSession(userId: number, sessionId: number, dto: DiagnoseSessionDto) {
+    if (dto.diagnosisCode !== DiagnosisCode.OTHER && dto.diagnosisText) {
+      dto.diagnosisText = undefined;
+    }
+    if (dto.diagnosisCode === DiagnosisCode.OTHER && !dto.diagnosisText) {
+      throw new ConflictException('diagnosisText is required when diagnosisCode is OTHER');
+    }
+
+    const update = await this.prisma.session.updateMany({
+      where: {
+        id: sessionId,
+        examOutcome: ExamOutcome.PENDING,
+        lockedByOperatorId: userId,
+        lockToken: dto.lockToken,
+        version: dto.version,
+      },
+      data: {
+        examOutcome: ExamOutcome.DIAGNOSED,
+        diagnosisCode: dto.diagnosisCode,
+        diagnosisText: dto.diagnosisCode === DiagnosisCode.OTHER ? dto.diagnosisText : null,
+        lockedByOperatorId: null,
+        lockedAt: null,
+        lockToken: null,
+        version: { increment: 1 },
+      },
+    });
+
+    if (update.count !== 1) {
+      throw new ConflictException('Diagnose failed due to stale version/lock/session state');
+    }
+
+    return { success: true, sessionId };
+  }
+
+  async cancelPemeriksaanSession(userId: number, sessionId: number, dto: CancelSessionDto) {
+    const existing = await this.getScopedSession(userId, sessionId);
+    if (existing.examOutcome === ExamOutcome.CANCELED) {
+      return { success: true, sessionId, alreadyCanceled: true };
+    }
+
+    const update = await this.prisma.session.updateMany({
+      where: {
+        id: sessionId,
+        examOutcome: ExamOutcome.PENDING,
+        lockedByOperatorId: userId,
+        lockToken: dto.lockToken,
+        version: dto.version,
+      },
+      data: {
+        examOutcome: ExamOutcome.CANCELED,
+        diagnosisCode: null,
+        diagnosisText: null,
+        lockedByOperatorId: null,
+        lockedAt: null,
+        lockToken: null,
+        version: { increment: 1 },
+      },
+    });
+
+    if (update.count !== 1) {
+      throw new ConflictException('Cancel failed due to stale version/lock/session state');
+    }
+
+    return { success: true, sessionId };
   }
 
   async getValidations(userId: number) {

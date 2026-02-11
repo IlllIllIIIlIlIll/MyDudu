@@ -141,15 +141,26 @@ export class DeviceService {
         }
 
         // 2. Create Session (Manual)
+        const measurementCompleted =
+            data.weight !== undefined &&
+            data.weight !== null &&
+            data.height !== undefined &&
+            data.height !== null &&
+            data.temperature !== undefined &&
+            data.temperature !== null;
+
         const session = await this.prisma.session.create({
             data: {
                 sessionUuid: `manual-${Date.now()}`,
                 childId: child.id,
                 deviceId: 1, // Fallback to a default/virtual device ID or find one
                 status: 'COMPLETE',
+                examOutcome: 'PENDING',
                 weight: data.weight,
                 height: data.height,
                 temperature: data.temperature,
+                measurementCompleted,
+                measurementCompletedAt: measurementCompleted ? new Date() : null,
                 recordedAt: new Date(),
             }
         });

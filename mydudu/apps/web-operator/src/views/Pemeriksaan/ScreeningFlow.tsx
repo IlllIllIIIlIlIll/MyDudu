@@ -1,23 +1,21 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import {
-  Users,
   Activity,
   ChevronRight,
-  CheckCircle2,
   XCircle,
   Thermometer,
   Weight,
   Ruler,
-  Stethoscope,
   Printer,
-  ChevronLeft,
   RefreshCw,
   User,
   ExternalLink,
-  LogOut
+  LogOut,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ImageWithFallback } from '../../components/figma/ImageWithFallback';
+import { useAuth } from '../../context/AuthContext';
+import { fetchWithAuth } from '../../lib/api';
 import styles from './ScreeningFlow.module.css';
 
 interface ScreeningFlowProps {
@@ -73,29 +71,26 @@ interface Patient {
   lastVisit?: { weight: number; height: number; date: string };
 }
 
-// --- Mock Data: Patient Queue ---
-
-const MOCK_QUEUE: Patient[] = [
-  {
-    id: 'p1',
-    name: 'Budi Santoso',
-    age: '2 tahun 3 bulan',
-    ageMonths: 27,
-    gender: 'M',
-    parentName: 'Siti Aminah',
-    avatar: 'https://images.unsplash.com/photo-1623854767648-e7bb8009f0db?w=200&h=200&fit=crop',
-    lastVisit: { weight: 12.5, height: 88, date: '2025-12-10' }
-  },
-  {
-    id: 'p2',
-    name: 'Aisyah Putri',
-    age: '1 tahun 1 bulan',
-    ageMonths: 13,
-    gender: 'F',
-    parentName: 'Rina Wati',
-    avatar: 'https://images.unsplash.com/photo-1590038767624-dac5740a997b?w=200&h=200&fit=crop',
-  }
-];
+interface QueueSession {
+  sessionId: number;
+  version: number;
+  recordedAt: string;
+  weight: number | null;
+  height: number | null;
+  temperature: number | null;
+  heartRate: number | null;
+  child: {
+    id: number;
+    fullName: string;
+    birthDate: string;
+    gender: 'M' | 'F' | null;
+    parentName: string | null;
+  };
+  lock?: {
+    ttlSecondsRemaining: number;
+  };
+  lockToken?: string;
+}
 
 // --- Akinator-like Logic Tree (Consistent Paths) ---
 
@@ -202,11 +197,13 @@ const Sidebar = ({
   patient,
   isMinimized,
   setIsMinimized,
+  onCancel,
   onExit
 }: {
   patient: Patient;
   isMinimized: boolean;
   setIsMinimized: (m: boolean) => void;
+  onCancel: () => void;
   onExit: () => void;
 }) => (
   <motion.aside
@@ -255,7 +252,10 @@ const Sidebar = ({
       className="mt-auto p-5 flex flex-col gap-2"
       onClick={(event) => event.stopPropagation()}
     >
-      <button className={`${isMinimized ? styles.miniAction : 'w-full'} flex items-center justify-center gap-2 font-bold py-3 transition-all ${isMinimized ? styles.miniDanger : styles.sidebarButtonDanger}`}>
+      <button
+        onClick={onCancel}
+        className={`${isMinimized ? styles.miniAction : 'w-full'} flex items-center justify-center gap-2 font-bold py-3 transition-all ${isMinimized ? styles.miniDanger : styles.sidebarButtonDanger}`}
+      >
         <XCircle className="w-4 h-4" />
         {!isMinimized && <span className="text-xs">Batal Sesi</span>}
       </button>
@@ -269,24 +269,220 @@ const Sidebar = ({
   </motion.aside>
 );
 
+// --- Result view (Hasil Klasifikasi) ---
+
+interface ScreeningResultViewProps {
+  diagnosis: DiagnosisResult;
+  quizHistory: { question: string; answer: string }[];
+  vitalsLeft: { label: string; value: number; unit: string; icon: ReactNode }[];
+  vitalsRight: { label: string; value: number; unit: string; icon: ReactNode }[];
+  onPrint: () => void;
+  onNewPatient: () => void;
+}
+
+function ScreeningResultView({
+  diagnosis,
+  quizHistory,
+  vitalsLeft,
+  vitalsRight,
+  onPrint,
+  onNewPatient,
+}: ScreeningResultViewProps) {
+  return (
+    <motion.div
+      key="result"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`${styles.resultViewRoot} print:block`}
+    >
+      <header className={`${styles.resultHeaderFullWidth} no-print`} aria-hidden="false">
+        <div className={styles.resultHeaderBadge}>Hasil Klasifikasi</div>
+        <h1 className={styles.resultHeaderTitle}>{diagnosis.title}</h1>
+        <p className={styles.resultHeaderDesc}>{diagnosis.description}</p>
+      </header>
+
+      <div className={`${styles.resultGridWrap} no-print`}>
+        <div className={`${styles.resultGridFive} ${styles.resultGridFiveWithPanel}`}>
+          <div className={`${styles.resultCell} ${styles.resultCellStatic} ${styles.resultCellAreaVitals}`}>
+            <h3 className={styles.resultCardTitle}>Metrik Vitals</h3>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2 mt-1 text-[11px]">
+              {vitalsLeft.map((v) => (
+                <div key={v.label} className="flex items-center gap-2">
+                  <div className={`flex items-center justify-center ${styles.vitalIcon}`}>{v.icon}</div>
+                  <div>
+                    <span className={styles.resultCardLabel}>{v.label}</span>
+                    <span className={`${styles.resultCardValue} block`}>{v.value}{v.unit}</span>
+                  </div>
+                </div>
+              ))}
+              {vitalsRight.map((v) => (
+                <div key={v.label} className="flex items-center gap-2">
+                  <div className={`flex items-center justify-center ${styles.vitalIcon}`}>{v.icon}</div>
+                  <div>
+                    <span className={styles.resultCardLabel}>{v.label}</span>
+                    <span className={`${styles.resultCardValue} block`}>{v.value}{v.unit}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className={`${styles.resultCell} ${styles.resultCellScroll} ${styles.resultCellAreaSymptoms}`}>
+            <h3 className={`${styles.resultCardTitle} shrink-0`}>Riwayat Gejala (Review)</h3>
+            <div className="space-y-1.5 mt-1 min-h-0">
+              {quizHistory.map((step, i) => (
+                <div key={i} className="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 last:border-0 text-xs">
+                  <p className={`${styles.resultCardValue} font-medium text-slate-700 truncate flex-1 min-w-0`}>{step.question}</p>
+                  <span className={`${styles.resultPill} shrink-0 ${step.answer === 'Ya' ? styles.resultPillYes : styles.resultPillNo}`}>{step.answer}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className={`${styles.resultCell} ${styles.resultCellScroll} ${styles.resultCellAreaSop}`}>
+            <h3 className={`${styles.resultCardTitle} shrink-0 flex items-center gap-1.5`}>
+              <span className="w-1 h-3 rounded-full bg-emerald-500" />
+              <span>Instruksi SOP Penanganan</span>
+            </h3>
+            <div className="space-y-1.5 mt-1 min-h-0">
+              {diagnosis.instructions.map((inst, idx) => (
+                <div key={idx} className="bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-1.5 text-slate-700 text-xs">
+                  <p className="leading-relaxed">{inst}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className={`${styles.actionPanelScreenOnly} ${styles.resultCell} ${styles.resultCellStatic} ${styles.resultCellAreaActions} no-print`}>
+            <h3 className={styles.resultActionTitle}>Panel Tindakan</h3>
+            <div className="flex flex-col gap-2 flex-1 justify-center min-h-0">
+              <button type="button" onClick={onPrint} className="w-full gradient-primary text-white py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 hover:opacity-90 active:scale-[0.99] shadow-md" title="Cetak Hasil">
+                <Printer className="w-4 h-4 shrink-0" /> <span>Cetak Hasil</span>
+              </button>
+              <button type="button" onClick={onNewPatient} className="w-full gradient-primary text-white py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 hover:opacity-90 active:scale-[0.99] shadow-md" title="Pasien Baru">
+                <RefreshCw className="w-4 h-4 shrink-0" /> <span>Pasien Baru</span>
+              </button>
+              <button type="button" className="w-full bg-white border border-slate-200 text-slate-600 py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-slate-50 active:scale-[0.99]" title="Hubungi RS">
+                <ExternalLink className="w-4 h-4 shrink-0" /> <span>Hubungi RS</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 // --- Main Application ---
 
 export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
+  const { user } = useAuth();
   const [phase, setPhase] = useState<'VITALS' | 'QUIZ' | 'RESULT'>('VITALS');
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(MOCK_QUEUE[0]);
+  const [selectedSession, setSelectedSession] = useState<QueueSession | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
   const [currentNodeId, setCurrentNodeId] = useState<string>('start');
   const [quizHistory, setQuizHistory] = useState<{ question: string, answer: string }[]>([]);
+  const [queueLoading, setQueueLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
-  const [vitalsData] = useState<Record<string, { value: number; unit: string; icon: ReactNode; status?: 'normal' | 'danger' }>>({
-    weight: { value: 12.8, unit: 'kg', icon: <Weight className="w-4 h-4" /> },
-    height: { value: 89.2, unit: 'cm', icon: <Ruler className="w-4 h-4" /> },
-    temp: { value: 38.6, unit: '°C', icon: <Thermometer className="w-4 h-4" />, status: 'danger' },
+  const selectedPatient: Patient | null = selectedSession
+    ? {
+      id: String(selectedSession.child.id),
+      name: selectedSession.child.fullName,
+      ageMonths: (() => {
+        const birth = new Date(selectedSession.child.birthDate);
+        const now = new Date();
+        return Math.max(0, (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth()));
+      })(),
+      age: (() => {
+        const birth = new Date(selectedSession.child.birthDate);
+        const now = new Date();
+        const total = Math.max(0, (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth()));
+        return `${Math.floor(total / 12)} tahun ${total % 12} bulan`;
+      })(),
+      gender: selectedSession.child.gender === 'F' ? 'F' : 'M',
+      parentName: selectedSession.child.parentName || '-',
+      avatar: 'https://images.unsplash.com/photo-1623854767648-e7bb8009f0db?w=200&h=200&fit=crop',
+      lastVisit: selectedSession.weight !== null && selectedSession.height !== null
+        ? { weight: selectedSession.weight, height: selectedSession.height, date: selectedSession.recordedAt }
+        : undefined,
+    }
+    : null;
+
+  const [vitalsData, setVitalsData] = useState<Record<string, { value: number; unit: string; icon: ReactNode; status?: 'normal' | 'danger' }>>({
+    weight: { value: 0, unit: 'kg', icon: <Weight className="w-4 h-4" /> },
+    height: { value: 0, unit: 'cm', icon: <Ruler className="w-4 h-4" /> },
+    temp: { value: 0, unit: '°C', icon: <Thermometer className="w-4 h-4" />, status: 'normal' },
     spo2: { value: 98, unit: '%', icon: <Activity className="w-4 h-4" /> },
-    heartRate: { value: 110, unit: 'bpm', icon: <Activity className="w-4 h-4" /> },
+    heartRate: { value: 0, unit: 'bpm', icon: <Activity className="w-4 h-4" /> },
   });
 
   const [vitalsStatus, setVitalsStatus] = useState<'IDLE' | 'FETCHING' | 'CONNECTED'>('FETCHING');
+
+  const diagnosisCodeMap: Record<string, 'PNEUMONIA' | 'DENGUE' | 'DIARRHEA_SEVERE' | 'HEALTHY'> = {
+    diag_pneumonia: 'PNEUMONIA',
+    diag_dengue: 'DENGUE',
+    diag_diarrhea_severe: 'DIARRHEA_SEVERE',
+    diag_healthy: 'HEALTHY',
+  };
+
+  const claimSession = async (sessionId: number) => {
+    if (!user?.id) return null;
+    return fetchWithAuth(`/operator/pemeriksaan/${sessionId}/claim?userId=${user.id}`, { method: 'POST' }) as Promise<QueueSession>;
+  };
+
+  const loadQueue = async () => {
+    if (!user?.id) return;
+    setQueueLoading(true);
+    setApiError(null);
+    try {
+      const queue = await fetchWithAuth(`/operator/pemeriksaan/queue?userId=${user.id}`) as QueueSession[];
+      if (!queue.length) {
+        setSelectedSession(null);
+        return;
+      }
+
+      for (const candidate of queue) {
+        try {
+          const claimed = await claimSession(candidate.sessionId);
+          setSelectedSession(claimed);
+          setPhase('VITALS');
+          setCurrentNodeId('start');
+          setQuizHistory([]);
+          setVitalsStatus('IDLE');
+          return;
+        } catch {
+          continue;
+        }
+      }
+
+      setSelectedSession(null);
+      setApiError('Tidak ada sesi yang bisa di-claim saat ini.');
+    } catch (error: any) {
+      setSelectedSession(null);
+      setApiError(error?.message || 'Gagal memuat antrean pemeriksaan');
+    } finally {
+      setQueueLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadQueue();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!selectedSession) return;
+    const tempValue = Number(selectedSession.temperature ?? 0);
+    setVitalsData({
+      weight: { value: Number(selectedSession.weight ?? 0), unit: 'kg', icon: <Weight className="w-4 h-4" /> },
+      height: { value: Number(selectedSession.height ?? 0), unit: 'cm', icon: <Ruler className="w-4 h-4" /> },
+      temp: { value: tempValue, unit: '°C', icon: <Thermometer className="w-4 h-4" />, status: tempValue > 37.5 ? 'danger' : 'normal' },
+      spo2: { value: 98, unit: '%', icon: <Activity className="w-4 h-4" /> },
+      heartRate: { value: Number(selectedSession.heartRate ?? 0), unit: 'bpm', icon: <Activity className="w-4 h-4" /> },
+    });
+  }, [selectedSession]);
 
   useEffect(() => {
     if (phase === 'VITALS' && vitalsStatus === 'IDLE') {
@@ -297,6 +493,20 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
       return () => clearTimeout(timer);
     }
   }, [phase, vitalsStatus]);
+
+  useEffect(() => {
+    if (!selectedSession?.lockToken || !user?.id) return;
+    const timer = setInterval(async () => {
+      try {
+        await fetchWithAuth(`/operator/pemeriksaan/${selectedSession.sessionId}/renew-lock?userId=${user.id}`, {
+          method: 'POST',
+          body: JSON.stringify({ lockToken: selectedSession.lockToken }),
+        });
+      } catch {
+      }
+    }, 120000);
+    return () => clearInterval(timer);
+  }, [selectedSession?.sessionId, selectedSession?.lockToken, user?.id]);
 
   const handleDecision = (choice: 'yes' | 'no') => {
     const node = DECISION_TREE[currentNodeId];
@@ -314,11 +524,67 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = () => window.print();
+
+  const handleCancelSession = async () => {
+    if (!selectedSession?.lockToken || !user?.id) return;
+    if (!window.confirm('Batalkan sesi ini?')) return;
+
+    setSubmitting(true);
+    try {
+      await fetchWithAuth(`/operator/pemeriksaan/${selectedSession.sessionId}/cancel?userId=${user.id}`, {
+        method: 'POST',
+        body: JSON.stringify({
+          version: selectedSession.version,
+          lockToken: selectedSession.lockToken,
+        }),
+      });
+      await loadQueue();
+    } catch (error: any) {
+      setApiError(error?.message || 'Gagal membatalkan sesi');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDiagnoseAndNext = async () => {
+    if (!selectedSession?.lockToken || !user?.id) return;
+    const diagnosisCode = diagnosisCodeMap[currentNodeId];
+    if (!diagnosisCode) {
+      setApiError('Kode diagnosis tidak ditemukan.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await fetchWithAuth(`/operator/pemeriksaan/${selectedSession.sessionId}/diagnose?userId=${user.id}`, {
+        method: 'POST',
+        body: JSON.stringify({
+          diagnosisCode,
+          version: selectedSession.version,
+          lockToken: selectedSession.lockToken,
+        }),
+      });
+      await loadQueue();
+    } catch (error: any) {
+      setApiError(error?.message || 'Gagal menyimpan diagnosis');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const currentNode = DECISION_TREE[currentNodeId];
+
+  // Vitals display order: left col = weight, temp, heartRate; right col = height, spo2
+  const vitalsLeft = [
+    { label: 'WEIGHT', value: vitalsData.weight.value, unit: vitalsData.weight.unit, icon: <Weight className="w-3.5 h-3.5" /> },
+    { label: 'TEMP', value: vitalsData.temp.value, unit: vitalsData.temp.unit, icon: <Thermometer className="w-3.5 h-3.5" /> },
+    { label: 'HEARTRATE', value: vitalsData.heartRate.value, unit: vitalsData.heartRate.unit, icon: <Activity className="w-3.5 h-3.5" /> },
+  ];
+  const vitalsRight = [
+    { label: 'HEIGHT', value: vitalsData.height.value, unit: vitalsData.height.unit, icon: <Ruler className="w-3.5 h-3.5" /> },
+    { label: 'SPO2', value: vitalsData.spo2.value, unit: vitalsData.spo2.unit, icon: <Activity className="w-3.5 h-3.5" /> },
+  ];
 
   return (
     <div className={`${styles.pedsScope} fixed inset-0 z-50 h-screen w-screen flex overflow-hidden font-sans`}>
@@ -329,6 +595,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
           patient={selectedPatient}
           isMinimized={isMinimized}
           setIsMinimized={setIsMinimized}
+          onCancel={handleCancelSession}
           onExit={onExit}
         />
       )}
@@ -336,16 +603,42 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
       {/* 3. Main Stage */}
       <main className="flex-1 flex flex-col overflow-hidden">
 
-        <div className={`flex-1 overflow-y-auto bg-transparent ${styles.mainContent}`}>
+        <div className={`flex-1 flex flex-col min-h-0 bg-transparent ${phase === 'RESULT' ? 'overflow-hidden' : `overflow-y-auto ${styles.mainContent}`}`}>
+          {!selectedSession && (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-slate-700 font-semibold text-lg">{queueLoading ? 'Memuat antrean pemeriksaan...' : 'Tidak ada sesi pemeriksaan tersedia.'}</p>
+                {apiError && <p className="text-rose-600 text-sm mt-2">{apiError}</p>}
+                {!queueLoading && (
+                  <button onClick={loadQueue} className="mt-4 px-4 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50">
+                    Muat Ulang
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {phase === 'RESULT' && selectedPatient && currentNode.finalDiagnosis ? (
+            <div className="flex-1 min-h-0 flex flex-col px-4 py-3">
+              <ScreeningResultView
+                diagnosis={currentNode.finalDiagnosis}
+                quizHistory={quizHistory}
+                vitalsLeft={vitalsLeft}
+                vitalsRight={vitalsRight}
+                onPrint={handlePrint}
+                onNewPatient={handleDiagnoseAndNext}
+              />
+            </div>
+          ) : null}
           <AnimatePresence mode="wait">
 
             {/* --- PHASE 2: VITALS (AUTO) --- */}
-            {phase === 'VITALS' && selectedPatient && (
+            {phase === 'VITALS' && selectedPatient && selectedSession && (
               <motion.div
                 key="vitals" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-                className={styles.vitalsWrap}
+                className={`${styles.vitalsWrap} w-full h-full`}
               >
-                <div className="mb-8 text-center">
+                <div className="text-center">
                   <h2 className={`mb-2 ${styles.vitalsTitle}`}>Data Biometrik Pasien</h2>
                   <p className={`max-w-md mx-auto ${styles.vitalsSubtitle}`}>Menarik data dari perangkat Dudu. dari perangkat Dudu</p>
                 </div>
@@ -375,6 +668,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
 
                 <button
                   onClick={() => setPhase('QUIZ')}
+                  disabled={submitting}
                   className={`w-full transition-all flex items-center justify-center gap-3 ${styles.ctaPrimary}`}
                 >
                   Analisis Gejala Lanjutan <ChevronRight className="w-5 h-5" />
@@ -383,10 +677,10 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
             )}
 
             {/* --- PHASE 3: AKINATOR QUIZ --- */}
-            {phase === 'QUIZ' && (
+            {phase === 'QUIZ' && selectedSession && (
               <motion.div
                 key="quiz" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, y: -20 }}
-                className="max-w-6xl mx-auto h-full flex flex-col items-center justify-center py-6"
+                className="max-w-6xl mx-auto h-full flex flex-col items-center justify-center"
               >
                 <div className="w-full flex flex-col items-center mb-14">
                   <h2 className={`text-slate-900 text-center mb-2 max-w-5xl ${styles.quizTitleText}`}>
@@ -397,16 +691,16 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
 
                 <div className={`grid grid-cols-2 ${styles.quizGrid}`}>
                   <QuizCard
-                    label="YA, DITEMUKAN"
+                    label="Ada"
                     type="yes"
                     image="/placeholder1.png"
-                    onClick={() => handleDecision('yes')}
+                    onClick={() => !submitting && handleDecision('yes')}
                   />
                   <QuizCard
-                    label="TIDAK ADA"
+                    label="Tidak Ada"
                     type="no"
                     image="/placeholder2.png"
-                    onClick={() => handleDecision('no')}
+                    onClick={() => !submitting && handleDecision('no')}
                   />
                 </div>
 
@@ -416,146 +710,6 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                     initial={{ width: '0%' }}
                     animate={{ width: currentNodeId === 'start' ? '10%' : '60%' }}
                   />
-                </div>
-              </motion.div>
-            )}
-
-            {/* --- PHASE 4: RESULT --- */}
-            {phase === 'RESULT' && selectedPatient && currentNode.finalDiagnosis && (
-              <motion.div 
-                key="result" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                className="max-w-6xl mx-auto grid grid-cols-12 gap-8 print:block print:max-w-none print:m-0"
-              >
-                <style dangerouslySetInnerHTML={{ __html: `
-                  @media print {
-                    body * { visibility: hidden; }
-                    .print-section, .print-section * { visibility: visible; }
-                    .print-section { 
-                      position: absolute; 
-                      left: 0; top: 0; 
-                      width: 210mm; 
-                      height: 297mm; 
-                      background: white !important; 
-                      padding: 20mm !important;
-                      margin: 0 !important;
-                    }
-                    .no-print { display: none !important; }
-                    @page { size: A4; margin: 0; }
-                  }
-                `}} />
-
-                <div className="col-span-8 space-y-6 print-section print:p-0 print:border-none">
-                  <div className="hidden print:flex items-center justify-between border-b-4 border-slate-900 pb-4 mb-8">
-                    <div>
-                      <h1 className="text-2xl font-extrabold text-slate-900">LAPORAN PEMERIKSAAN POSYANDU</h1>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Desa Sukamaju • Digital Health Engine</p>
-                    </div>
-                    <Activity className="w-10 h-10 text-indigo-600" />
-                  </div>
-
-                  <div className={`p-8 rounded-[32px] text-white shadow-xl relative overflow-hidden print:bg-white print:text-slate-900 print:shadow-none print:border-2 print:rounded-2xl ${
-                    currentNode.finalDiagnosis.severity === 'Merah' ? 'bg-rose-600 print:border-rose-600' : 
-                    currentNode.finalDiagnosis.severity === 'Kuning' ? 'bg-amber-500 print:border-amber-500' : 'bg-emerald-600 print:border-emerald-600'
-                  }`}>
-                    <div className="relative z-10">
-                      <div className="inline-flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full backdrop-blur-md mb-4 border border-white/10 print:bg-slate-100 print:text-slate-600 print:border-slate-200">
-                        <span className="text-[9px] font-bold uppercase tracking-widest">Hasil Klasifikasi</span>
-                      </div>
-                      <h2 className="text-4xl font-extrabold mb-2 leading-tight print:text-2xl">{currentNode.finalDiagnosis.title}</h2>
-                      <p className="text-lg font-medium text-white/80 max-w-xl print:text-slate-600 print:text-sm">{currentNode.finalDiagnosis.description}</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 print:grid-cols-2">
-                    <div className="bg-white rounded-[24px] p-6 border border-slate-200 shadow-sm print:rounded-xl print:p-5">
-                      <h3 className="font-bold text-slate-400 text-[9px] uppercase tracking-widest mb-4">Biodata Pasien</h3>
-                      <div className="space-y-2.5">
-                        <div className="flex justify-between border-b border-slate-50 pb-1.5"><span className="text-xs text-slate-500">Nama</span><span className="text-xs font-bold text-slate-700">{selectedPatient.name}</span></div>
-                        <div className="flex justify-between border-b border-slate-50 pb-1.5"><span className="text-xs text-slate-500">Umur</span><span className="text-xs font-bold text-slate-700">{selectedPatient.age}</span></div>
-                        <div className="flex justify-between"><span className="text-xs text-slate-500">Wali</span><span className="text-xs font-bold text-slate-700">{selectedPatient.parentName}</span></div>
-                      </div>
-                    </div>
-                    <div className="bg-white rounded-[24px] p-6 border border-slate-200 shadow-sm print:rounded-xl print:p-5">
-                      <h3 className="font-bold text-slate-400 text-[9px] uppercase tracking-widest mb-4">Metrik Vitals</h3>
-                      <div className="grid grid-cols-2 gap-y-3 gap-x-6">
-                        {Object.entries(vitalsData).map(([key, v]) => (
-                          <div key={key} className="flex flex-col">
-                            <span className="text-[9px] text-slate-400 font-bold uppercase">{key}</span>
-                            <span className="text-xs font-bold text-slate-800">{v.value}{v.unit}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-[24px] p-6 border border-slate-200 shadow-sm print:rounded-xl print:p-5">
-                    <h3 className="font-bold text-slate-400 text-[9px] uppercase tracking-widest mb-5">Riwayat Gejala (Review)</h3>
-                    <div className="space-y-3">
-                      {quizHistory.map((step, i) => (
-                        <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl print:bg-transparent print:border-b print:rounded-none">
-                          <p className="text-xs font-bold text-slate-700">{step.question}</p>
-                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${step.answer === 'Ya' ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                            {step.answer}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-900 text-white rounded-[24px] p-8 print:bg-white print:text-slate-900 print:border-2 print:border-slate-900 print:rounded-xl">
-                    <h3 className="font-bold text-base mb-4 flex items-center gap-2">
-                      <div className="w-1.5 h-5 bg-indigo-500 rounded-full" /> 
-                      Instruksi SOP Penanganan
-                    </h3>
-                    <div className="space-y-3">
-                      {currentNode.finalDiagnosis.instructions.map((inst, idx) => (
-                        <div key={idx} className="flex items-start gap-3 p-4 bg-white/5 rounded-xl border border-white/10 print:bg-slate-50 print:border-slate-100">
-                          <p className="text-white/80 text-sm font-medium leading-relaxed print:text-slate-700">{inst}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="hidden print:flex justify-between mt-16 pt-8 border-t border-slate-100">
-                    <div className="text-center w-40">
-                      <p className="text-[9px] text-slate-400 mb-12 uppercase font-bold">Tenaga Kesehatan</p>
-                      <div className="border-b border-slate-900 w-full" />
-                    </div>
-                    <div className="text-center w-40">
-                      <p className="text-[9px] text-slate-400 mb-12 uppercase font-bold">Wali Pasien</p>
-                      <div className="border-b border-slate-900 w-full" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-span-4 space-y-6 no-print">
-                  <div className="bg-white rounded-[24px] p-6 border border-slate-200 shadow-sm sticky top-6">
-                    <h3 className="font-bold text-[10px] mb-5 uppercase tracking-widest text-slate-400">Panel Tindakan</h3>
-                    <div className="space-y-3">
-                      <button 
-                        onClick={handlePrint}
-                        className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg"
-                      >
-                        <Printer className="w-4 h-4" /> Cetak Hasil
-                      </button>
-                      <button 
-                        onClick={() => { 
-                          setPhase('QUEUE'); 
-                          setSelectedPatient(null); 
-                          setCurrentNodeId('start'); 
-                          setVitalsStatus('IDLE');
-                          setQuizHistory([]);
-                        }} 
-                        className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-sm shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
-                      >
-                        Pasien Baru
-                      </button>
-                      <hr className="border-slate-100 my-2" />
-                      <button className="w-full bg-white border border-slate-200 text-slate-600 py-4 rounded-xl font-bold text-sm hover:bg-slate-50 flex items-center justify-center gap-2">
-                        <ExternalLink className="w-4 h-4" /> Hubungi RS
-                      </button>
-                    </div>
-                  </div>
                 </div>
               </motion.div>
             )}
@@ -622,9 +776,6 @@ function QuizCard({ label, type, image, onClick }: { label: string; type: 'yes' 
         />
       </div>
       <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-white text-center z-10">
-        <div className={`${styles.quizBadge} ${type === 'yes' ? styles.quizBadgeYes : styles.quizBadgeNo} mb-4`}>
-          {type === 'yes' ? <CheckCircle2 className="w-7 h-7" /> : <XCircle className="w-7 h-7" />}
-        </div>
         <h3 className={styles.quizTitle}>{label}</h3>
         <p className={`${styles.quizHint} text-white/70 mt-1`}>
           TAP UNTUK MEMILIH

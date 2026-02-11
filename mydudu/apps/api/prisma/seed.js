@@ -6,19 +6,24 @@ const prisma = new PrismaClient();
 async function main() {
     console.log('Start seeding...');
 
-    // 1. Clean up
-    await prisma.notification.deleteMany();
-    await prisma.auditLog.deleteMany();
-    await prisma.incident.deleteMany();
-    await prisma.nutritionStatus.deleteMany();
-    await prisma.session.deleteMany();
-    await prisma.child.deleteMany();
-    await prisma.device.deleteMany();
-    await prisma.parent.deleteMany();
-    await prisma.user.deleteMany();
-    await prisma.posyandu.deleteMany();
-    await prisma.village.deleteMany();
-    await prisma.district.deleteMany();
+    // 1. Optional destructive clean up (explicit opt-in only)
+    if (process.env.ALLOW_DESTRUCTIVE_SEED === '1') {
+        await prisma.notification.deleteMany();
+        await prisma.auditLog.deleteMany();
+        await prisma.incident.deleteMany();
+        await prisma.nutritionStatus.deleteMany();
+        await prisma.session.deleteMany();
+        await prisma.child.deleteMany();
+        await prisma.device.deleteMany();
+        await prisma.parent.deleteMany();
+        await prisma.user.deleteMany();
+        await prisma.posyandu.deleteMany();
+        await prisma.village.deleteMany();
+        await prisma.district.deleteMany();
+        console.log('Destructive cleanup completed (ALLOW_DESTRUCTIVE_SEED=1).');
+    } else {
+        console.log('Destructive cleanup skipped (set ALLOW_DESTRUCTIVE_SEED=1 to enable).');
+    }
 
     // 2. Locations (Kabupaten Tangerang Restoration)
     const locations = {

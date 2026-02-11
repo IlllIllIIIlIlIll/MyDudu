@@ -220,6 +220,20 @@ export class MqttService implements OnModuleInit {
             return;
         }
 
+        const resolvedWeight = sessionData.weight ?? existingSession?.weight ?? null;
+        const resolvedHeight = sessionData.height ?? existingSession?.height ?? null;
+        const resolvedTemperature = sessionData.temperature ?? existingSession?.temperature ?? null;
+        const meetsMeasurementMinimum = resolvedWeight !== null && resolvedHeight !== null && resolvedTemperature !== null;
+        const measurementCompleted = existingSession
+            ? Boolean(existingSession.measurementCompleted || meetsMeasurementMinimum)
+            : meetsMeasurementMinimum;
+        const measurementCompletedAt = measurementCompleted
+            ? existingSession?.measurementCompletedAt ?? new Date()
+            : null;
+
+        sessionData.measurementCompleted = measurementCompleted;
+        sessionData.measurementCompletedAt = measurementCompletedAt;
+
         // 5. Save Data (Create or Update)
         try {
             let session;
