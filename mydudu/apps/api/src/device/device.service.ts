@@ -4,6 +4,7 @@ import { CreateDeviceDto } from './dto/create-device.dto';
 import { UpdateDeviceDto } from './dto/update-device.dto';
 import { SystemLogsService, SystemLogAction } from '../system-logs/system-logs.service';
 import { NotificationService } from '../notifications/notifications.service';
+import { SessionStatus, ExamOutcome } from '@prisma/client';
 
 @Injectable()
 export class DeviceService {
@@ -134,7 +135,7 @@ export class DeviceService {
         temperature?: number;
         heartRate?: number;
         noiseLevel?: number;
-    }) {
+    }, operatorId?: number) {
         // 1. Find Child + Parent (prefer strict ID-based matching)
         let child = null as any;
 
@@ -162,7 +163,7 @@ export class DeviceService {
         }
 
         if (!child) {
-            throw new Error('Child not found. Please check Mother Name and Child Name.');
+            throw new NotFoundException('Child not found. Please check Mother Name and Child Name.');
         }
 
         const targetVillageId = data.villageId || child.parent?.villageId;
@@ -205,8 +206,9 @@ export class DeviceService {
                 sessionUuid: `manual-${Date.now()}`,
                 childId: child.id,
                 deviceId: selectedDevice.id,
-                status: 'COMPLETE',
-                examOutcome: 'PENDING',
+                operatorId: operatorId, // Log who created this
+                status: SessionStatus.COMPLETE,
+                examOutcome: ExamOutcome.PENDING,
                 weight: data.weight,
                 height: data.height,
                 temperature: data.temperature,
@@ -222,7 +224,7 @@ export class DeviceService {
         await this.systemLogsService.logEvent(SystemLogAction.SESSION_CREATED, {
             sessionId: session.id,
             manual: true
-        });
+        }, operatorId);
 
         // 4. Compute Nutrition Status (Lazy load or inject service if needed. Using direct create here)
         // Ideally inject NutritionService but avoiding circular deps if any.

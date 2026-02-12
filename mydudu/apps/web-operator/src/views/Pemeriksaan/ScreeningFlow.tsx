@@ -10,6 +10,7 @@ import {
   User,
   ExternalLink,
   LogOut,
+  XCircle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ImageWithFallback } from '../../components/figma/ImageWithFallback';
@@ -279,11 +280,10 @@ const Sidebar = ({
                     type="button"
                     disabled={isSwitching || isActive || item.claimable === false}
                     onClick={() => onSwitchPatient(item.sessionId)}
-                    className={`w-full text-left px-2 py-2 rounded-lg border text-xs transition-colors ${
-                      isActive
+                    className={`w-full text-left px-2 py-2 rounded-lg border text-xs transition-colors ${isActive
                         ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
                         : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-60'
-                    }`}
+                      }`}
                   >
                     <p className="font-semibold truncate">{item.child.fullName}</p>
                     <p className="text-[10px] text-slate-500">Sesi #{item.sessionId}</p>

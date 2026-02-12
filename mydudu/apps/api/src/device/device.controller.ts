@@ -35,7 +35,8 @@ export class DeviceController {
     }
 
     @Post('manual-telemetry')
-    submitManualTelemetry(@Body() body: {
+    @UseGuards(AuthGuard)
+    submitManualTelemetry(@Req() req: any, @Body() body: {
         parentId?: number;
         childId?: number;
         motherName: string;
@@ -48,6 +49,6 @@ export class DeviceController {
         heartRate?: number;
         noiseLevel?: number;
     }) {
-        return this.deviceService.processManualEntry(body);
+        return this.deviceService.processManualEntry(body, req.user?.id);
     }
 }

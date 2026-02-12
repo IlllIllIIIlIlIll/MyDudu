@@ -62,9 +62,16 @@ export function RegisterChildDialog({ onSuccess, trigger }: RegisterChildDialogP
         setShowParentDropdown(true);
     };
 
+    const today = new Date().toISOString().split('T')[0];
+    const isDateInvalid = form.birthDate > today;
+
     const handleSubmit = async () => {
         if (!form.fullName || !form.birthDate || !form.gender || !form.parentId) {
             alert("Nama, Tanggal Lahir, Jenis Kelamin, dan Orang Tua wajib diisi");
+            return;
+        }
+
+        if (isDateInvalid) {
             return;
         }
 
@@ -74,7 +81,6 @@ export function RegisterChildDialog({ onSuccess, trigger }: RegisterChildDialogP
                 method: 'POST',
                 body: JSON.stringify(form)
             });
-            alert("Anak berhasil didaftarkan!");
             alert("Anak berhasil didaftarkan!");
             setForm({ fullName: '', birthDate: '', gender: 'MALE', bloodType: 'UNKNOWN', parentId: '', parentName: '' });
             setOpen(false);
@@ -132,10 +138,12 @@ export function RegisterChildDialog({ onSuccess, trigger }: RegisterChildDialogP
                                     <label className="text-[14px] font-semibold text-gray-700">Tanggal Lahir</label>
                                     <input
                                         type="date"
+                                        max={today}
                                         value={form.birthDate}
                                         onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
+                                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-[15px] ${isDateInvalid ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-[#11998E]'}`}
                                     />
+                                    {isDateInvalid && <span className="text-xs text-red-500">Tanggal tidak valid</span>}
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-[14px] font-semibold text-gray-700">Jenis Kelamin</label>
