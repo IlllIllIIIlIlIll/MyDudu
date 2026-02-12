@@ -31,7 +31,7 @@ export function SystemLogs() {
     setLoading(true);
     try {
       const token = await auth.currentUser?.getIdToken();
-      const response = await fetch(`http://localhost:3000/system-logs?page=${currentPage}&limit=${limit}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/system-logs?page=${currentPage}&limit=${limit}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

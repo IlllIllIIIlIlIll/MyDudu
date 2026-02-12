@@ -73,10 +73,10 @@ export function DeviceRegistry() {
     try {
       const token = await auth.currentUser?.getIdToken();
       const [devicesRes, districtsRes] = await Promise.all([
-        fetch('http://localhost:3000/devices', {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/devices`, {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
-        fetch('http://localhost:3000/districts', {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/districts`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
       ]);
@@ -114,7 +114,7 @@ export function DeviceRegistry() {
           return;
         }
         // Create new Posyandu
-        const posyanduRes = await fetch('http://localhost:3000/districts/posyandu', {
+        const posyanduRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/districts/posyandu`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -131,7 +131,7 @@ export function DeviceRegistry() {
         finalPosyanduId = newPosyandu.id.toString();
       }
 
-      const res = await fetch('http://localhost:3000/devices', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/devices`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -158,7 +158,7 @@ export function DeviceRegistry() {
     if (!selectedDevice) return;
     try {
       const token = await auth.currentUser?.getIdToken();
-      const res = await fetch(`http://localhost:3000/devices/${selectedDevice.id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/devices/${selectedDevice.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
