@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { GrowthService } from '../growth/growth.service';
 import { OperatorScopeService } from './operator-scope.service';
 import { UserRole } from '@prisma/client';
 
@@ -8,6 +9,7 @@ export class OperatorResourceService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly scopeService: OperatorScopeService,
+        private readonly growthService: GrowthService,
     ) { }
 
     async getChildren(userId: number) {
@@ -63,8 +65,33 @@ export class OperatorResourceService {
             },
         });
 
-        return children.map((child) => {
+        return Promise.all(children.map(async (child) => {
             const lastSession = child.sessions?.[0];
+            let growthAnalysis = null;
+
+            if (lastSession && (lastSession.weight || lastSession.height)) {
+                // Calculate age
+                const recordDate = lastSession.recordedAt || new Date();
+                const birthDate = child.birthDate;
+                const diffTime = Math.abs(recordDate.getTime() - birthDate.getTime());
+                const ageDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                const weight = lastSession.weight ? Number(lastSession.weight) : undefined;
+                const height = lastSession.height ? Number(lastSession.height) : undefined;
+                const gender = child.gender || 'M';
+
+                try {
+                    growthAnalysis = await this.growthService.analyzeGrowth(
+                        child.id,
+                        gender,
+                        ageDays,
+                        weight,
+                        height
+                    );
+                } catch (e) {
+                    console.error(`Failed to analyze growth for child ${child.id}:`, e);
+                }
+            }
 
             return {
                 id: child.id,
@@ -82,6 +109,7 @@ export class OperatorResourceService {
                         height: lastSession.height,
                         temperature: lastSession.temperature,
                         nutritionCategory: lastSession.nutritionStatuses?.[0]?.category || null,
+                        growthAnalysis, // Enhanced data
                         deviceName: lastSession.device?.name || null,
                         deviceUuid: lastSession.device?.deviceUuid || null,
                         posyanduName: lastSession.device?.posyandu?.name || null,
@@ -90,7 +118,7 @@ export class OperatorResourceService {
                     }
                     : null,
             };
-        });
+        }));
     }
 
     async getDevices(userId: number) {
