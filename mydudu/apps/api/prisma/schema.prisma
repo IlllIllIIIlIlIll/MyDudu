@@ -512,3 +512,81 @@ model WhoGrowthStandard {
   @@index([indicator, gender, ageDays, lengthHeightCm], map: "idx_who_lookup")
   @@map("who_growth_standards")
 }
+
+// ============================================================
+// SYSTEM OBSERVABILITY
+// ============================================================
+
+enum MetricType {
+  VERCEL_BANDWIDTH
+  VERCEL_INVOCATIONS
+  NEON_STORAGE
+  NEON_COMPUTE
+  NEON_CONNECTIONS
+  UPSTASH_COMMANDS
+  UPSTASH_DATA_SIZE
+  APP_REQUEST_COUNT
+  APP_ERROR_COUNT
+  APP_AVG_LATENCY
+  APP_COLD_STARTS
+  AUTH_MAU
+  AUTH_ATTEMPTS
+  DATA_FRESHNESS
+}
+
+enum ProviderType {
+  VERCEL
+  RENDER
+  NEON
+  UPSTASH
+  FIREBASE
+  INTERNAL
+}
+
+enum MetricStatus {
+  VALID
+  ESTIMATED
+  FAILED_FETCH
+  PARTIAL
+}
+
+model SystemMetric {
+  id          BigInt     @id @default(autoincrement())
+  timestamp   DateTime   @default(now()) @map("timestamp") @db.Timestamp(6)
+  
+  type        MetricType
+  provider    ProviderType
+  source      String     @db.VarChar(50)
+  status      MetricStatus
+  
+  value       Decimal    @db.Decimal(18, 4)
+  limit       Decimal?   @db.Decimal(18, 4)
+  unit        String     @db.VarChar(20)
+  
+  windowStart DateTime?  @map("window_start")
+  windowEnd   DateTime?  @map("window_end")
+  
+  collectionDurationMs Int? @map("collection_duration_ms")
+  payloadHash String?    @map("payload_hash")
+  
+  meta        Json?
+
+  @@index([timestamp, type, provider], map: "idx_metrics_lookup")
+  @@map("system_metrics")
+}
+
+model SystemMetricDerived {
+  id                  BigInt   @id @default(autoincrement())
+  computedAt          DateTime @default(now()) @map("computed_at")
+  metricType          MetricType
+  provider            ProviderType
+  source              String   @db.VarChar(50)
+  
+  daysRemaining       Decimal? @map("days_remaining") @db.Decimal(10, 2)
+  projectedCost       Decimal? @map("projected_cost") @db.Decimal(10, 2)
+  anomalyScore        Decimal? @map("anomaly_score") @db.Decimal(5, 4)
+  predictionConfidence Decimal? @map("prediction_confidence") @db.Decimal(5, 4)
+
+  @@index([metricType, provider, computedAt], map: "idx_derived_lookup")
+  @@map("system_metrics_derived")
+}

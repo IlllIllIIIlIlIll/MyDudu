@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -21,6 +21,8 @@ import { AdminModule } from './admin/admin.module';
 import { OperatorModule } from './operator/operator.module';
 import { ReportsController } from './reports/reports.controller';
 import { ChildrenModule } from './children/children.module';
+import { ObservabilityModule } from './observability/observability.module';
+import { TelemetryMiddleware } from './observability/telemetry.middleware';
 
 @Module({
     imports: [
@@ -43,9 +45,14 @@ import { ChildrenModule } from './children/children.module';
         AdminModule,
         OperatorModule,
         ChildrenModule,
+        ObservabilityModule,
     ],
     controllers: [AppController, ReportsController],
     providers: [AppService],
 })
-export class AppModule { }
+export class AppModule implements NestModule {
+    configure(consumer: MiddlewareConsumer) {
+        consumer.apply(TelemetryMiddleware).forRoutes('*');
+    }
+}
 

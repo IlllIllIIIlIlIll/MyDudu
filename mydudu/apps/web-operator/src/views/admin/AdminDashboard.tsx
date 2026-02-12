@@ -2,31 +2,43 @@ import { useEffect, useState } from 'react';
 import { auth } from '@/lib/firebase';
 import { Server, Users, Smartphone, Activity, AlertTriangle, CheckCircle, Database } from 'lucide-react';
 import { OverviewCard } from '../../components/OverviewCard';
+import { ObservabilityCard } from '../../components/ObservabilityCard'; // Import new component
 
 export function AdminDashboard() {
   const [stats, setStats] = useState<any>(null);
+  const [obsData, setObsData] = useState<any>(null); // New state for observability
+  const [loadingObs, setLoadingObs] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const token = await auth.currentUser?.getIdToken();
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/admin/dashboard`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
-        if (!res.ok) {
-          console.warn("Dashboard API not ready (404/Error). Showing empty state.");
+        // Fetch General Stats
+        const res = await fetch(`${apiUrl}/admin/dashboard`, { headers });
+        if (res.ok) {
+          const data = await res.json();
+          setStats(data);
+        } else {
+          console.warn("Dashboard API error");
           setStats({});
-          return;
         }
 
-        const data = await res.json();
-        setStats(data);
+        // Fetch Observability Stats (New)
+        setLoadingObs(true);
+        const resObs = await fetch(`${apiUrl}/admin/dashboard/observability`, { headers });
+        if (resObs.ok) {
+          const dataObs = await resObs.json();
+          setObsData(dataObs);
+        }
+        setLoadingObs(false);
+
       } catch (err) {
         console.error("Failed to fetch dashboard stats", err);
         setStats({});
+        setLoadingObs(false);
       }
     };
 
@@ -47,6 +59,56 @@ export function AdminDashboard() {
         <p className="text-gray-600 text-[15px] mt-1">
           IT Administrator Dashboard - System Health & Performance Monitoring
         </p>
+      </div>
+
+      {/* Infrastructure Health (New Section) */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-[18px] text-gray-800 flex items-center gap-2">
+            <Server className="w-5 h-5 text-indigo-600" />
+            Infrastructure Health (Free Tier)
+          </h3>
+          {obsData?.lastCollectedAt && (
+            <span className="text-[12px] text-gray-400">
+              Last sync: {new Date(obsData.lastCollectedAt).toLocaleString()}
+            </span>
+          )}
+        </div>
+
+        {loadingObs ? (
+          <div className="h-32 flex items-center justify-center bg-gray-50 rounded-xl border border-dashed text-gray-400">
+            Loading telemetry...
+          </div>
+        ) : obsData?.metrics?.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {/* Map over critical metrics */}
+            {/* Note: In a real app we might filter/sort. Here we just map the latest snapshot. */}
+            {obsData.metrics.filter((m: any) => m.type !== 'DATA_FRESHNESS').slice(0, 10).map((m: any) => {
+              // Try to find matching analysis
+              const analysis = obsData.analysis?.find((a: any) => a.metricType === m.type && a.provider === m.provider);
+
+              return (
+                <ObservabilityCard
+                  key={m.id}
+                  provider={m.provider}
+                  type={m.type.replace('NEON_', '').replace('VERCEL_', '').replace('UPSTASH_', '').replace('APP_', '').replace('AUTH_', '')} // Simple Clean up
+                  value={Number(m.value)}
+                  limit={m.limit ? Number(m.limit) : null}
+                  unit={m.unit}
+                  status={m.status}
+                  daysRemaining={analysis ? Number(analysis.daysRemaining) : undefined}
+                  anomalyScore={analysis ? Number(analysis.anomalyScore) : undefined}
+                />
+              );
+            })}
+
+            {/* Internal Health Section if missing from snapshot for some reason, we can hardcode visual placeholders or just ensure backend sends them */}
+          </div>
+        ) : (
+          <div className="p-6 bg-blue-50 text-blue-700 rounded-xl text-sm">
+            No telemetry data available yet. It will appear after the first hourly collection snapshot.
+          </div>
+        )}
       </div>
 
       {/* Overview Cards */}
