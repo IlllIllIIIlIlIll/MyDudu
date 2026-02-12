@@ -1,24 +1,30 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
-import { OperatorService } from './operator.service';
 import { CancelSessionDto, DiagnoseSessionDto, ReleaseLockDto, RenewLockDto } from './dto/pemeriksaan.dto';
+import { OperatorDashboardService } from './operator-dashboard.service';
+import { OperatorResourceService } from './operator-resource.service';
+import { OperatorSessionService } from './operator-session.service';
 
 @Controller('operator')
 export class OperatorController {
-  constructor(private readonly operatorService: OperatorService) { }
+  constructor(
+    private readonly dashboardService: OperatorDashboardService,
+    private readonly resourceService: OperatorResourceService,
+    private readonly sessionService: OperatorSessionService,
+  ) { }
 
   @Get('overview')
   getOverview(@Query('userId', ParseIntPipe) userId: number) {
-    return this.operatorService.getOverview(userId);
+    return this.dashboardService.getOverview(userId);
   }
 
   @Get('children')
   getChildren(@Query('userId', ParseIntPipe) userId: number) {
-    return this.operatorService.getChildren(userId);
+    return this.resourceService.getChildren(userId);
   }
 
   @Get('parents')
   getParents(@Query('userId', ParseIntPipe) userId: number) {
-    return this.operatorService.getParents(userId);
+    return this.resourceService.getParents(userId);
   }
 
   @Get('parents/:parentId/children')
@@ -26,12 +32,12 @@ export class OperatorController {
     @Query('userId', ParseIntPipe) userId: number,
     @Param('parentId', ParseIntPipe) parentId: number,
   ) {
-    return this.operatorService.getChildrenByParent(userId, parentId);
+    return this.resourceService.getChildrenByParent(userId, parentId);
   }
 
   @Get('devices')
   getDevices(@Query('userId', ParseIntPipe) userId: number) {
-    return this.operatorService.getDevices(userId);
+    return this.resourceService.getDevices(userId);
   }
 
   @Get('devices/by-village')
@@ -40,22 +46,22 @@ export class OperatorController {
     @Query('villageId', ParseIntPipe) villageId: number,
     @Query('q') query?: string,
   ) {
-    return this.operatorService.getDevicesByVillage(userId, villageId, query || '');
+    return this.resourceService.getDevicesByVillage(userId, villageId, query || '');
   }
 
   @Get('validations')
   getValidations(@Query('userId', ParseIntPipe) userId: number) {
-    return this.operatorService.getValidations(userId);
+    return this.dashboardService.getValidations(userId);
   }
 
   @Get('reports')
   getReports(@Query('userId', ParseIntPipe) userId: number) {
-    return this.operatorService.getReports(userId);
+    return this.dashboardService.getReports(userId);
   }
 
   @Get('pemeriksaan/queue')
   getPemeriksaanQueue(@Query('userId', ParseIntPipe) userId: number) {
-    return this.operatorService.getPemeriksaanQueue(userId);
+    return this.sessionService.getPemeriksaanQueue(userId);
   }
 
   @Post('pemeriksaan/:sessionId/claim')
@@ -63,7 +69,7 @@ export class OperatorController {
     @Query('userId', ParseIntPipe) userId: number,
     @Param('sessionId', ParseIntPipe) sessionId: number,
   ) {
-    return this.operatorService.claimPemeriksaanSession(userId, sessionId);
+    return this.sessionService.claimPemeriksaanSession(userId, sessionId);
   }
 
   @Post('pemeriksaan/:sessionId/renew-lock')
@@ -72,7 +78,7 @@ export class OperatorController {
     @Param('sessionId', ParseIntPipe) sessionId: number,
     @Body() dto: RenewLockDto,
   ) {
-    return this.operatorService.renewPemeriksaanLock(userId, sessionId, dto);
+    return this.sessionService.renewPemeriksaanLock(userId, sessionId, dto);
   }
 
   @Post('pemeriksaan/:sessionId/release-lock')
@@ -81,7 +87,7 @@ export class OperatorController {
     @Param('sessionId', ParseIntPipe) sessionId: number,
     @Body() dto: ReleaseLockDto,
   ) {
-    return this.operatorService.releasePemeriksaanLock(userId, sessionId, dto);
+    return this.sessionService.releasePemeriksaanLock(userId, sessionId, dto);
   }
 
   @Post('pemeriksaan/:sessionId/diagnose')
@@ -90,7 +96,7 @@ export class OperatorController {
     @Param('sessionId', ParseIntPipe) sessionId: number,
     @Body() dto: DiagnoseSessionDto,
   ) {
-    return this.operatorService.diagnosePemeriksaanSession(userId, sessionId, dto);
+    return this.sessionService.diagnosePemeriksaanSession(userId, sessionId, dto);
   }
 
   @Post('pemeriksaan/:sessionId/cancel')
@@ -99,6 +105,6 @@ export class OperatorController {
     @Param('sessionId', ParseIntPipe) sessionId: number,
     @Body() dto: CancelSessionDto,
   ) {
-    return this.operatorService.cancelPemeriksaanSession(userId, sessionId, dto);
+    return this.sessionService.cancelPemeriksaanSession(userId, sessionId, dto);
   }
 }

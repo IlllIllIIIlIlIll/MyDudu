@@ -144,6 +144,38 @@
   padding: 18px 20px;
 }
 
+.miniAction {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  border: 1px solid #e1e9f4;
+  background: #ffffff;
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+.miniAction:hover {
+  background: #f8fbff;
+  border-color: #cbd5e1;
+  color: #1e293b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -8px rgba(15, 23, 42, 0.1);
+}
+
+.miniAction:active {
+  transform: translateY(0) scale(0.95);
+}
+
+.miniDanger {
+  background: #ffeef0;
+  color: #e11d48;
+}
+
+.miniDanger:hover {
+  background: #ffe1e5;
+  box-shadow: 0 4px 12px -8px rgba(225, 29, 72, 0.2);
+}
+
 .vitalIcon {
   width: 28px;
   height: 28px;
@@ -196,11 +228,18 @@
   font-weight: 700;
   box-shadow: 0 20px 30px -22px rgba(15, 23, 42, 0.5);
   margin-top: auto;
+  transition: all 0.2s ease;
 }
 
 .ctaPrimary:hover {
   background: #0a0f1d;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 24px 38px -20px rgba(15, 23, 42, 0.6);
+}
+
+.ctaPrimary:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 10px 20px -18px rgba(15, 23, 42, 0.5);
 }
 
 .sidebarToggle {
@@ -271,26 +310,36 @@
   background: #ffffff;
   color: #5b6473;
   border-radius: 16px;
+  transition: all 0.2s ease;
+}
+
+.sidebarButton:hover {
+  background: #f8fbff;
+  border-color: #cbd5e1;
+  color: #1e293b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -8px rgba(15, 23, 42, 0.1);
+}
+
+.sidebarButton:active {
+  transform: translateY(0) scale(0.98);
 }
 
 .sidebarButtonDanger {
   background: #ffeef0;
   color: #e11d48;
   border-radius: 16px;
+  transition: all 0.2s ease;
 }
 
-.miniAction {
-  width: 44px;
-  height: 44px;
-  border-radius: 16px;
-  border: 1px solid #e1e9f4;
-  background: #ffffff;
-  color: #64748b;
+.sidebarButtonDanger:hover {
+  background: #ffe1e5;
+  box-shadow: 0 4px 12px -8px rgba(225, 29, 72, 0.2);
+  transform: translateY(-1px);
 }
 
-.miniDanger {
-  background: #ffeef0;
-  color: #e11d48;
+.sidebarButtonDanger:active {
+  transform: translateY(0) scale(0.98);
 }
 
 .kmsTrack {
@@ -559,6 +608,7 @@
   overflow: hidden;
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
+
 .resultCell:hover {
   border-color: #cbd5e1;
   box-shadow: 0 4px 12px -4px rgba(15, 23, 42, 0.08);
@@ -578,19 +628,32 @@
 .resultCellScroll::-webkit-scrollbar {
   width: 6px;
 }
+
 .resultCellScroll::-webkit-scrollbar-track {
   background: #f1f5f9;
   border-radius: 3px;
 }
+
 .resultCellScroll::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 3px;
 }
 
-.resultCellAreaVitals { grid-area: vitals; }
-.resultCellAreaSymptoms { grid-area: symptoms; }
-.resultCellAreaSop { grid-area: sop; }
-.resultCellAreaActions { grid-area: actions; }
+.resultCellAreaVitals {
+  grid-area: vitals;
+}
+
+.resultCellAreaSymptoms {
+  grid-area: symptoms;
+}
+
+.resultCellAreaSop {
+  grid-area: sop;
+}
+
+.resultCellAreaActions {
+  grid-area: actions;
+}
 
 @media (max-width: 900px) {
   .resultGridFiveWithPanel {
@@ -611,6 +674,7 @@
   gap: 1.5rem;
   align-items: start;
 }
+
 @media (max-width: 1024px) {
   .resultGrid {
     grid-template-columns: 1fr;
@@ -631,12 +695,14 @@
   padding: 1.25rem 1.5rem;
   transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
+
 @media screen {
   .resultCard:hover {
     box-shadow: 0 10px 40px -12px rgba(15, 23, 42, 0.12);
     border-color: #cbd5e1;
   }
 }
+
 @media print {
   .resultCard {
     background: #fff;
@@ -673,21 +739,26 @@
   color: #fff;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
+
 @media screen {
   .resultClassificationCard:hover {
     transform: translateY(-2px);
     box-shadow: 0 20px 40px -16px rgba(0, 0, 0, 0.25);
   }
 }
+
 .resultClassificationCard.resultSeverityGreen {
   background-color: #065f46;
 }
+
 .resultClassificationCard.resultSeverityRed {
   background-color: #be123c;
 }
+
 .resultClassificationCard.resultSeverityYellow {
   background-color: #b45309;
 }
+
 .resultClassificationTitle,
 .resultClassificationDesc {
   color: inherit;
@@ -700,9 +771,11 @@
   padding: 1.5rem 1.75rem;
   border: 1px solid #334155;
 }
+
 .resultSopCard .resultCardTitle {
   color: #94a3b8;
 }
+
 .resultSopItem {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -723,6 +796,7 @@
   box-shadow: 0 4px 24px -8px rgba(15, 23, 42, 0.15);
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
+
 .resultActionPanel:hover {
   box-shadow: 0 12px 32px -12px rgba(15, 23, 42, 0.2);
   border-color: #cbd5e1;
@@ -744,10 +818,12 @@
   padding: 0.35rem 0.75rem;
   border-radius: 9999px;
 }
+
 .resultPillYes {
   background: #fef2f2;
   color: #b91c1c;
 }
+
 .resultPillNo {
   background: #ecfdf5;
   color: #047857;
@@ -758,27 +834,33 @@
   .reportHeaderPrintOnly {
     display: none !important;
   }
+
   .actionPanelScreenOnly {
     display: block !important;
   }
 }
+
 @media print {
   .reportHeaderPrintOnly {
     display: flex !important;
   }
+
   .actionPanelScreenOnly {
     display: none !important;
   }
+
   .resultClassificationCard {
     background: #fff !important;
     color: #1e293b !important;
     border: 2px solid #0f172a;
   }
+
   .resultSopCard {
     background: #fff !important;
     color: #1e293b !important;
     border: 2px solid #1e293b;
   }
+
   .resultSopItem {
     background: #f8fafc;
     color: #1e293b;
