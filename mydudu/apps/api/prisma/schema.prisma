@@ -462,3 +462,53 @@ model Geotag {
 
   @@map("geotags")
 }
+
+// ============================================================
+// WHO GROWTH STANDARDS
+// ============================================================
+
+enum WhoGender {
+  M
+  F
+
+  @@map("who_gender")
+}
+
+enum WhoGrowthIndicator {
+  WEIGHT_FOR_AGE
+  WEIGHT_FOR_HEIGHT
+  WEIGHT_FOR_LENGTH
+  LENGTH_HEIGHT_FOR_AGE
+  BMI_FOR_AGE
+
+  @@map("who_growth_indicator")
+}
+
+model WhoGrowthStandard {
+  id        Int                @id @default(autoincrement())
+  indicator WhoGrowthIndicator
+  gender    WhoGender
+  
+  // Discriminator: One of these must be set depending on indicator
+  ageDays        Int?               @map("age_days")
+  lengthHeightCm Decimal?           @map("length_height_cm") @db.Decimal(8, 2)
+  
+  l         Decimal            @db.Decimal(12, 8)
+  m         Decimal            @db.Decimal(12, 8)
+  s         Decimal            @db.Decimal(12, 8)
+  
+  sd4Neg    Decimal?           @map("sd4_neg") @db.Decimal(12, 8)
+  sd3Neg    Decimal?           @map("sd3_neg") @db.Decimal(12, 8)
+  sd2Neg    Decimal?           @map("sd2_neg") @db.Decimal(12, 8)
+  sd1Neg    Decimal?           @map("sd1_neg") @db.Decimal(12, 8)
+  sd0       Decimal            @map("sd0") @db.Decimal(12, 8)
+  sd1       Decimal?           @map("sd1") @db.Decimal(12, 8)
+  sd2       Decimal?           @map("sd2") @db.Decimal(12, 8)
+  sd3       Decimal?           @map("sd3") @db.Decimal(12, 8)
+  sd4       Decimal?           @map("sd4") @db.Decimal(12, 8)
+  
+  createdAt DateTime           @default(now()) @map("created_at") @db.Timestamp(6)
+
+  @@index([indicator, gender, ageDays, lengthHeightCm], map: "idx_who_lookup")
+  @@map("who_growth_standards")
+}
