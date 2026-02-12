@@ -65,6 +65,17 @@ export interface OperatorDashboardOverview {
   }[];
 }
 
+export interface GrowthAnalysisResult {
+  zScore: number;
+  percentile: number;
+  lms: { l: number; m: number; s: number };
+  indicator: string;
+  status: NutritionCategory;
+  deviation: number;
+  ideal: number;
+  color: string;
+}
+
 export interface OperatorChildRecord {
   id: number;
   fullName: string;
@@ -80,6 +91,7 @@ export interface OperatorChildRecord {
     height: number | null;
     temperature: number | null;
     nutritionCategory: NutritionCategory | null;
+    growthAnalysis: Partial<Record<string, GrowthAnalysisResult>> | null;
     deviceName: string | null;
     deviceUuid: string | null;
     posyanduName: string | null;

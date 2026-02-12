@@ -8,6 +8,8 @@ import { fetchWithAuth } from '@/lib/api';
 import { NutritionCategory, OperatorChildRecord, OperatorParentRecord } from '../types/operator';
 import { ParentTable } from '../components/ParentTable';
 import { Button } from '../components/ui/button';
+import { ChildDetailDialog } from '../components/ChildDetailDialog';
+import { useState } from 'react';
 
 export function ChildRecords() {
   const { user } = useAuth();
@@ -34,6 +36,9 @@ export function ChildRecords() {
     },
     { NORMAL: 0, STUNTED: 0, WASTED: 0, OBESE: 0 } as Record<NutritionCategory, number>,
   );
+
+  const [selectedChild, setSelectedChild] = useState<OperatorChildRecord | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   return (
     <div className="p-8 space-y-6">
@@ -74,7 +79,13 @@ export function ChildRecords() {
           Memuat data anak...
         </div>
       ) : (
-        <ChildTable children={children} />
+        <ChildTable
+          children={children}
+          onSelect={(child) => {
+            setSelectedChild(child);
+            setDetailOpen(true);
+          }}
+        />
       )}
 
       {isLoadingParents ? (
@@ -84,6 +95,12 @@ export function ChildRecords() {
       ) : (
         <ParentTable parents={parents} />
       )}
+
+      <ChildDetailDialog
+        child={selectedChild}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+      />
     </div>
   );
 }

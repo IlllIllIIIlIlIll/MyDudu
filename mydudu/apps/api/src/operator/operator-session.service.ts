@@ -2,6 +2,7 @@ import { ConflictException, HttpException, Injectable, NotFoundException } from 
 import { PrismaService } from '../prisma/prisma.service';
 import { OperatorScopeService } from './operator-scope.service';
 import { CancelSessionDto, DiagnoseSessionDto, ReleaseLockDto, RenewLockDto } from './dto/pemeriksaan.dto';
+import { GrowthService } from '../growth/growth.service';
 import { DiagnosisCode, ExamOutcome } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
@@ -12,6 +13,7 @@ export class OperatorSessionService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly scopeService: OperatorScopeService,
+        private readonly growthService: GrowthService,
     ) { }
 
     private isLockExpired(lockedAt?: Date | null) {
@@ -19,7 +21,7 @@ export class OperatorSessionService {
         return lockedAt.getTime() < Date.now() - this.LOCK_TTL_MS;
     }
 
-    private toQueueItem(session: any) {
+    private async toQueueItem(session: any) {
         const lockExpired = this.isLockExpired(session.lockedAt);
         const isLockedByOther = !!session.lockedByOperatorId && !lockExpired;
         const staleThresholdMs = 6 * 60 * 60 * 1000;
@@ -27,6 +29,31 @@ export class OperatorSessionService {
         const ttlSecondsRemaining = session.lockedAt
             ? Math.max(0, Math.ceil((session.lockedAt.getTime() + this.LOCK_TTL_MS - Date.now()) / 1000))
             : 0;
+
+        let growthAnalysis = null;
+        if (session.child && (session.weight || session.height)) {
+            try {
+                const recordDate = session.recordedAt || new Date();
+                const birthDate = session.child.birthDate;
+                const diffTime = Math.abs(recordDate.getTime() - birthDate.getTime());
+                const ageDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                const weight = session.weight ? Number(session.weight) : undefined;
+                const height = session.height ? Number(session.height) : undefined;
+                const gender = session.child.gender || 'M';
+
+                growthAnalysis = await this.growthService.analyzeGrowth(
+                    session.child.id,
+                    gender,
+                    ageDays,
+                    weight,
+                    height
+                );
+            } catch (e) {
+                // Silently fail specific growth calc if data is bad, don't block queue
+            }
+        }
+
 
         return {
             sessionId: session.id,
@@ -58,6 +85,7 @@ export class OperatorSessionService {
             },
             claimable: !isLockedByOther,
             isStale,
+            growthAnalysis,
         };
     }
 
@@ -128,7 +156,7 @@ export class OperatorSessionService {
             },
         });
 
-        return sessions.map((session) => this.toQueueItem(session));
+        return Promise.all(sessions.map((session) => this.toQueueItem(session)));
     }
 
     async claimPemeriksaanSession(userId: number, sessionId: number) {
@@ -166,7 +194,7 @@ export class OperatorSessionService {
 
         const fresh = await this.getScopedSession(userId, sessionId);
         return {
-            ...this.toQueueItem(fresh),
+            ...(await this.toQueueItem(fresh)),
             lockToken: fresh.lockToken,
         };
     }
@@ -191,7 +219,7 @@ export class OperatorSessionService {
         });
 
         const fresh = await this.getScopedSession(userId, sessionId);
-        return this.toQueueItem(fresh);
+        return await this.toQueueItem(fresh);
     }
 
     async releasePemeriksaanLock(userId: number, sessionId: number, dto: ReleaseLockDto) {

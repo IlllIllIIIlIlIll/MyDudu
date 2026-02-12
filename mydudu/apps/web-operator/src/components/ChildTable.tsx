@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 
 interface ChildTableProps {
   children: OperatorChildRecord[];
+  onSelect: (child: OperatorChildRecord) => void;
 }
 
 const nutritionLabels: Record<NutritionCategory, string> = {
@@ -14,7 +15,7 @@ const nutritionLabels: Record<NutritionCategory, string> = {
   OBESE: 'Obesitas',
 };
 
-export function ChildTable({ children }: ChildTableProps) {
+export function ChildTable({ children, onSelect }: ChildTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterVillage, setFilterVillage] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -149,6 +150,7 @@ export function ChildTable({ children }: ChildTableProps) {
               <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Golongan Darah</th>
               <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Status Gizi</th>
               <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Pemeriksaan Terakhir</th>
+              <th className="px-6 py-4 text-center text-[15px] font-bold text-gray-700">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -177,6 +179,15 @@ export function ChildTable({ children }: ChildTableProps) {
                   </td>
                   <td className="px-6 py-4 text-[15px] text-gray-600">
                     {getDaysAgo(child.lastSession?.recordedAt || null)}
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <button
+                      onClick={() => onSelect(child)}
+                      className="p-2 text-gray-400 hover:text-[#11998E] hover:bg-teal-50 rounded-lg transition-colors"
+                      title="Lihat Detail Pertumbuhan"
+                    >
+                      <Eye className="w-5 h-5" />
+                    </button>
                   </td>
                 </tr>
               );

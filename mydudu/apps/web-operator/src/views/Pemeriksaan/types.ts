@@ -53,6 +53,16 @@ export interface QueueSession {
     claimable?: boolean;
     isStale?: boolean;
     lockToken?: string;
+    growthAnalysis?: Record<string, {
+        zScore: number;
+        percentile: number;
+        lms: { l: number; m: number; s: number };
+        indicator: string;
+        status: string;
+        deviation: number;
+        ideal: number;
+        color: string;
+    }> | null;
 }
 
 export interface QuizStepHistory {

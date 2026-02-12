@@ -17,6 +17,7 @@ import { ScreeningResultView } from './components/ScreeningResultView';
 import { VitalDisplay } from './components/VitalDisplay';
 import { ProgressLine } from './components/ProgressLine';
 import { QuizCard } from './components/QuizCard';
+import { GrowthScale } from '../../components/GrowthScale';
 
 interface ScreeningFlowProps {
   onExit: () => void;
@@ -367,12 +368,71 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                   ))}
                 </div>
 
-                <div className={`${styles.kmsCard} mb-8`}>
                   <h3 className={`mb-6 ${styles.kmsTitle}`}>Analisis Pertumbuhan (KMS)</h3>
-                  <div className="space-y-6">
-                    <ProgressLine label="BB/U (Berat/Umur)" value={85} color="blue" labelValue="+0.4" />
-                    <ProgressLine label="TB/U (Tinggi/Umur)" value={62} color="orange" labelValue="-1.2" />
-                    <ProgressLine label="Proporsional BB/TB" value={78} color="green" labelValue="+0.2" />
+                  <div className="space-y-4">
+                    {selectedSession.growthAnalysis ? (
+                      <>
+                        {selectedSession.growthAnalysis['WEIGHT_FOR_AGE'] && (
+                          <GrowthScale
+                            label="BB/U"
+                            subLabel="Berat Badan menurut Umur"
+                            value={selectedSession.weight || 0}
+                            unit="kg"
+                            zScore={selectedSession.growthAnalysis['WEIGHT_FOR_AGE'].zScore}
+                            deviation={selectedSession.growthAnalysis['WEIGHT_FOR_AGE'].deviation}
+                            ideal={selectedSession.growthAnalysis['WEIGHT_FOR_AGE'].ideal}
+                            color={selectedSession.growthAnalysis['WEIGHT_FOR_AGE'].color}
+                          />
+                        )}
+                        {selectedSession.growthAnalysis['LENGTH_HEIGHT_FOR_AGE'] && (
+                          <GrowthScale
+                            label="TB/U"
+                            subLabel="Tinggi Badan menurut Umur"
+                            value={selectedSession.height || 0}
+                            unit="cm"
+                            zScore={selectedSession.growthAnalysis['LENGTH_HEIGHT_FOR_AGE'].zScore}
+                            deviation={selectedSession.growthAnalysis['LENGTH_HEIGHT_FOR_AGE'].deviation}
+                            ideal={selectedSession.growthAnalysis['LENGTH_HEIGHT_FOR_AGE'].ideal}
+                            color={selectedSession.growthAnalysis['LENGTH_HEIGHT_FOR_AGE'].color}
+                          />
+                        )}
+                         {/* Check for Weight/Length or Weight/Height */}
+                        {(selectedSession.growthAnalysis['WEIGHT_FOR_LENGTH'] || selectedSession.growthAnalysis['WEIGHT_FOR_HEIGHT']) && (
+                          (() => {
+                            const indicator = selectedSession.growthAnalysis['WEIGHT_FOR_LENGTH'] ? 'WEIGHT_FOR_LENGTH' : 'WEIGHT_FOR_HEIGHT';
+                            const analysis = selectedSession.growthAnalysis[indicator]!;
+                            return (
+                                <GrowthScale
+                                    label="BB/TB"
+                                    subLabel={indicator === 'WEIGHT_FOR_LENGTH' ? "Berat menurut Panjang" : "Berat menurut Tinggi"}
+                                    value={selectedSession.weight || 0}
+                                    unit="kg"
+                                    zScore={analysis.zScore}
+                                    deviation={analysis.deviation}
+                                    ideal={analysis.ideal}
+                                    color={analysis.color}
+                                />
+                            );
+                          })()
+                        )}
+                         {selectedSession.growthAnalysis['BMI_FOR_AGE'] && (
+                            <GrowthScale
+                                label="IMT/U"
+                                subLabel="Indeks Massa Tubuh menurut Umur"
+                                value={Number((selectedSession.weight! / Math.pow(selectedSession.height! / 100, 2)).toFixed(1))}
+                                unit="kg/m²"
+                                zScore={selectedSession.growthAnalysis['BMI_FOR_AGE'].zScore}
+                                deviation={selectedSession.growthAnalysis['BMI_FOR_AGE'].deviation}
+                                ideal={selectedSession.growthAnalysis['BMI_FOR_AGE'].ideal}
+                                color={selectedSession.growthAnalysis['BMI_FOR_AGE'].color}
+                            />
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-center text-gray-500 py-4 text-sm">
+                        Data pertumbuhan belum tersedia untuk analisis.
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -386,47 +446,47 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
               </motion.div>
             )}
 
-            {/* --- PHASE 3: AKINATOR QUIZ --- */}
-            {phase === 'QUIZ' && selectedSession && (
-              <motion.div
-                key="quiz" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, y: -20 }}
-                className="max-w-6xl mx-auto h-full flex flex-col items-center justify-center"
-              >
-                <div className="w-full flex flex-col items-center mb-14">
-                  <h2 className={`text-slate-900 text-center mb-2 max-w-5xl ${styles.quizTitleText}`}>
-                    {currentNode.question}
-                  </h2>
-                  <p className={`text-center max-w-3xl ${styles.quizSubtitleText}`}>{currentNode.layman}</p>
-                </div>
+          {/* --- PHASE 3: AKINATOR QUIZ --- */}
+          {phase === 'QUIZ' && selectedSession && (
+            <motion.div
+              key="quiz" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, y: -20 }}
+              className="max-w-6xl mx-auto h-full flex flex-col items-center justify-center"
+            >
+              <div className="w-full flex flex-col items-center mb-14">
+                <h2 className={`text-slate-900 text-center mb-2 max-w-5xl ${styles.quizTitleText}`}>
+                  {currentNode.question}
+                </h2>
+                <p className={`text-center max-w-3xl ${styles.quizSubtitleText}`}>{currentNode.layman}</p>
+              </div>
 
-                <div className={`grid grid-cols-2 ${styles.quizGrid}`}>
-                  <QuizCard
-                    label="Ada"
-                    type="yes"
-                    image="/placeholder1.png"
-                    onClick={() => !submitting && handleDecision('yes')}
-                  />
-                  <QuizCard
-                    label="Tidak Ada"
-                    type="no"
-                    image="/placeholder2.png"
-                    onClick={() => !submitting && handleDecision('no')}
-                  />
-                </div>
+              <div className={`grid grid-cols-2 ${styles.quizGrid}`}>
+                <QuizCard
+                  label="Ada"
+                  type="yes"
+                  image="/placeholder1.png"
+                  onClick={() => !submitting && handleDecision('yes')}
+                />
+                <QuizCard
+                  label="Tidak Ada"
+                  type="no"
+                  image="/placeholder2.png"
+                  onClick={() => !submitting && handleDecision('no')}
+                />
+              </div>
 
-                <div className="mt-10 h-1.5 w-40 bg-slate-100 rounded-full overflow-hidden">
-                  <motion.div
-                    className={`h-full ${styles.pedsAccent}`}
-                    initial={{ width: '0%' }}
-                    animate={{ width: currentNodeId === 'start' ? '10%' : '60%' }}
-                  />
-                </div>
-              </motion.div>
-            )}
+              <div className="mt-10 h-1.5 w-40 bg-slate-100 rounded-full overflow-hidden">
+                <motion.div
+                  className={`h-full ${styles.pedsAccent}`}
+                  initial={{ width: '0%' }}
+                  animate={{ width: currentNodeId === 'start' ? '10%' : '60%' }}
+                />
+              </div>
+            </motion.div>
+          )}
 
-          </AnimatePresence>
-        </div>
-      </main>
+        </AnimatePresence>
     </div>
+      </main >
+    </div >
   );
 }
