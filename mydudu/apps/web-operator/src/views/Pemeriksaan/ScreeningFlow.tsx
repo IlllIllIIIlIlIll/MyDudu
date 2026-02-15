@@ -427,6 +427,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                             deviation={selectedSession.growthAnalysis['WEIGHT_FOR_AGE'].deviation}
                             ideal={selectedSession.growthAnalysis['WEIGHT_FOR_AGE'].ideal}
                             lms={selectedSession.growthAnalysis['WEIGHT_FOR_AGE'].lms}
+                            indicator="WEIGHT_FOR_AGE"
                           />
                         )}
 
@@ -440,6 +441,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                             deviation={selectedSession.growthAnalysis['LENGTH_HEIGHT_FOR_AGE'].deviation}
                             ideal={selectedSession.growthAnalysis['LENGTH_HEIGHT_FOR_AGE'].ideal}
                             lms={selectedSession.growthAnalysis['LENGTH_HEIGHT_FOR_AGE'].lms}
+                            indicator="LENGTH_HEIGHT_FOR_AGE"
                           />
                         )}
 
@@ -459,6 +461,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                                 deviation={analysis.deviation}
                                 ideal={analysis.ideal}
                                 lms={analysis.lms}
+                                indicator={indicator as any}
                               />
                             );
                           })()
@@ -474,6 +477,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                             deviation={selectedSession.growthAnalysis['BMI_FOR_AGE'].deviation}
                             ideal={selectedSession.growthAnalysis['BMI_FOR_AGE'].ideal}
                             lms={selectedSession.growthAnalysis['BMI_FOR_AGE'].lms}
+                            indicator="BMI_FOR_AGE"
                           />
                         )}
                       </div>

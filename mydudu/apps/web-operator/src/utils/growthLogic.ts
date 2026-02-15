@@ -1,5 +1,12 @@
 export type GrowthStatusSeverity = 'success' | 'warning' | 'danger' | 'neutral';
 
+export type GrowthIndicator =
+    | 'LENGTH_HEIGHT_FOR_AGE'
+    | 'WEIGHT_FOR_AGE'
+    | 'WEIGHT_FOR_LENGTH'
+    | 'WEIGHT_FOR_HEIGHT'
+    | 'BMI_FOR_AGE';
+
 export interface GrowthStatus {
     label: string;
     color: string;
@@ -9,80 +16,151 @@ export interface GrowthStatus {
 }
 
 export const GROWTH_STATUS_MAP: Record<string, GrowthStatus> = {
-    SANGAT_KURANG: {
-        label: 'Sangat Kurang',
+    // --- Stunting (Height/Age) ---
+    SANGAT_PENDEK: {
+        label: 'Sangat Pendek (Severe Stunted)',
         color: '#ef4444',
         severity: 'danger',
-        explanation: 'Sangat jauh di bawah standar usianya.',
-        recommendation: 'Segera rujuk ke dokter spesialis anak.'
+        explanation: 'Tinggi badan sangat jauh di bawah standar.',
+        recommendation: 'Rujuk segera ke Sp.A untuk investigasi stunting.'
     },
-    KURANG: {
-        label: 'Kurang',
+    PENDEK: {
+        label: 'Pendek (Stunted)',
         color: '#eab308',
         severity: 'warning',
-        explanation: 'Di bawah standar usianya.',
-        recommendation: 'Evaluasi asupan makan dan pantau rutin.'
+        explanation: 'Tinggi badan di bawah standar.',
+        recommendation: 'Evaluasi asupan kronis dan stimulasi.'
     },
+
+    // --- Wasting (Weight/Height) & BMI ---
+    SANGAT_KURUS: {
+        label: 'Sangat Kurus (Severe Wasted)',
+        color: '#ef4444',
+        severity: 'danger',
+        explanation: 'Berat sangat kurang dibanding tinggi.',
+        recommendation: 'Rujuk segera. Risiko malnutrisi akut berat.'
+    },
+    KURUS: { // Wasted
+        label: 'Kurus (Wasted)',
+        color: '#eab308',
+        severity: 'warning',
+        explanation: 'Berat kurang dibanding tinggi.',
+        recommendation: 'Perbaiki asupan kalori segera.'
+    },
+    GEMUK: { // Overweight
+        label: 'Gemuk (Overweight)',
+        color: '#eab308',
+        severity: 'warning',
+        explanation: 'Berat lebih dibanding tinggi.',
+        recommendation: 'Evaluasi pola makan, kurangi gula.'
+    },
+    OBESITAS: { // Obese
+        label: 'Obesitas (Obese)',
+        color: '#ef4444',
+        severity: 'danger',
+        explanation: 'Berat sangat berlebih dibanding tinggi.',
+        recommendation: 'Rujuk Sp.A untuk manajemen obesitas.'
+    },
+
+    // --- Underweight (Weight/Age) ---
+    SANGAT_KURANG: { // Severe Underweight
+        label: 'Berat Sangat Kurang',
+        color: '#ef4444',
+        severity: 'danger',
+        explanation: 'Berat badan sangat rendah untuk usianya.',
+        recommendation: 'Perlu penanganan medis segera.'
+    },
+    KURANG: { // Underweight
+        label: 'Berat Kurang',
+        color: '#eab308',
+        severity: 'warning',
+        explanation: 'Berat badan rendah untuk usianya.',
+        recommendation: 'Evaluasi MPASI dan pola asuh.'
+    },
+
+    // --- Common ---
     NORMAL: {
         label: 'Normal',
         color: '#22c55e',
         severity: 'success',
-        explanation: 'Sesuai dengan usianya.',
+        explanation: 'Pertumbuhan sesuai standar.',
         recommendation: 'Pertahankan gizi seimbang.'
     },
-    LEBIH: {
+    LEBIH: { // Generic more (used in WFA sometimes, though typically not flagged high)
         label: 'Lebih',
         color: '#eab308',
         severity: 'warning',
-        explanation: 'Di atas standar usianya.',
-        recommendation: 'Evaluasi pola makan, kurangi gula/lemak.'
-    },
-    SANGAT_LEBIH: {
-        label: 'Sangat Lebih',
-        color: '#ef4444',
-        severity: 'danger',
-        explanation: 'Sangat jauh di atas standar usianya.',
-        recommendation: 'Konsultasi dokter untuk cegah obesitas.'
+        explanation: 'Di atas rata-rata.',
+        recommendation: 'Pantau terus.'
     },
     TIDAK_VALID: {
         label: 'Data Tidak Valid',
         color: '#cbd5e1',
         severity: 'neutral',
-        explanation: 'Data pengukuran tidak valid.',
-        recommendation: 'Silakan ukur ulang.'
+        explanation: 'Data pengukuran di luar batas wajar.',
+        recommendation: 'Ukur ulang.'
     }
 };
 
-export function getGrowthStatus(zScore: number | null | undefined): GrowthStatus {
+/**
+ * Determines growth status based on Z-score and specific Indicator type.
+ * STRICT WHO CLASSIFICATION LOGIC.
+ */
+export function getGrowthStatus(zScore: number | null | undefined, indicator?: GrowthIndicator): GrowthStatus {
     if (zScore === null || zScore === undefined || isNaN(zScore)) {
         return GROWTH_STATUS_MAP.TIDAK_VALID;
     }
 
-    // Sanity check removed as per request: all input considered valid
-    // if (zScore > 5 || zScore < -5) {
-    //     return GROWTH_STATUS_MAP.TIDAK_VALID;
-    // }
+    // Safety Guard
+    if (zScore < -5 || zScore > 5) {
+        return GROWTH_STATUS_MAP.TIDAK_VALID;
+    }
 
+    // Identify indicator group
+    const isHeightAge = indicator === 'LENGTH_HEIGHT_FOR_AGE';
+    const isWeightHeight = indicator === 'WEIGHT_FOR_LENGTH' || indicator === 'WEIGHT_FOR_HEIGHT' || indicator === 'BMI_FOR_AGE';
+    const isWeightAge = indicator === 'WEIGHT_FOR_AGE';
+
+    if (isHeightAge) {
+        // Stunting Logic
+        if (zScore < -3) return GROWTH_STATUS_MAP.SANGAT_PENDEK;
+        if (zScore < -2) return GROWTH_STATUS_MAP.PENDEK;
+        return GROWTH_STATUS_MAP.NORMAL; // > -2 is Normal (Tall is not usually distinct pathology for stunting screens, but >3 could be endocrine)
+    }
+
+    if (isWeightHeight) {
+        // Wasting / Obesity Logic
+        if (zScore < -3) return GROWTH_STATUS_MAP.SANGAT_KURUS;
+        if (zScore < -2) return GROWTH_STATUS_MAP.KURUS;
+        if (zScore > 3) return GROWTH_STATUS_MAP.OBESITAS;
+        if (zScore > 2) return GROWTH_STATUS_MAP.GEMUK;
+        return GROWTH_STATUS_MAP.NORMAL;
+    }
+
+    if (isWeightAge) {
+        // Underweight Logic
+        // Note: WFA > +1 is a problem?, WHO says > +1 is likely overweight but WFH is better.
+        // We stick to Underweight detection here primarily.
+        if (zScore < -3) return GROWTH_STATUS_MAP.SANGAT_KURANG;
+        if (zScore < -2) return GROWTH_STATUS_MAP.KURANG;
+        return GROWTH_STATUS_MAP.NORMAL;
+    }
+
+    // Fallback / Generic Logic if indicator unseen
     if (zScore < -3) return GROWTH_STATUS_MAP.SANGAT_KURANG;
-    if (zScore >= -3 && zScore < -2) return GROWTH_STATUS_MAP.KURANG;
-    if (zScore >= -2 && zScore <= 2) return GROWTH_STATUS_MAP.NORMAL;
-    if (zScore > 2 && zScore <= 3) return GROWTH_STATUS_MAP.LEBIH;
-    if (zScore > 3) return GROWTH_STATUS_MAP.SANGAT_LEBIH;
-
-    return GROWTH_STATUS_MAP.TIDAK_VALID;
+    if (zScore < -2) return GROWTH_STATUS_MAP.KURANG;
+    if (zScore > 3) return GROWTH_STATUS_MAP.SANGAT_LEBIH; // Generic High
+    if (zScore > 2) return GROWTH_STATUS_MAP.LEBIH;        // Generic High
+    return GROWTH_STATUS_MAP.NORMAL;
 }
 
-export function getStatusLabelFromZ(zScore: number) {
-    return getGrowthStatus(zScore).label;
+export function getStatusLabelFromZ(zScore: number, indicator?: GrowthIndicator) {
+    return getGrowthStatus(zScore, indicator).label;
 }
 
 /**
  * Calculates the measurement value (X) from a given Z-score (Z)
  * using the LMS parameters (L, M, S).
- * 
- * Formula:
- * If L != 0: X = M * (1 + L * S * Z)^(1/L)
- * If L == 0: X = M * exp(S * Z)
  */
 export function calculateValueFromZ(z: number, l: number, m: number, s: number): number {
     if (l === 0) {
@@ -91,4 +169,21 @@ export function calculateValueFromZ(z: number, l: number, m: number, s: number):
     const base = 1 + l * s * z;
     if (base <= 0) return 0; // Out of valid range
     return m * Math.pow(base, 1 / l);
+}
+
+/**
+ * Calculates boundary values for the Reference Explorer.
+ * Returns measurements at key Z-scores provided in zPoints or defaults [-3, -2, 0, 2, 3].
+ */
+export function calculateExplorerBoundaries(
+    l: number,
+    m: number,
+    s: number,
+    zPoints: number[] = [-3, -2, 0, 2, 3]
+): Record<number, number> {
+    const boundaries: Record<number, number> = {};
+    zPoints.forEach(z => {
+        boundaries[z] = calculateValueFromZ(z, l, m, s);
+    });
+    return boundaries;
 }

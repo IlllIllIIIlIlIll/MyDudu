@@ -1,7 +1,7 @@
 
 import { motion, AnimatePresence } from 'motion/react';
 import { useMemo, useState, useRef, useEffect } from 'react';
-import { getGrowthStatus, GrowthStatus, calculateValueFromZ } from '../utils/growthLogic';
+import { getGrowthStatus, GrowthStatus, calculateValueFromZ, calculateExplorerBoundaries, GrowthIndicator } from '../utils/growthLogic';
 import { AlertCircle, ChevronRight, Info, X, Compass } from 'lucide-react';
 
 interface GrowthScaleProps {
@@ -13,16 +13,17 @@ interface GrowthScaleProps {
     unit: string;       // e.g., "kg" or "cm"
     color?: string;      // Hex color from backend
     lms?: { l: number; m: number; s: number }; // LMS parameters for Explorer
+    indicator?: GrowthIndicator; // Optional indicator for strict classification
 }
 
-export function GrowthScale({ label, value, zScore, deviation, ideal, unit, color, lms }: GrowthScaleProps) {
+export function GrowthScale({ label, value, zScore, deviation, ideal, unit, color, lms, indicator }: GrowthScaleProps) {
 
     const [isExplorerOpen, setExplorerOpen] = useState(false);
     const [ghostZ, setGhostZ] = useState<number>(zScore ?? 0);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    const status: GrowthStatus = useMemo(() => getGrowthStatus(zScore), [zScore]);
-    const ghostStatus: GrowthStatus = useMemo(() => getGrowthStatus(ghostZ), [ghostZ]);
+    const status: GrowthStatus = useMemo(() => getGrowthStatus(zScore, indicator), [zScore, indicator]);
+    const ghostStatus: GrowthStatus = useMemo(() => getGrowthStatus(ghostZ, indicator), [ghostZ, indicator]);
 
     // Calculate position percentage (clamped -3.5 to +3.5 mapped to 0-100%)
     const getPosition = (z: number | null) => {
@@ -39,13 +40,14 @@ export function GrowthScale({ label, value, zScore, deviation, ideal, unit, colo
         return calculateValueFromZ(ghostZ, lms.l, lms.m, lms.s);
     }, [ghostZ, lms]);
 
-    // Reference Anchors
+    // Reference Anchors using centralized logic
     const anchors = useMemo(() => {
         if (!lms) return null;
+        const bounds = calculateExplorerBoundaries(lms.l, lms.m, lms.s, [-2, 0, 2]);
         return {
-            lower: calculateValueFromZ(-2, lms.l, lms.m, lms.s), // -2 SD
-            median: calculateValueFromZ(0, lms.l, lms.m, lms.s), // 0 SD
-            upper: calculateValueFromZ(2, lms.l, lms.m, lms.s),  // +2 SD
+            lower: bounds[-2],  // -2 SD
+            median: bounds[0],  // Median
+            upper: bounds[2],   // +2 SD
         };
     }, [lms]);
 
