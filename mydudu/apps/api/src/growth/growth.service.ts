@@ -221,11 +221,15 @@ export class GrowthService {
         const results: Partial<Record<WhoGrowthIndicator, GrowthAnalysisResult>> = {};
         const sex = gender === 'M' ? WhoGender.M : WhoGender.F;
 
+        console.log(`[GrowthService] Analyze: child=${childId}, sex=${sex}, age=${ageDays}, w=${weight}, h=${height}`);
+
         // 1. Weight-for-Age (0-5 years)
         if (weight !== undefined && ageDays <= 1856) {
             const lms = await this.getLMSData(WhoGrowthIndicator.WEIGHT_FOR_AGE, sex, ageDays);
             if (lms) {
                 results[WhoGrowthIndicator.WEIGHT_FOR_AGE] = this.formatResult(lms, WhoGrowthIndicator.WEIGHT_FOR_AGE, weight);
+            } else {
+                console.log(`[GrowthService] WFA LMS not found for age=${ageDays}`);
             }
         }
 
@@ -234,6 +238,8 @@ export class GrowthService {
             const lms = await this.getLMSData(WhoGrowthIndicator.LENGTH_HEIGHT_FOR_AGE, sex, ageDays);
             if (lms) {
                 results[WhoGrowthIndicator.LENGTH_HEIGHT_FOR_AGE] = this.formatResult(lms, WhoGrowthIndicator.LENGTH_HEIGHT_FOR_AGE, height);
+            } else {
+                console.log(`[GrowthService] HFA LMS not found for age=${ageDays}`);
             }
         }
 
@@ -251,6 +257,8 @@ export class GrowthService {
             const lms = await this.getLMSData(indicator, sex, height);
             if (lms) {
                 results[indicator] = this.formatResult(lms, indicator, weight);
+            } else {
+                console.log(`[GrowthService] WFL/H LMS not found for height=${height}, indicator=${indicator}`);
             }
         }
 
@@ -261,6 +269,8 @@ export class GrowthService {
             const lms = await this.getLMSData(WhoGrowthIndicator.BMI_FOR_AGE, sex, ageDays);
             if (lms) {
                 results[WhoGrowthIndicator.BMI_FOR_AGE] = this.formatResult(lms, WhoGrowthIndicator.BMI_FOR_AGE, bmi);
+            } else {
+                console.log(`[GrowthService] BMI LMS not found for age=${ageDays}`);
             }
         }
 

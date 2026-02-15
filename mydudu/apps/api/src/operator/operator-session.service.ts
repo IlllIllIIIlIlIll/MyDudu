@@ -160,43 +160,47 @@ export class OperatorSessionService {
     }
 
     async claimPemeriksaanSession(userId: number, sessionId: number) {
-        const session = await this.getScopedSession(userId, sessionId);
+        let attempts = 0;
+        while (attempts < 3) {
+            attempts++;
+            const session = await this.getScopedSession(userId, sessionId);
 
-        if (session.examOutcome !== ExamOutcome.PENDING) {
-            throw new ConflictException('Session is no longer pending');
+            if (session.examOutcome !== ExamOutcome.PENDING) {
+                throw new ConflictException('Session is no longer pending');
+            }
+
+            const lockExpired = this.isLockExpired(session.lockedAt);
+            const lockOwnedByOther = !!session.lockedByOperatorId && session.lockedByOperatorId !== userId && !lockExpired;
+            if (lockOwnedByOther) {
+                throw new HttpException('Session locked by another operator', 423);
+            }
+
+            const now = new Date();
+            const lockToken = randomUUID();
+
+            const updated = await this.prisma.session.updateMany({
+                where: {
+                    id: session.id,
+                    version: session.version,
+                },
+                data: {
+                    lockedByOperatorId: userId,
+                    lockedAt: now,
+                    lockToken,
+                    version: { increment: 1 },
+                },
+            });
+
+            if (updated.count === 1) {
+                const fresh = await this.getScopedSession(userId, sessionId);
+                return {
+                    ...(await this.toQueueItem(fresh)),
+                    lockToken: fresh.lockToken,
+                };
+            }
         }
 
-        const lockExpired = this.isLockExpired(session.lockedAt);
-        const lockOwnedByOther = !!session.lockedByOperatorId && session.lockedByOperatorId !== userId && !lockExpired;
-        if (lockOwnedByOther) {
-            throw new HttpException('Session locked by another operator', 423);
-        }
-
-        const now = new Date();
-        const lockToken = randomUUID();
-
-        const updated = await this.prisma.session.updateMany({
-            where: {
-                id: session.id,
-                version: session.version,
-            },
-            data: {
-                lockedByOperatorId: userId,
-                lockedAt: now,
-                lockToken,
-                version: { increment: 1 },
-            },
-        });
-
-        if (updated.count !== 1) {
-            throw new ConflictException('Session changed, please retry');
-        }
-
-        const fresh = await this.getScopedSession(userId, sessionId);
-        return {
-            ...(await this.toQueueItem(fresh)),
-            lockToken: fresh.lockToken,
-        };
+        throw new ConflictException('Session changed, please retry');
     }
 
     async renewPemeriksaanLock(userId: number, sessionId: number, dto: RenewLockDto) {

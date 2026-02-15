@@ -81,8 +81,7 @@ export function ChildDetailDialog({ child, open, onOpenChange }: ChildDetailDial
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {analysis['WEIGHT_FOR_AGE'] && (
                                     <GrowthScale
-                                        label="BB/U"
-                                        subLabel="Berat Badan menurut Umur"
+                                        label="Berat dibanding Umur"
                                         value={session?.weight || 0}
                                         unit="kg"
                                         zScore={analysis['WEIGHT_FOR_AGE'].zScore}
@@ -93,8 +92,7 @@ export function ChildDetailDialog({ child, open, onOpenChange }: ChildDetailDial
                                 )}
                                 {analysis['LENGTH_HEIGHT_FOR_AGE'] && (
                                     <GrowthScale
-                                        label="TB/U"
-                                        subLabel="Tinggi Badan menurut Umur"
+                                        label="Tinggi dibanding Umur"
                                         value={session?.height || 0}
                                         unit="cm"
                                         zScore={analysis['LENGTH_HEIGHT_FOR_AGE'].zScore}
@@ -109,8 +107,7 @@ export function ChildDetailDialog({ child, open, onOpenChange }: ChildDetailDial
                                         const data = analysis[indicator]!;
                                         return (
                                             <GrowthScale
-                                                label="BB/TB"
-                                                subLabel={indicator === 'WEIGHT_FOR_LENGTH' ? "Berat menurut Panjang" : "Berat menurut Tinggi"}
+                                                label="Berat dibanding Tinggi Badan"
                                                 value={session?.weight || 0}
                                                 unit="kg"
                                                 zScore={data.zScore}
@@ -123,8 +120,7 @@ export function ChildDetailDialog({ child, open, onOpenChange }: ChildDetailDial
                                 )}
                                 {analysis['BMI_FOR_AGE'] && (
                                     <GrowthScale
-                                        label="IMT/U"
-                                        subLabel="Indeks Massa Tubuh menurut Umur"
+                                        label="Indeks Massa Tubuh dibanding Umur"
                                         value={Number((session?.weight! / Math.pow(session?.height! / 100, 2)).toFixed(1))}
                                         unit="kg/m²"
                                         zScore={analysis['BMI_FOR_AGE'].zScore}

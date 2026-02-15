@@ -1,0 +1,16 @@
+{
+  "WEIGHT_FOR_HEIGHT": {
+    "count": 2204,
+    "minAgeDays": null,
+    "maxAgeDays": null,
+    "minLengthHeightCm": "65",
+    "maxLengthHeightCm": "120"
+  },
+  "WEIGHT_FOR_LENGTH": {
+    "count": 2604,
+    "minAgeDays": null,
+    "maxAgeDays": null,
+    "minLengthHeightCm": "45",
+    "maxLengthHeightCm": "110"
+  }
+}
