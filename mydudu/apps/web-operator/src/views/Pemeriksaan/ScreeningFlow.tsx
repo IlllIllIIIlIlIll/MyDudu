@@ -20,6 +20,7 @@ import { QuizCard } from './components/QuizCard';
 import { GrowthScale } from '../../components/GrowthScale';
 import { GrowthSummaryCard } from '../../components/GrowthSummaryCard';
 import { RawMeasurementCard } from './components/RawMeasurementCard';
+import { ClinicalQuizPage } from './components/ClinicalQuizPage';
 
 interface ScreeningFlowProps {
   onExit: () => void;
@@ -330,7 +331,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
       {/* 3. Main Stage */}
       <main className="flex-1 flex flex-col overflow-hidden">
 
-        <div className={`flex-1 flex flex-col min-h-0 bg-transparent ${phase === 'RESULT' ? 'overflow-hidden' : `overflow-y-auto ${styles.mainContent}`}`}>
+        <div className="flex-1 flex flex-col min-h-0 bg-transparent overflow-hidden">
           {phase === 'RESULT' && selectedPatient && currentNode.finalDiagnosis ? (
             <div className="flex-1 min-h-0 flex flex-col px-4 py-3">
               <ScreeningResultView
@@ -504,42 +505,21 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
               </motion.div>
             )}
 
-            {/* --- PHASE 3: AKINATOR QUIZ --- */}
-            {phase === 'QUIZ' && selectedSession && (
-              <motion.div
-                key="quiz" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, y: -20 }}
-                className="max-w-6xl mx-auto h-full flex flex-col items-center justify-center"
-              >
-                <div className="w-full flex flex-col items-center mb-14">
-                  <h2 className={`text-slate-900 text-center mb-2 max-w-5xl ${styles.quizTitleText}`}>
-                    {currentNode.question}
-                  </h2>
-                  <p className={`text-center max-w-3xl ${styles.quizSubtitleText}`}>{currentNode.layman}</p>
-                </div>
-
-                <div className={`grid grid-cols-2 ${styles.quizGrid}`}>
-                  <QuizCard
-                    label="Ada"
-                    type="yes"
-                    image="/placeholder1.png"
-                    onClick={() => !submitting && handleDecision('yes')}
-                  />
-                  <QuizCard
-                    label="Tidak Ada"
-                    type="no"
-                    image="/placeholder2.png"
-                    onClick={() => !submitting && handleDecision('no')}
-                  />
-                </div>
-
-                <div className="mt-10 h-1.5 w-40 bg-slate-100 rounded-full overflow-hidden">
-                  <motion.div
-                    className={`h-full ${styles.pedsAccent}`}
-                    initial={{ width: '0%' }}
-                    animate={{ width: currentNodeId === 'start' ? '10%' : '60%' }}
-                  />
-                </div>
-              </motion.div>
+            {/* --- PHASE 3: CLINICAL QUIZ --- */}
+            {phase === 'QUIZ' && selectedSession && currentNode && (
+              <ClinicalQuizPage
+                currentQuestion={{
+                  id: currentNodeId,
+                  question: currentNode.question,
+                  layman: currentNode.layman,
+                  yesNodeId: currentNode.yesNodeId ?? null,
+                  noNodeId: currentNode.noNodeId ?? null,
+                }}
+                currentQuestionIndex={quizHistory.length + 1}
+                totalQuestions={Object.values(DECISION_TREE).filter(node => !node.finalDiagnosis).length}
+                onAnswer={handleDecision}
+                isSubmitting={submitting}
+              />
             )}
 
           </AnimatePresence>

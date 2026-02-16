@@ -15,7 +15,7 @@ export function QuizCard({ label, type, image, onClick }: QuizCardProps) {
     return (
         <button
             onClick={onClick}
-            className={`group relative flex-1 h-full transition-all active:scale-95 ${styles.quizCard} ${type === 'yes' ? styles.quizYes : styles.quizNo
+            className={`group relative w-full h-full transition-all active:scale-95 ${styles.quizCard} ${type === 'yes' ? styles.quizYes : styles.quizNo
                 }`}
         >
             <div className={`absolute inset-0 transition-transform duration-700 group-hover:scale-105 ${styles.quizFrame} ${isPlaceholder ? styles.quizPlaceholder : ''}`}>

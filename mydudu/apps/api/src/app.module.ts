@@ -23,6 +23,7 @@ import { ReportsController } from './reports/reports.controller';
 import { ChildrenModule } from './children/children.module';
 import { ObservabilityModule } from './observability/observability.module';
 import { TelemetryMiddleware } from './observability/telemetry.middleware';
+import { ClinicalModule } from './clinical/clinical.module';
 
 @Module({
     imports: [
@@ -43,9 +44,9 @@ import { TelemetryMiddleware } from './observability/telemetry.middleware';
         CronModule,
         NutritionModule,
         AdminModule,
-        OperatorModule,
         ChildrenModule,
         ObservabilityModule,
+        ClinicalModule,
     ],
     controllers: [AppController, ReportsController],
     providers: [AppService],

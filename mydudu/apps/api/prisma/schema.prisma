@@ -49,6 +49,9 @@ enum ExamOutcome {
   PENDING
   DIAGNOSED
   CANCELED
+  REFER_IMMEDIATELY
+  EMERGENCY
+  EXCLUDED
 
   @@map("exam_outcome")
 }
@@ -163,6 +166,11 @@ model User {
   createdSchedules  Schedule[]
   auditLogs         AuditLog[]
 
+  // Clinical Engine
+  createdClinicalTrees  ClinicalDecisionTree[] 
+  reviewedClinicalTrees ClinicalDecisionTree[] @relation("tree_reviews")
+  reviewedTreeExpansions TreeExpansionProposal[] @relation("tree_expansion_reviewer")
+
   @@unique([fullName, phoneNumber], map: "idx_unique_fullname_phone")
   @@index([role], map: "idx_users_role")
   @@map("users")
@@ -274,6 +282,8 @@ model Session {
   lockedAt   DateTime?      @map("locked_at") @db.Timestamp(6)
   lockToken  String?        @map("lock_token") @db.VarChar(64)
   version    Int            @default(1)
+  treeVersion String?       @map("tree_version") @db.VarChar(64) // Added for version locking
+  snapshotNodes Json?       @map("snapshot_nodes") // PHASE 9: Immutable tree snapshot
   updatedAt  DateTime       @updatedAt @map("updated_at") @db.Timestamp(6)
 
   // Metrics
@@ -589,4 +599,77 @@ model SystemMetricDerived {
 
   @@index([metricType, provider, computedAt], map: "idx_derived_lookup")
   @@map("system_metrics_derived")
+}
+
+// ============================================================
+// CLINICAL ENGINE (DETERMINISTIC)
+// ============================================================
+
+model ClinicalDisease {
+  id          String   @id @db.VarChar(50) // e.g. 'DENGUE'
+  name        String   @db.VarChar(100)    // e.g. 'Demam Berdarah Dengue'
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  decisionTrees ClinicalDecisionTree[]
+
+  @@map("clinical_diseases")
+}
+
+model ClinicalDecisionTree {
+  id          Int      @id @default(autoincrement())
+  diseaseId   String   @map("disease_id") @db.VarChar(50)
+  version     String   @db.VarChar(20)    // e.g. '1.0.0'
+  isActive    Boolean  @default(false) @map("is_active")
+  
+  // Artifact A: The Raw Spec (source of truth for the generator)
+  clinicalSpec Json    @map("clinical_spec") 
+  
+  // Artifact B: The Executable Graph (source of truth for the engine)
+  treeNodes    Json    @map("tree_nodes") 
+  
+  // Metadata for Governance
+  commitNote   String?  @map("commit_note") @db.Text
+  specHash     String   @map("spec_hash") @db.VarChar(64) // SHA-256 for integrity
+
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  createdBy    Int?     @map("created_by")
+  
+  reviewerId   Int?     @map("reviewer_id")
+  approvedAt   DateTime? @map("approved_at") @db.Timestamp(6)
+
+  disease      ClinicalDisease @relation(fields: [diseaseId], references: [id], onDelete: Cascade)
+  creator      User?           @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  reviewer     User?           @relation("tree_reviews", fields: [reviewerId], references: [id], onDelete: SetNull)
+
+  @@unique([diseaseId, version], map: "uq_clinical_tree_version")
+  @@index([isActive], map: "idx_clinical_tree_active")
+  @@map("clinical_decision_trees")
+}
+
+// ============================================================
+// PHASE 10: LLM EXPANSION PROPOSALS
+// ============================================================
+
+model TreeExpansionProposal {
+  id          Int      @id @default(autoincrement())
+  diseaseId   String   @map("disease_id") @db.VarChar(50)
+  baseVersion String   @map("base_version") @db.VarChar(50)
+  
+  proposedSpec Json    @map("proposed_spec")
+  proposedNodes Json   @map("proposed_nodes")
+  
+  status      String   @default("PENDING") @db.VarChar(20) // PENDING, APPROVED, REJECTED
+  
+  generatedBy String?  @map("generated_by") @db.VarChar(100) // LLM model identifier
+  reviewedBy  Int?     @map("reviewed_by")
+  reviewNotes String?  @map("review_notes") @db.Text
+  
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  reviewedAt  DateTime? @map("reviewed_at") @db.Timestamp(6)
+  
+  reviewer    User?    @relation("tree_expansion_reviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  
+  @@map("tree_expansion_proposals")
 }
