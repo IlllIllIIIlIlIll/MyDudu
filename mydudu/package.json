@@ -23,6 +23,7 @@
     "prisma": "^5.10.2"
   },
   "dependencies": {
-    "@prisma/client": "^5.10.2"
+    "@prisma/client": "^5.10.2",
+    "fast-json-stable-stringify": "^2.1.0"
   }
 }

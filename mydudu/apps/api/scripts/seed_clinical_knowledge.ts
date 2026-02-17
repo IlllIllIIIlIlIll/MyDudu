@@ -1,5 +1,6 @@
 
 import * as nodeCrypto from 'crypto';
+const stringify = require('fast-json-stable-stringify');
 import { PrismaClient } from '@prisma/client';
 import { ClinicalSpec } from '../src/clinical/clinical.types';
 import { ClinicalTreeGenerator } from '../src/clinical/ClinicalTreeGenerator';
@@ -842,9 +843,10 @@ async function seed() {
         const version = "1.0.0-mvp";
 
         // Fix: Compute real SHA-256 hash to match ClinicalEngineService integrity check
+        // Update: Use fast-json-stable-stringify for deterministic hashing
         const specHash = nodeCrypto
             .createHash('sha256')
-            .update(JSON.stringify(spec))
+            .update(stringify(spec))
             .digest('hex');
 
         // 3. Upsert ClinicalDisease

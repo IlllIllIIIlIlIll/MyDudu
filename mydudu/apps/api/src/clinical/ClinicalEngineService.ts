@@ -8,6 +8,7 @@ import {
     Logger
 } from '@nestjs/common';
 import * as crypto from 'crypto';
+import stringify = require('fast-json-stable-stringify');
 import { PrismaService } from '../prisma/prisma.service';
 import { ClinicalEngineRunner } from './ClinicalEngineRunner';
 import { ClinicalSpec, TreeNode, ExamOutcome } from './clinical.types';
@@ -31,7 +32,7 @@ export class ClinicalEngineService {
     static hashSpec(spec: ClinicalSpec): string {
         return crypto
             .createHash('sha256')
-            .update(JSON.stringify(spec))
+            .update(stringify(spec))
             .digest('hex');
     }
 
@@ -144,7 +145,7 @@ export class ClinicalEngineService {
         if (tree.specHash && session.treeVersion) {
             const currentSpecHash = ClinicalEngineService.hashSpec(tree.clinicalSpec as ClinicalSpec);
             console.log("Stored hash:", tree.specHash);
-console.log("Runtime hash:", currentSpecHash);
+            console.log("Runtime hash:", currentSpecHash);
             if (currentSpecHash !== tree.specHash) {
                 this.logger.error({
                     event: 'SPEC_HASH_MISMATCH',
