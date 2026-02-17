@@ -9,9 +9,9 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
 import { fetchWithAuth } from '../../lib/api';
+import { clinicalApi, type ClinicalNode } from '../../lib/clinicalApi';
 import styles from './ScreeningFlow.module.css';
 import { Patient, QueueSession, QuizStepHistory } from './types';
-import { DECISION_TREE, DIAGNOSIS_CODE_MAP } from './constants';
 import { SidebarPanel } from './components/SidebarPanel';
 import { ScreeningResultView } from './components/ScreeningResultView';
 import { VitalDisplay } from './components/VitalDisplay';
@@ -39,6 +39,12 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
   const [submitting, setSubmitting] = useState(false);
   const [isSwitchingPatient, setIsSwitchingPatient] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+
+  // Clinical API state
+  const [clinicalSessionId, setClinicalSessionId] = useState<string | null>(null);
+  const [clinicalNodes, setClinicalNodes] = useState<Record<string, ClinicalNode>>({});
+  const [clinicalOutcome, setClinicalOutcome] = useState<string | null>(null);
+  const [clinicalLoading, setClinicalLoading] = useState(false);
 
   const selectedPatient: Patient | null = selectedSession
     ? {
@@ -98,9 +104,12 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
             const claimed = await claimSession(candidate.sessionId);
             setSelectedSession(claimed);
             setPhase('VITALS');
-            setCurrentNodeId('start');
+            setCurrentNodeId('');
             setQuizHistory([]);
             setVitalsStatus('IDLE');
+            setClinicalSessionId(null);
+            setClinicalNodes({});
+            setClinicalOutcome(null);
             return;
           } catch {
             continue;
@@ -176,9 +185,49 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
     return () => clearInterval(timer);
   }, [selectedSession?.sessionId, selectedSession?.lockToken, user?.id]);
 
-  const handleDecision = (choice: 'yes' | 'no') => {
-    const node = DECISION_TREE[currentNodeId];
+  // Start clinical session when entering QUIZ phase
+  useEffect(() => {
+    if (phase === 'QUIZ' && !clinicalSessionId && selectedSession) {
+      const startClinicalSession = async () => {
+        setClinicalLoading(true);
+        try {
+          const response = await clinicalApi.startSession(
+            selectedSession.child.id,
+            1 // deviceId - TODO: get from session or context
+          );
+
+          setClinicalSessionId(response.sessionId);
+
+          // Convert initial nodes to Record format
+          const nodesMap = response.initialNodes.reduce((acc, node) => {
+            acc[node.id] = node;
+            return acc;
+          }, {} as Record<string, ClinicalNode>);
+
+          setClinicalNodes(nodesMap);
+
+          // Set first node as current
+          if (response.initialNodes.length > 0) {
+            setCurrentNodeId(response.initialNodes[0].id);
+          }
+        } catch (error: any) {
+          setApiError(error?.message || 'Gagal memulai sesi klinis');
+        } finally {
+          setClinicalLoading(false);
+        }
+      };
+
+      startClinicalSession();
+    }
+  }, [phase, clinicalSessionId, selectedSession]);
+
+  const handleDecision = async (choice: 'yes' | 'no') => {
+    if (!clinicalSessionId || !clinicalNodes[currentNodeId]) return;
+
+    const node = clinicalNodes[currentNodeId];
+    const answer = choice === 'yes';
     const nextId = choice === 'yes' ? node.yesNodeId : node.noNodeId;
+
     setQuizHistory(prev => [
       ...prev,
       {
@@ -186,19 +235,37 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
         nodeId: node.id,
         question: node.question,
         answer: choice === 'yes' ? 'Ya' : 'Tidak',
-        answerYes: choice === 'yes',
-        nextNodeId: nextId,
+        answerYes: answer,
+        nextNodeId: nextId || undefined,
       }
     ]);
 
-    if (nextId) {
-      const nextNode = DECISION_TREE[nextId];
-      if (nextNode.finalDiagnosis) {
+    setClinicalLoading(true);
+    try {
+      const response = await clinicalApi.submitAnswer(clinicalSessionId, node.id, answer);
+
+      if (response.outcome) {
+        // Final outcome reached
+        setClinicalOutcome(response.outcome);
         setPhase('RESULT');
-        setCurrentNodeId(nextId);
-      } else {
-        setCurrentNodeId(nextId);
+      } else if (response.nextNodes && response.nextNodes.length > 0) {
+        // More questions to ask
+        const newNodes = response.nextNodes.reduce((acc, n) => {
+          acc[n.id] = n;
+          return acc;
+        }, {} as Record<string, ClinicalNode>);
+
+        setClinicalNodes(prev => ({ ...prev, ...newNodes }));
+
+        // Move to first next node
+        if (nextId && newNodes[nextId]) {
+          setCurrentNodeId(nextId);
+        }
       }
+    } catch (error: any) {
+      setApiError(error?.message || 'Gagal mengirim jawaban');
+    } finally {
+      setClinicalLoading(false);
     }
   };
 
@@ -230,9 +297,12 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
       }
       setSelectedSession(claimed);
       setPhase('VITALS');
-      setCurrentNodeId('start');
+      setCurrentNodeId('');
       setQuizHistory([]);
       setVitalsStatus('IDLE');
+      setClinicalSessionId(null);
+      setClinicalNodes({});
+      setClinicalOutcome(null);
       await loadQueue(false);
     } catch (error: any) {
       setApiError(error?.message || 'Gagal mengganti pasien');
@@ -264,19 +334,14 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
   };
 
   const handleDiagnoseAndNext = async () => {
-    if (!selectedSession?.lockToken || !user?.id) return;
-    const diagnosisCode = DIAGNOSIS_CODE_MAP[currentNodeId];
-    if (!diagnosisCode) {
-      setApiError('Kode diagnosis tidak ditemukan.');
-      return;
-    }
+    if (!selectedSession?.lockToken || !user?.id || !clinicalOutcome) return;
 
     setSubmitting(true);
     try {
       await fetchWithAuth(`/operator/pemeriksaan/${selectedSession.sessionId}/diagnose?userId=${user.id}`, {
         method: 'POST',
         body: JSON.stringify({
-          diagnosisCode,
+          diagnosisCode: clinicalOutcome,
           version: selectedSession.version,
           lockToken: selectedSession.lockToken,
           quizSteps: quizHistory.map((step) => ({
@@ -285,7 +350,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
             question: step.question,
             answerYes: step.answerYes,
             nextNodeId: step.nextNodeId,
-            treeVersion: 'decision-tree-v1',
+            treeVersion: clinicalSessionId || 'clinical-api-v1',
           })),
         }),
       });
@@ -297,7 +362,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
     }
   };
 
-  const currentNode = DECISION_TREE[currentNodeId];
+  const currentNode = clinicalNodes[currentNodeId];
 
   // Vitals display order: left col = weight, temp, heartRate; right col = height, spo2
   const vitalsLeft = [
@@ -332,10 +397,15 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
       <main className="flex-1 flex flex-col overflow-hidden">
 
         <div className="flex-1 flex flex-col min-h-0 bg-transparent overflow-hidden">
-          {phase === 'RESULT' && selectedPatient && currentNode.finalDiagnosis ? (
+          {phase === 'RESULT' && selectedPatient && clinicalOutcome ? (
             <div className="flex-1 min-h-0 flex flex-col px-4 py-3">
               <ScreeningResultView
-                diagnosis={currentNode.finalDiagnosis}
+                diagnosis={{
+                  title: clinicalOutcome === 'DIAGNOSED' ? 'Terdiagnosis' : clinicalOutcome === 'REFER_IMMEDIATELY' ? 'Rujuk Segera' : clinicalOutcome === 'EMERGENCY' ? 'Gawat Darurat' : 'Hasil Pemeriksaan',
+                  description: `Hasil pemeriksaan klinis: ${clinicalOutcome}`,
+                  severity: clinicalOutcome === 'EMERGENCY' || clinicalOutcome === 'REFER_IMMEDIATELY' ? 'Merah' : clinicalOutcome === 'DIAGNOSED' ? 'Kuning' : 'Hijau',
+                  instructions: clinicalOutcome === 'EMERGENCY' ? ['Rujuk ke UGD segera', 'Berikan pertolongan pertama'] : clinicalOutcome === 'REFER_IMMEDIATELY' ? ['Rujuk ke fasilitas kesehatan', 'Pantau kondisi anak'] : ['Lanjutkan pemantauan', 'Berikan perawatan sesuai anjuran']
+                }}
                 quizHistory={quizHistory}
                 vitalsLeft={vitalsLeft}
                 vitalsRight={vitalsRight}
@@ -516,9 +586,9 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                   noNodeId: currentNode.noNodeId ?? null,
                 }}
                 currentQuestionIndex={quizHistory.length + 1}
-                totalQuestions={Object.values(DECISION_TREE).filter(node => !node.finalDiagnosis).length}
+                totalQuestions={Object.keys(clinicalNodes).length}
                 onAnswer={handleDecision}
-                isSubmitting={submitting}
+                isSubmitting={submitting || clinicalLoading}
               />
             )}
 
