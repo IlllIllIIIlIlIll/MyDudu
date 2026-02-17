@@ -1,6 +1,6 @@
 
 import { Module } from '@nestjs/common';
-import { ClinicalController } from './ClinicalController';
+import { ClinicalController } from './clinical.controller';
 import { ClinicalEngineService } from './ClinicalEngineService';
 
 @Module({
