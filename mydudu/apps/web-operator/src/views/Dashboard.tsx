@@ -150,7 +150,7 @@ export function Dashboard() {
                       }
                     />
                   )}
-                  <Select value={reportPeriod} onValueChange={setReportPeriod}>
+                  {/* <Select value={reportPeriod} onValueChange={setReportPeriod}>
                     <SelectTrigger className="w-[140px] bg-gray-50 border-gray-200">
                       <SelectValue placeholder="Periode" />
                     </SelectTrigger>
@@ -160,8 +160,8 @@ export function Dashboard() {
                       <SelectItem value="monthly">Bulanan</SelectItem>
                       <SelectItem value="yearly">Tahunan</SelectItem>
                     </SelectContent>
-                  </Select>
-                  <Button
+                  </Select> */}
+                  {/* <Button
                     variant="outline"
                     size="icon"
                     className="bg-[#11998E] text-white border-none hover:bg-[#0e8076] transition-all shadow-md active:scale-95"
@@ -169,7 +169,7 @@ export function Dashboard() {
                     title="Unduh Laporan"
                   >
                     <Download className="w-5 h-5" />
-                  </Button>
+                  </Button> */}
                 </div>
               </div>
               <div className="overflow-x-auto">

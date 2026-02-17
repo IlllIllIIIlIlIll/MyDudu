@@ -61,18 +61,28 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activePage === item.id;
+            const isValidation = item.id === 'validation';
 
             return (
               <li key={item.id}>
                 <button
-                  onClick={() => onNavigate(item.id)}
-                  className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all ${isActive
-                    ? 'gradient-primary text-white shadow-lg'
-                    : 'text-gray-700 hover:bg-gray-50'
+                  onClick={() => !isValidation && onNavigate(item.id)}
+                  disabled={isValidation}
+                  className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200 
+                    ${isValidation
+                      ? 'bg-transparent text-gray-300 cursor-not-allowed' // Completely disabled look
+                      : isActive
+                        ? 'gradient-primary text-white shadow-md scale-[1.02]'
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 hover:shadow-sm active:scale-95'
                     }`}
                 >
                   <Icon className="w-5 h-5" />
                   <span className="font-medium text-[14px]">{item.label}</span>
+                  {isValidation && (
+                    <span className="ml-auto text-[10px] font-bold bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                      Soon
+                    </span>
+                  )}
                 </button>
               </li>
             );

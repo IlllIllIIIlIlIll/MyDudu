@@ -83,9 +83,9 @@ export function ScreeningResultView({
                             <button type="button" onClick={onNewPatient} className="w-full gradient-primary text-white py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 hover:opacity-90 active:scale-[0.99] shadow-md" title="Pasien Baru">
                                 <RefreshCw className="w-4 h-4 shrink-0" /> <span>Pasien Baru</span>
                             </button>
-                            <button type="button" className="w-full bg-white border border-slate-200 text-slate-600 py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-slate-50 active:scale-[0.99]" title="Hubungi RS">
+                            {/* <button type="button" className="w-full bg-white border border-slate-200 text-slate-600 py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-slate-50 active:scale-[0.99]" title="Hubungi RS">
                                 <ExternalLink className="w-4 h-4 shrink-0" /> <span>Hubungi RS</span>
-                            </button>
+                            </button> */}
                         </div>
                     </div>
                 </div>
