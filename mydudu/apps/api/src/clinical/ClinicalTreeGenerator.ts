@@ -46,11 +46,19 @@ export class ClinicalTreeGenerator {
             : (spec.risk_factors.some(r => r.gate_type === 'HARD_GATE') ? id(`risk_hard__0`) : id(`severe__0`));
 
         if (primarySymptom) {
+            // Find label from core_symptoms (or risk/warning/severe tables)
+            const source = spec.core_symptoms.find(s => s.id === primarySymptom)
+                || spec.risk_factors.find(r => r.id === primarySymptom)
+                || spec.warning_signs.find(w => w.id === primarySymptom)
+                || spec.severe_criteria.find(s => s.id === primarySymptom);
+
+            const questionText = source ? source.label : `Apakah anak mengalami ${primarySymptom.replace(/_/g, " ")}?`;
+
             nodes.push({
                 node_id: id(`entry_gate`),
                 disease_id: spec.disease_id,
                 node_type: 'ENTRY_GATE',
-                question: `Apakah anak mengalami ${primarySymptom.replace(/_/g, " ")}?`,
+                question: questionText,
                 answer_yes: firstRealNode,
                 answer_no: OUTCOME_EXCLUDED,
                 metadata: {

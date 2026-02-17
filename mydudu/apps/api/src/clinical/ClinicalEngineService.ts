@@ -143,6 +143,8 @@ export class ClinicalEngineService {
         // PHASE 1: Spec Hash Integrity Verification
         if (tree.specHash && session.treeVersion) {
             const currentSpecHash = ClinicalEngineService.hashSpec(tree.clinicalSpec as ClinicalSpec);
+            console.log("Stored hash:", tree.specHash);
+console.log("Runtime hash:", currentSpecHash);
             if (currentSpecHash !== tree.specHash) {
                 this.logger.error({
                     event: 'SPEC_HASH_MISMATCH',

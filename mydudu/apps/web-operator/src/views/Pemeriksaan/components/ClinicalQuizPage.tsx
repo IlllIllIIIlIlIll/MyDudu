@@ -47,11 +47,11 @@ export function ClinicalQuizPage({
         <div className={`mb-2 ${styles.quizTitleText}`}>
           {currentQuestion.question}
         </div>
-        {currentQuestion.layman && (
+        {/* {currentQuestion.layman && (
           <p className={`max-w-2xl mx-auto ${styles.quizSubtitleText}`}>
             {currentQuestion.layman}
           </p>
-        )}
+        )} */}
       </div>
 
       {/* Answers */}

@@ -105,6 +105,7 @@ export const TreeNodeSchema = z.object({
     disease_id: z.string(),
     node_type: TreeNodeTypeSchema,
     question: z.string(),
+    layman: z.string().optional(),
     answer_yes: z.string(), // Next Node ID
     answer_no: z.string(),  // Next Node ID
 
