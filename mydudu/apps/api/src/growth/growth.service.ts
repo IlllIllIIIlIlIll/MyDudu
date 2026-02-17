@@ -271,7 +271,14 @@ export class GrowthService {
         const results: Partial<Record<WhoGrowthIndicator, GrowthAnalysisResult>> = {};
         const sex = gender === 'M' ? WhoGender.M : WhoGender.F;
 
-        console.log(`[GrowthService] Analyze: child=${childId}, sex=${sex}, age=${ageDays}, w=${weight}, h=${height}`);
+        // Query child to get name and UUID for logging (don't log database ID)
+        const child = await this.prisma.child.findUnique({
+            where: { id: childId },
+            select: { fullName: true, childUuid: true }
+        });
+
+        const childIdentifier = child ? `"${child.fullName}" (${child.childUuid})` : `ID:${childId}`;
+        console.log(`[GrowthService] Analyze: child=${childIdentifier}, sex=${sex}, age=${ageDays}, w=${weight}, h=${height}`);
 
         // Helper to safely set result if valid
         const setResult = (ind: WhoGrowthIndicator, res: GrowthAnalysisResult | null) => {

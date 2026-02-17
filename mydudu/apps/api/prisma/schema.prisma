@@ -200,6 +200,7 @@ model Parent {
 
 model Child {
   id        Int       @id @default(autoincrement())
+  childUuid String    @unique @default(uuid()) @map("child_uuid") @db.VarChar(64)
   parentId  Int       @map("parent_id")
   fullName  String    @map("full_name") @db.VarChar(100)
   birthDate DateTime  @map("birth_date") @db.Date

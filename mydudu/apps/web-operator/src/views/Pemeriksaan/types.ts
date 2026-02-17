@@ -40,6 +40,7 @@ export interface QueueSession {
     noiseLevel?: number | null;
     child: {
         id: number;
+        childUuid: string;
         fullName: string;
         birthDate: string;
         gender: 'M' | 'F' | null;

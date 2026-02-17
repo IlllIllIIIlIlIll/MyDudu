@@ -192,8 +192,8 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
         setClinicalLoading(true);
         try {
           const response = await clinicalApi.startSession(
-            selectedSession.child.id,
-            1 // deviceId - TODO: get from session or context
+            selectedSession.child.childUuid
+            // deviceUuid is optional and will use first available device as fallback
           );
 
           setClinicalSessionId(response.sessionId);

@@ -1,9 +1,10 @@
-import { Controller, Post, Get, Body, Param } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ClinicalEngineService } from './ClinicalEngineService';
+import { PrismaService } from '../prisma/prisma.service';
 
 interface StartSessionRequest {
-    childId: number;
-    deviceId: number;
+    childUuid: string;  // Changed from childId
+    deviceUuid?: string; // Changed from deviceId, optional
 }
 
 interface SubmitAnswerRequest {
@@ -14,15 +15,54 @@ interface SubmitAnswerRequest {
 
 @Controller('clinical')
 export class ClinicalController {
-    constructor(private readonly clinicalService: ClinicalEngineService) { }
+    constructor(
+        private readonly clinicalService: ClinicalEngineService,
+        private readonly prisma: PrismaService
+    ) { }
 
     @Post('start')
     async startSession(@Body() req: StartSessionRequest) {
-        const { childId, deviceId } = req;
+        const { childUuid, deviceUuid } = req;
 
-        // Start session with all active diseases (for now, just DENGUE)
+        // Query child by UUID to get internal ID
+        const child = await this.prisma.child.findUnique({
+            where: { childUuid },
+            select: { id: true, fullName: true }
+        });
+
+        if (!child) {
+            throw new NotFoundException(`Child with UUID ${childUuid} not found`);
+        }
+
+        // Query device by UUID or use first available device
+        let deviceId: number;
+        if (deviceUuid) {
+            const device = await this.prisma.device.findUnique({
+                where: { deviceUuid },
+                select: { id: true }
+            });
+
+            if (!device) {
+                throw new NotFoundException(`Device with UUID ${deviceUuid} not found`);
+            }
+
+            deviceId = device.id;
+        } else {
+            // Fallback: use first available device
+            const firstDevice = await this.prisma.device.findFirst({
+                orderBy: { id: 'asc' }
+            });
+
+            if (!firstDevice) {
+                throw new BadRequestException('No devices found in the system');
+            }
+
+            deviceId = firstDevice.id;
+        }
+
+        // Start session with internal IDs
         const result = await this.clinicalService.startSession({
-            childId,
+            childId: child.id,
             deviceId,
             diseaseIds: ['DENGUE'] // Hardcoded for now, could be dynamic based on symptoms
         });

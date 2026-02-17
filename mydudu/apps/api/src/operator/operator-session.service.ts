@@ -66,6 +66,7 @@ export class OperatorSessionService {
             noiseLevel: session.noiseLevel ? Number(session.noiseLevel) : null,
             child: {
                 id: session.child?.id,
+                childUuid: session.child?.childUuid,
                 fullName: session.child?.fullName || null,
                 birthDate: session.child?.birthDate || null,
                 gender: session.child?.gender || null,
