@@ -241,12 +241,11 @@ export class MqttService implements OnModuleInit {
             if (existingSession) {
                 // UPDATE existing session
                 // We only update fields that are defined in `sessionData`.
-                // Note: sessionData has `sessionUuid`, `deviceId`, etc. we might not want to overwrite UUID.
 
                 // Remove fixed fields from update payload
                 delete sessionData.sessionUuid;
                 delete sessionData.recordedAt; // Keep original time
-                delete sessionData.deviceId;   // Keep original device ID (or update if we want to track last writer?)
+                delete sessionData.deviceId;   // Keep original device ID
                 delete sessionData.childId;
                 delete sessionData.status;
 
@@ -257,11 +256,19 @@ export class MqttService implements OnModuleInit {
 
                 this.logger.log(`Session MERGED/UPDATED for ${deviceUuid}. ID: ${session.id}`);
             } else {
-                // CREATE new session
-                session = await this.prisma.session.create({
-                    data: sessionData
-                });
-                this.logger.log(`Session CREATED for ${deviceUuid} at ${payloadTime}`);
+                // CREATE new session (with Idempotency Check)
+                try {
+                    session = await this.prisma.session.create({
+                        data: sessionData
+                    });
+                    this.logger.log(`Session CREATED for ${deviceUuid} at ${payloadTime}`);
+                } catch (e: any) {
+                    if (e.code === 'P2002') {
+                        this.logger.warn(`Duplicate session creation prevented (Idempotency) for ${deviceUuid} at ${payloadTime}`);
+                        return;
+                    }
+                    throw e;
+                }
             }
 
             await this.systemLogsService.logEvent(

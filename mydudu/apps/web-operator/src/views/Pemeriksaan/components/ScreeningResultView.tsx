@@ -72,19 +72,7 @@ export function ScreeningResultView({
                         </div>
                     </div>
 
-                    <div className={`${styles.resultCell} ${styles.resultCellScroll} ${styles.resultCellAreaSop}`}>
-                        <h3 className={`${styles.resultCardTitle} shrink-0 flex items-center gap-1.5`}>
-                            <span className="w-1 h-3 rounded-full bg-emerald-500" />
-                            <span>Instruksi SOP Penanganan</span>
-                        </h3>
-                        <div className="space-y-1.5 mt-1 min-h-0">
-                            {diagnosis.instructions.map((inst, idx) => (
-                                <div key={idx} className="bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-1.5 text-slate-700 text-xs">
-                                    <p className="leading-relaxed">{inst}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+
 
                     <div className={`${styles.actionPanelScreenOnly} ${styles.resultCell} ${styles.resultCellStatic} ${styles.resultCellAreaActions} no-print`}>
                         <h3 className={styles.resultActionTitle}>Panel Tindakan</h3>

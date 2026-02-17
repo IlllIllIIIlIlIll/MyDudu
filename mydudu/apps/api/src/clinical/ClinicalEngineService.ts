@@ -66,15 +66,21 @@ export class ClinicalEngineService {
             return acc;
         }, {} as Record<string, any>);
 
-        const session = await this.prisma.session.create({
-            data: {
-                sessionUuid: crypto.randomUUID(),
-                childId: dto.childId,
-                deviceId: dto.deviceId,
-                treeVersion: primaryTree.version, // Lock session to this version
-                snapshotNodes: snapshotNodes, // PHASE 9: Store immutable snapshot
-                status: 'IN_PROGRESS'
-            }
+        // PHASE 6: Transaction Atomicity - Session Creation
+        const session = await this.prisma.$transaction(async (tx) => {
+            return await tx.session.create({
+                data: {
+                    sessionUuid: crypto.randomUUID(),
+                    childId: dto.childId,
+                    deviceId: dto.deviceId,
+                    treeVersion: primaryTree.version, // Lock session to this version
+                    snapshotNodes: snapshotNodes, // PHASE 9: Store immutable snapshot
+                    status: 'IN_PROGRESS'
+                }
+            });
+        }, {
+            maxWait: 5000, // 5s max wait for connection
+            timeout: 10000 // 10s max transaction duration
         });
 
         // 3. Return initial nodes (Entry Gates)

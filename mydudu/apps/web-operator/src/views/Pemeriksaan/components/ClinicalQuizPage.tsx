@@ -34,7 +34,12 @@ export function ClinicalQuizPage({
     >
       {/* Progress */}
       <div className="shrink-0">
-        <ProgressLine current={currentQuestionIndex} total={totalQuestions} />
+        <ProgressLine 
+          label="Pertanyaan" 
+          value={(currentQuestionIndex / totalQuestions) * 100} 
+          color="blue"
+          labelValue={`${currentQuestionIndex}/${totalQuestions}`}
+        />
       </div>
 
       {/* Question */}

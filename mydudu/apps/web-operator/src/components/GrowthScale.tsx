@@ -137,18 +137,15 @@ export function GrowthScale({ label, value, zScore, deviation, ideal, unit, colo
             {/* Scale Track */}
             <div
                 ref={containerRef}
-                className={`relative h-3 w-full bg-slate-100 rounded-full overflow-hidden mt-2 mb-6 shadow-inner ${isExplorerOpen ? 'cursor-ew-resize touch-none' : ''}`}
+                className={`relative h-3 w-full rounded-full overflow-hidden mt-2 mb-6 shadow-inner ${isExplorerOpen ? 'cursor-ew-resize touch-none' : ''}`}
+                style={{
+                    background: `linear-gradient(to right, #dc2626 0%, #f97316 15%, #facc15 30%, #22c55e 50%, #facc15 70%, #f97316 85%, #dc2626 100%)`
+                }}
                 onMouseDown={isExplorerOpen ? handleScaleInteraction : undefined}
                 onTouchMove={isExplorerOpen ? handleScaleInteraction : undefined}
                 onTouchStart={isExplorerOpen ? handleScaleInteraction : undefined}
             >
-                {/* Gradient Background */}
-                <div
-                    className="absolute inset-0 w-full h-full opacity-80"
-                    style={{
-                        background: `linear-gradient(to right, #ef4444 0%, #ef4444 15%, #eab308 30%, #22c55e 45%, #22c55e 55%, #eab308 70%, #ef4444 85%, #ef4444 100%)`
-                    }}
-                />
+                {/* Gradient Background - now integrated into div background */}
 
                 {/* Trail (Ghost to Actual) */}
                 {isExplorerOpen && (

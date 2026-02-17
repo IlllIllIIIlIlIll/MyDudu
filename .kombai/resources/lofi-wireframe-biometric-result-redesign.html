@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pediatric Biometric Result - Wireframe Redesign</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Comic Sans MS', cursive;
+            background: #f5f5f5;
+            color: #333;
+            padding: 20px;
+        }
+        .wireframe-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #fff;
+            border: 2px solid #333;
+            padding: 20px;
+        }
+        .title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px dashed #999;
+        }
+        .header-section {
+            background: #e8e8e8;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid #666;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .header-badge {
+            background: #ccc;
+            padding: 4px 10px;
+            display: inline-block;
+            font-size: 11px;
+            font-weight: bold;
+            border: 1px solid #999;
+            margin-bottom: 8px;
+        }
+        .header-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 8px 0 4px 0;
+        }
+        .header-subtitle {
+            font-size: 12px;
+            color: #666;
+        }
+        .alert-section {
+            background: #ffe8e8;
+            border-left: 6px solid #cc0000;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px solid #990000;
+            border-radius: 4px;
+        }
+        .alert-title {
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+        .alert-badge {
+            background: #cc0000;
+            color: #fff;
+            padding: 3px 8px;
+            font-size: 10px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-top: 8px;
+        }
+        .grid-section {
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+        .biometric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: #fff;
+            border: 2px solid #ccc;
+            padding: 12px;
+            border-radius: 4px;
+            text-align: center;
+            position: relative;
+        }
+        .card.critical {
+            background: #fff5f5;
+            border-color: #cc6666;
+        }
+        .reuse-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #4CAF50;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 9px;
+            font-weight: bold;
+            z-index: 10;
+        }
+        .card-label {
+            font-size: 10px;
+            color: #999;
+            text-transform: uppercase;
+        }
+        .card-value {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 4px 0;
+        }
+        .card-unit {
+            font-size: 9px;
+            color: #999;
+        }
+        .growth-card {
+            background: #fff;
+            border: 2px solid #ccc;
+            padding: 16px;
+            margin-bottom: 16px;
+            border-radius: 4px;
+            position: relative;
+        }
+        .growth-title {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .growth-bar {
+            background: linear-gradient(90deg, #cc0000 0%, #ff6600 15%, #ffcc00 30%, #00cc00 50%, #ffcc00 70%, #ff6600 85%, #cc0000 100%);
+            height: 14px;
+            border-radius: 8px;
+            border: 1px solid #999;
+            position: relative;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+        .growth-gradient {
+            height: 100%;
+            width: 100%;
+        }
+        .growth-marker {
+            position: absolute;
+            top: 50%;
+            left: 60%;
+            transform: translateY(-50%);
+            width: 2px;
+            height: 20px;
+            background: #fff;
+            border: 2px solid #333;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .growth-labels {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+            font-size: 9px;
+            color: #999;
+            text-align: center;
+            margin-top: 4px;
+        }
+        .growth-interpretation {
+            font-size: 11px;
+            color: #666;
+            font-style: italic;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e8e8e8;
+        }
+        .severity-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #cc0000;
+            color: #fff;
+            padding: 4px 10px;
+            font-size: 9px;
+            font-weight: bold;
+            border-radius: 3px;
+        }
+        .severity-badge.normal {
+            background: #00cc00;
+        }
+        .bottom-cta {
+            background: #333333;
+            color: #fff;
+            padding: 16px;
+            text-align: center;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 20px 0 0 0;
+            border: 2px solid #000;
+        }
+        .bottom-cta-text {
+            font-size: 14px;
+            margin-bottom: 6px;
+        }
+        .responsive-note {
+            font-size: 10px;
+            color: #999;
+            font-style: italic;
+            margin-top: 20px;
+            padding: 10px;
+            background: #f5f5f5;
+            border: 1px dashed #ccc;
+        }
+        @media (max-width: 768px) {
+            .biometric-grid {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="wireframe-container">
+    <div class="title">Pediatric Biometric & Growth Risk Dashboard - Redesign Wireframe</div>
+        
+        <!-- HEADER SECTION -->
+        <div class="header-section">
+            <!-- REUSABLE: Badge component from src/components/Badge.tsx -->
+            <div class="reuse-badge" style="position: relative; display: inline-block; margin-bottom: 8px;">
+                <span>[REUSE] Badge</span>
+            </div>
+            <div class="header-badge">Hasil Klasifikasi</div>
+            
+            <div class="header-title">Hasil Pemeriksaan Pasien</div>
+            <div class="header-subtitle">Data Biometrik & Interpretasi Pertumbuhan</div>
+        </div>
+
+        <!-- ALERT SECTION (Conditional - shown only if severe risk detected) -->
+        <div class="alert-section">
+            <!-- REUSABLE: Alert component from src/components/Alert.tsx -->
+            <div class="reuse-badge" style="position: absolute; top: 8px; right: 8px;">
+                <span>[REUSE] Alert</span>
+            </div>
+            <div class="alert-title">Perhatian Khusus Diperlukan</div>
+            <p style="font-size: 12px; color: #666; margin: 6px 0;">Suhu tubuh anak menunjukkan demam tinggi. Diperlukan tindakan segera.</p>
+            <div class="alert-badge">Demam Tinggi</div>
+        </div>
+
+        <!-- BIOMETRIC CARDS GRID -->
+        <div class="grid-section">
+            <div class="section-title">Metrik Vital</div>
+            <div class="biometric-grid">
+                <!-- REUSABLE: MeasurementCard component from src/components/RawMeasurementCard.tsx -->
+                <div class="card">
+                    <div class="reuse-badge">[REUSE] Card</div>
+                    <div class="card-label">Berat Badan</div>
+                    <div class="card-value">12.5</div>
+                    <div class="card-unit">kg</div>
+                </div>
+                <div class="card">
+                    <div class="reuse-badge">[REUSE] Card</div>
+                    <div class="card-label">Tinggi Badan</div>
+                    <div class="card-value">95.0</div>
+                    <div class="card-unit">cm</div>
+                </div>
+                <div class="card critical">
+                    <div class="reuse-badge" style="background: #ff6600;">[REUSE] Card</div>
+                    <div class="card-label">Suhu Tubuh</div>
+                    <div class="card-value" style="color: #cc0000;">39.2</div>
+                    <div class="card-unit">°C</div>
+                </div>
+                <div class="card">
+                    <div class="reuse-badge">[REUSE] Card</div>
+                    <div class="card-label">Detak Jantung</div>
+                    <div class="card-value">115</div>
+                    <div class="card-unit">bpm</div>
+                </div>
+                <div class="card">
+                    <div class="reuse-badge">[REUSE] Card</div>
+                    <div class="card-label">Saturasi O2</div>
+                    <div class="card-value">97</div>
+                    <div class="card-unit">%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GROWTH INTERPRETATION SECTION -->
+        <div class="grid-section">
+            <div class="section-title">📈 Interpretasi Pertumbuhan</div>
+            
+            <!-- REUSABLE: GrowthScale component from src/components/GrowthScale.tsx -->
+            <div class="growth-card">
+                <div class="reuse-badge">[REUSE] GrowthScale</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div class="growth-title">Berat dibanding Umur</div>
+                    <div class="severity-badge">Kurang</div>
+                </div>
+                <div class="growth-bar">
+                    <div class="growth-gradient" style="width: 25%;"></div>
+                    <div class="growth-marker" style="left: 25%;"></div>
+                </div>
+                <div class="growth-labels">
+                    <span>Sangat Kurang</span>
+                    <span>Kurang</span>
+                    <span>Normal</span>
+                    <span>Lebih</span>
+                    <span>Sangat Lebih</span>
+                </div>
+                <div class="growth-interpretation">
+                    Berat badan anak berada di kategori kurang. Z-score: -1.8. Rekomendasi: pantau asupan nutrisi dan tambahkan suplemen.
+                </div>
+            </div>
+
+            <div class="growth-card">
+                <div class="reuse-badge">[REUSE] GrowthScale</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div class="growth-title">Tinggi dibanding Umur</div>
+                    <div class="severity-badge normal">Normal</div>
+                </div>
+                <div class="growth-bar">
+                    <div class="growth-gradient" style="width: 52%;"></div>
+                    <div class="growth-marker" style="left: 52%;"></div>
+                </div>
+                <div class="growth-labels">
+                    <span>Sangat Kurang</span>
+                    <span>Kurang</span>
+                    <span>Normal</span>
+                    <span>Lebih</span>
+                    <span>Sangat Lebih</span>
+                </div>
+                <div class="growth-interpretation">
+                    Tinggi badan anak dalam rentang normal untuk usia. Z-score: 0.1. Status: sesuai pertumbuhan normal.
+                </div>
+            </div>
+
+            <div class="growth-card">
+                <div class="reuse-badge">[REUSE] GrowthScale</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div class="growth-title">Berat dibanding Tinggi Badan</div>
+                    <div class="severity-badge">Kurang</div>
+                </div>
+                <div class="growth-bar">
+                    <div class="growth-gradient" style="width: 30%;"></div>
+                    <div class="growth-marker" style="left: 30%;"></div>
+                </div>
+                <div class="growth-labels">
+                    <span>Sangat Kurang</span>
+                    <span>Kurang</span>
+                    <span>Normal</span>
+                    <span>Lebih</span>
+                    <span>Sangat Lebih</span>
+                </div>
+                <div class="growth-interpretation">
+                    Proposi berat dibanding tinggi badan menunjukkan kurus. Z-score: -1.5. Indikasi: risiko gizi kurang.
+                </div>
+            </div>
+        </div>
+
+        <!-- QUIZ HISTORY / SYMPTOMS SECTION -->
+        <div class="grid-section">
+            <div class="section-title">Riwayat Gejala Klinis</div>
+            <div class="growth-card" style="padding: 12px;">
+                <!-- REUSABLE: QuizHistory component (scrollable list) -->
+                <div class="reuse-badge">[REUSE] QuizHistory</div>
+                <div style="font-size: 11px; line-height: 1.6;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid #ddd;">
+                        <span style="flex: 1;">Demam dalam 3 hari terakhir?</span>
+                        <span style="background: #fef2f2; color: #b91c1c; padding: 2px 6px; border-radius: 3px; font-size: 9px;">Ya</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid #ddd;">
+                        <span style="flex: 1;">Batuk atau kesulitan bernapas?</span>
+                        <span style="background: #ecfdf5; color: #047857; padding: 2px 6px; border-radius: 3px; font-size: 9px;">Tidak</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid #ddd;">
+                        <span style="flex: 1;">Diare atau muntah?</span>
+                        <span style="background: #ecfdf5; color: #047857; padding: 2px 6px; border-radius: 3px; font-size: 9px;">Tidak</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="flex: 1;">Anak terlihat lemas atau tidak responsif?</span>
+                        <span style="background: #fef2f2; color: #b91c1c; padding: 2px 6px; border-radius: 3px; font-size: 9px;">Ya</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STICKY BOTTOM CTA -->
+        <div class="bottom-cta">
+            <!-- REUSABLE: PrimaryButton component from src/components/Button.tsx -->
+            <div class="reuse-badge" style="position: relative; display: inline-block;">[REUSE] Button</div>
+            <div class="bottom-cta-text">→ Analisis Gejala Lanjutan →</div>
+            <div style="font-size: 11px; opacity: 0.9;">Klik untuk melanjutkan dengan pasien berikutnya</div>
+        </div>
+
+        <div class="responsive-note">
+            <strong>Design Notes:</strong>
+            <ul style="margin-left: 16px; margin-top: 6px;">
+                <li>✓ Mobile-first responsive grid (1 col mobile, auto-fit desktop)</li>
+                <li>✓ Risk-based color coding (Red for danger, Green for normal)</li>
+                <li>✓ Growth bars with gradient visualization matching WHO standards</li>
+                <li>✓ Conditional alert section (only shows if severe risk detected)</li>
+                <li>✓ Sticky bottom CTA for easy next-patient workflow</li>
+                <li>✓ Micro-interactions: card hover, badge states, button feedback</li>
+                <li>✓ Accessibility: semantic HTML, color + text for status indication, sufficient contrast</li>
+                <li>✓ Print-friendly: SOP instructions visible, grayscale-safe colors</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

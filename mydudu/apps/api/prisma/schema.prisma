@@ -164,6 +164,8 @@ model User {
   validatedRecords  ValidationRecord[]
   notifications     Notification[]
   createdSchedules  Schedule[]
+  childUpdateLogs   ChildUpdateLog[]
+  sessionUpdateLogs SessionUpdateLog[]
   auditLogs         AuditLog[]
 
   // Clinical Engine
@@ -207,9 +209,11 @@ model Child {
   gender    String?   @db.Char(1) // 'M' or 'F'
   bloodType String?   @map("blood_type") @db.VarChar(10) // A, B, AB, O, UNKNOWN
   createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamp(6) // Soft Delete
 
-  parent   Parent    @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  parent   Parent    @relation(fields: [parentId], references: [id], onDelete: Restrict) // PROTECTED
   sessions Session[]
+  childUpdateLogs ChildUpdateLog[]
 
   @@map("children")
 }
@@ -226,6 +230,7 @@ model Device {
   status     DeviceStatus @default(INACTIVE) @map("status")
   // batteryLevel Int?         @map("battery_level") @db.SmallInt // Removed
   // lastSync     DateTime?    @map("last_sync") @db.Timestamp(6) // Removed
+  deletedAt  DateTime?    @map("deleted_at") @db.Timestamp(6) // Soft Delete
 
   posyandu  Posyandu?  @relation(fields: [posyanduId], references: [id])
   // logs      DeviceLog[] // Removed
@@ -234,12 +239,6 @@ model Device {
 
   @@map("devices")
 }
-
-// ============================================================
-// DEVICE LOGS - REMOVED
-// ============================================================
-
-// model DeviceLog { ... }
 
 // ============================================================
 // INCIDENT MANAGEMENT
@@ -255,17 +254,13 @@ model Incident {
   assignedTo  Int?      @map("assigned_to")
   createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
   resolvedAt  DateTime? @map("resolved_at") @db.Timestamp(6)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamp(6) // Soft Delete
 
   device   Device? @relation(fields: [deviceId], references: [id], onDelete: Cascade)
   assignee User?   @relation(fields: [assignedTo], references: [id], onDelete: SetNull)
 
   @@map("incidents")
 }
-
-// ============================================================
-// SESSIONS
-// ============================================================
-
 model Session {
   id          Int           @id @default(autoincrement())
   sessionUuid String        @unique @map("session_uuid") @db.VarChar(64)
@@ -283,9 +278,10 @@ model Session {
   lockedAt   DateTime?      @map("locked_at") @db.Timestamp(6)
   lockToken  String?        @map("lock_token") @db.VarChar(64)
   version    Int            @default(1)
-  treeVersion String?       @map("tree_version") @db.VarChar(64) // Added for version locking
-  snapshotNodes Json?       @map("snapshot_nodes") // PHASE 9: Immutable tree snapshot
+  treeVersion String?       @map("tree_version") @db.VarChar(64)
+  snapshotNodes Json?       @map("snapshot_nodes")
   updatedAt  DateTime       @updatedAt @map("updated_at") @db.Timestamp(6)
+  deletedAt  DateTime?      @map("deleted_at") @db.Timestamp(6) // Soft Delete
 
   // Metrics
   weight      Decimal? @db.Decimal(5, 2)
@@ -297,8 +293,8 @@ model Session {
   noiseLevel  Decimal? @map("noise_level") @db.Decimal(5, 2)
   // oxy          Decimal?      @db.Decimal(5, 2)
 
-  child    Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
-  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  child    Child  @relation(fields: [childId], references: [id], onDelete: Restrict) // PROTECTED
+  device   Device @relation(fields: [deviceId], references: [id], onDelete: Restrict) // PROTECTED
   operator User?  @relation("session_operator", fields: [operatorId], references: [id], onDelete: SetNull)
   lockedByOperator User? @relation("session_lock_owner", fields: [lockedByOperatorId], references: [id], onDelete: SetNull)
 
@@ -307,12 +303,17 @@ model Session {
   reports           Report[]
   geotags           Geotag[]
   quizSteps         SessionQuizStep[]
+  sessionUpdateLogs SessionUpdateLog[]
 
   @@index([childId], map: "idx_sessions_child_id")
   @@index([status], map: "idx_sessions_status")
   @@index([examOutcome, measurementCompleted, recordedAt], map: "idx_sessions_queue")
   @@index([lockedByOperatorId], map: "idx_sessions_lock_owner")
   @@index([measurementCompletedAt], map: "idx_sessions_measurement_completed_at")
+  
+  // Idempotency constraint: Prevent duplicate processing of same device timestamp
+  @@unique([deviceId, recordedAt], map: "uq_device_recorded_at")
+
   @@map("sessions")
 }
 
@@ -326,23 +327,14 @@ model SessionQuizStep {
   nextNodeId String?  @map("next_node_id") @db.VarChar(64)
   treeVersion String  @default("decision-tree-v1") @map("tree_version") @db.VarChar(64)
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamp(6) // Soft Delete
 
-  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Restrict) // PROTECTED
 
   @@unique([sessionId, stepOrder], map: "uq_session_quiz_steps_order")
   @@index([sessionId], map: "idx_session_quiz_steps_session")
   @@map("session_quiz_steps")
 }
-
-// ============================================================
-// MEASUREMENTS - REMOVED (Merged into Session)
-// ============================================================
-
-// model Measurement { ... }
-
-// ============================================================
-// NUTRITION STATUS
-// ============================================================
 
 model NutritionStatus {
   id        Int                @id @default(autoincrement())
@@ -351,8 +343,9 @@ model NutritionStatus {
   tbU       Decimal?           @map("tb_u") @db.Decimal(5, 2)
   bbTb      Decimal?           @map("bb_tb") @db.Decimal(5, 2)
   category  NutritionCategory?
+  deletedAt DateTime?          @map("deleted_at") @db.Timestamp(6) // Soft Delete
 
-  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Restrict) // PROTECTED
 
   @@map("nutrition_status")
 }
@@ -673,4 +666,46 @@ model TreeExpansionProposal {
   reviewer    User?    @relation("tree_expansion_reviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
   
   @@map("tree_expansion_proposals")
+}
+
+// ============================================================
+// AUDIT LOGS (PHASE 4: IMMUTABLE AUDIT TRAIL)
+// ============================================================
+
+model ChildUpdateLog {
+  id          BigInt   @id @default(autoincrement())
+  childId     Int      @map("child_id")
+  userId      Int?     @map("user_id")
+  action      String   @db.VarChar(20) // CREATE, UPDATE, SOFT_DELETE
+  fieldName   String   @map("field_name") @db.VarChar(50)
+  oldValue    String?  @map("old_value") @db.Text
+  newValue    String?  @map("new_value") @db.Text
+  reason      String?  @db.Text
+  ipAddress   String?  @map("ip_address") @db.VarChar(45)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+
+  child Child @relation(fields: [childId], references: [id], onDelete: Restrict)
+  user  User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([childId, createdAt])
+  @@map("child_update_logs")
+}
+
+model SessionUpdateLog {
+  id          BigInt   @id @default(autoincrement())
+  sessionId   Int      @map("session_id")
+  userId      Int?     @map("user_id")
+  action      String   @db.VarChar(20)
+  fieldName   String   @map("field_name") @db.VarChar(50)
+  oldValue    String?  @map("old_value") @db.Text
+  newValue    String?  @map("new_value") @db.Text
+  reason      String?  @db.Text
+  ipAddress   String?  @map("ip_address") @db.VarChar(45)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId, createdAt])
+  @@map("session_update_logs")
 }

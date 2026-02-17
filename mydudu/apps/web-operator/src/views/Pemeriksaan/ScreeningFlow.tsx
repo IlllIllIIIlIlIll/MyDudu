@@ -420,16 +420,16 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
             {phase === 'VITALS' && selectedPatient && selectedSession && (
               <motion.div
                 key="vitals" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-                className={`${styles.vitalsWrap} w-full h-full`}
+                className={`${styles.vitalsWrap} w-full h-full flex flex-col px-4 py-6`}
               >
                 {/* SECTION 1: RAW DATA (Measurements only, no interpretation) */}
-                <div>
+                <div className="flex-1 overflow-y-auto">
                   <div className="text-center mb-6">
                     <h2 className={`mb-2 ${styles.vitalsTitle}`}>Data Biometrik Pasien</h2>
                     <p className={`max-w-md mx-auto ${styles.vitalsSubtitle}`}>Hasil pengukuran dari perangkat Dudu</p>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                     <RawMeasurementCard
                       label="Berat Badan"
                       value={vitalsData.weight.value}

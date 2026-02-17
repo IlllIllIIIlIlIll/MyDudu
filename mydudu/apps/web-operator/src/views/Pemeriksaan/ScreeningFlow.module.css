@@ -110,14 +110,16 @@
 
 .vitalsTitle {
   font-size: 28px;
-  font-weight: 700;
-  color: #0b1020;
+  font-weight: 600;
+  color: #111827;
+  letter-spacing: -0.01em;
 }
 
 .vitalsSubtitle {
-  color: #8c97ab;
-  font-size: 13px;
-  line-height: 1.6;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 400;
 }
 
 .sensorPill {
@@ -138,10 +140,17 @@
 
 .vitalCard {
   background: #ffffff;
-  border: 2px dashed #d7e0ee;
-  border-radius: 22px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
   min-height: 140px;
   padding: 18px 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  transition: all 0.15s ease;
+}
+
+.vitalCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
 }
 
 .miniAction {
@@ -206,10 +215,15 @@
 
 .kmsCard {
   background: #ffffff;
-  border-radius: 24px;
-  border: 1px solid #dbe5f2;
-  padding: 28px 30px;
-  box-shadow: 0 20px 30px -26px rgba(15, 23, 42, 0.35);
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  transition: all 0.15s ease;
+}
+
+.kmsCard:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
 }
 
 .kmsTitle {
@@ -220,26 +234,26 @@
 }
 
 .ctaPrimary {
-  background: #0b1020;
+  background: #0f172a;
   color: #ffffff;
-  border-radius: 20px;
-  padding: 18px 24px;
-  font-size: 16px;
+  border-radius: 16px;
+  padding: 16px 24px;
+  font-size: 14px;
   font-weight: 700;
-  box-shadow: 0 20px 30px -22px rgba(15, 23, 42, 0.5);
+  box-shadow: none;
   margin-top: auto;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
+  border: none;
+  cursor: pointer;
 }
 
 .ctaPrimary:hover {
-  background: #0a0f1d;
-  transform: translateY(-2px);
-  box-shadow: 0 24px 38px -20px rgba(15, 23, 42, 0.6);
+  background: #1a2848;
+  transform: translateY(-1px);
 }
 
 .ctaPrimary:active {
-  transform: translateY(0) scale(0.98);
-  box-shadow: 0 10px 20px -18px rgba(15, 23, 42, 0.5);
+  transform: scale(0.98);
 }
 
 .sidebarToggle {
@@ -535,11 +549,11 @@
 .resultHeaderFullWidth {
   flex-shrink: 0;
   width: 100%;
-  padding: 1rem 1.5rem;
-  background: linear-gradient(135deg, var(--color-primary-start, #11998e) 0%, var(--color-primary-end, #38ef7d) 100%);
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
   color: #fff;
   border-radius: 1rem;
-  box-shadow: 0 4px 20px -8px rgba(17, 153, 142, 0.4);
+  box-shadow: 0 4px 20px -8px rgba(15, 23, 42, 0.3);
 }
 
 .resultHeaderBadge {
@@ -593,7 +607,7 @@
   grid-template-columns: 1fr 300px;
   grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-areas:
-    "vitals     sop"
+    "vitals     actions"
     "symptoms   actions";
 }
 
@@ -603,15 +617,16 @@
   display: flex;
   flex-direction: column;
   background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.875rem;
   overflow: hidden;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
 .resultCell:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 4px 12px -4px rgba(15, 23, 42, 0.08);
+  border-color: #d1d5db;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .resultCellStatic {

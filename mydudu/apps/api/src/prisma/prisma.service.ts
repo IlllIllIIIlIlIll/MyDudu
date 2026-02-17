@@ -1,9 +1,17 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { softDeleteMiddleware } from './soft-delete.middleware';
+import { auditMiddleware } from './audit.middleware';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
     async onModuleInit() {
+        // middleware for soft delete
+        this.$use(softDeleteMiddleware());
+
+        // middleware for audit logs
+        this.$use(auditMiddleware(this));
+
         // Retry logic for DB connection
         const maxRetries = 5;
         let retryCount = 0;
