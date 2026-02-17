@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, BadRequestException, NotFoundException, MethodNotAllowedException } from '@nestjs/common';
 import { ClinicalEngineService } from './ClinicalEngineService';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -19,6 +19,11 @@ export class ClinicalController {
         private readonly clinicalService: ClinicalEngineService,
         private readonly prisma: PrismaService
     ) { }
+
+    @Get('start')
+    async startSessionGet() {
+        throw new MethodNotAllowedException('This endpoint only accepts POST requests with a JSON body (childUuid, deviceUuid).');
+    }
 
     @Post('start')
     async startSession(@Body() req: StartSessionRequest) {
