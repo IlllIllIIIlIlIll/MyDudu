@@ -44,6 +44,7 @@ import { ClinicalModule } from './clinical/clinical.module';
         CronModule,
         NutritionModule,
         AdminModule,
+        OperatorModule,
         ChildrenModule,
         ObservabilityModule,
         ClinicalModule,
