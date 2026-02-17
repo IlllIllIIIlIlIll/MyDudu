@@ -12,8 +12,10 @@ export function softDeleteMiddleware(): Prisma.Middleware {
             );
         }
 
-        // Auto-filter soft-deleted records
-        if (params.model && (params.action === 'findMany' || params.action === 'findFirst' || params.action === 'findUnique')) {
+        // Auto-filter soft-deleted records ONLY for protected models
+        if (params.model && PROTECTED_MODELS.includes(params.model) &&
+            (params.action === 'findMany' || params.action === 'findFirst' || params.action === 'findUnique')) {
+
             // Change findUnique to findFirst to allow filtering by non-unique deletedAt field
             if (params.action === 'findUnique') {
                 params.action = 'findFirst';
