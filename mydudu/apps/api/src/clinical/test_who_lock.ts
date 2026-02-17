@@ -13,11 +13,11 @@ async function main() {
 
         await prisma.whoGrowthStandard.create({
             data: {
-                type: 'WFA',
+                indicator: 'WEIGHT_FOR_AGE', // Correct field name and enum
                 gender: 'M',
                 ageDays: 99999,
                 l: 1, m: 0, s: 0,
-                sd3neg: 0, sd2neg: 0, sd1neg: 0, sd0: 0, sd1: 0, sd2: 0, sd3: 0
+                sd0: 0 // Required field based on schema (sd0 is not optional)
             }
         });
         console.error('❌ FAILED: Insertion into who_growth_standards SUCCEEDED but should have been blocked!');
