@@ -17,11 +17,11 @@ import { RegisterParentDialog } from '../components/RegisterParentDialog';
 import { RegisterChildDialog } from '../components/RegisterChildDialog';
 import { Plus } from 'lucide-react';
 
-const nutritionLabels: Record<NutritionCategory, string> = {
-  NORMAL: 'Normal',
-  STUNTED: 'Stunting',
-  WASTED: 'Gizi Kurang',
-  OBESE: 'Obesitas',
+const sessionStatusConfig: Record<string, { label: string; bg: string; text: string }> = {
+  IN_PROGRESS: { label: 'Sedang Diukur', bg: 'bg-blue-100', text: 'text-blue-700' },
+  MEASURED: { label: 'Terukur', bg: 'bg-yellow-100', text: 'text-yellow-700' },
+  CLINICAL_ACTIVE: { label: 'Kuis Berlangsung', bg: 'bg-orange-100', text: 'text-orange-700' },
+  CLINICALLY_DONE: { label: 'Selesai', bg: 'bg-green-100', text: 'text-green-700' },
 };
 
 export function Dashboard() {
@@ -176,27 +176,32 @@ export function Dashboard() {
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      <th className="px-4 py-3 text-left text-[13px] font-bold text-gray-700">Anak</th>
-                      <th className="px-4 py-3 text-left text-[13px] font-bold text-gray-700">Tanggal</th>
-                      <th className="px-4 py-3 text-left text-[13px] font-bold text-gray-700">Alat</th>
-                      <th className="px-4 py-3 text-left text-[13px] font-bold text-gray-700">Status Gizi</th>
-                      <th className="px-4 py-3 text-left text-[13px] font-bold text-gray-700">Catatan</th>
+                      <th className="px-4 py-3 text-center text-[13px] font-bold text-gray-700">Anak</th>
+                      <th className="px-4 py-3 text-center text-[13px] font-bold text-gray-700">Tanggal</th>
+                      <th className="px-4 py-3 text-center text-[13px] font-bold text-gray-700">Alat</th>
+                      <th className="px-4 py-3 text-center text-[13px] font-bold text-gray-700">Status</th>
+                      <th className="px-4 py-3 text-center text-[13px] font-bold text-gray-700">Catatan</th>
                     </tr>
                   </thead>
                   <tbody>
                     {overview?.recentSessions?.map((session) => (
                       <tr key={session.id} className="border-b border-gray-100">
-                        <td className="px-4 py-3 text-[14px] font-semibold">{session.child?.fullName || '-'}</td>
-                        <td className="px-4 py-3 text-[14px] text-gray-600">{formatDate(session.recordedAt)}</td>
-                        <td className="px-4 py-3 text-[14px] text-gray-600">
+                        <td className="px-4 py-3 text-[14px] font-semibold text-center">{session.child?.fullName || '-'}</td>
+                        <td className="px-4 py-3 text-[14px] text-gray-600 text-center">{formatDate(session.recordedAt)}</td>
+                        <td className="px-4 py-3 text-[14px] text-gray-600 text-center">
                           {session.device?.name || '-'}
                         </td>
-                        <td className="px-4 py-3 text-[14px]">
-                          <span className="px-3 py-1 rounded-full text-[12px] font-semibold bg-gray-100 text-gray-700">
-                            {session.nutritionCategory ? nutritionLabels[session.nutritionCategory] : 'Belum Dinilai'}
-                          </span>
+                        <td className="px-4 py-3 text-[14px] text-center">
+                          {(() => {
+                            const cfg = sessionStatusConfig[session.status] ?? { label: session.status, bg: 'bg-gray-100', text: 'text-gray-700' };
+                            return (
+                              <span className={`px-3 py-1 rounded-full text-[12px] font-semibold ${cfg.bg} ${cfg.text}`}>
+                                {cfg.label}
+                              </span>
+                            );
+                          })()}
                         </td>
-                        <td className="px-4 py-3 text-[14px] text-gray-600">
+                        <td className="px-4 py-3 text-[14px] text-gray-600 text-center">
                           Berat {session.weight ?? '-'} kg, Tinggi {session.height ?? '-'} cm, Suhu {session.temperature ?? '-'} °C, Detak {session.heartRate ?? '-'} bpm, Kebisingan {session.noiseLevel ?? '-'} dB
                         </td>
                       </tr>
