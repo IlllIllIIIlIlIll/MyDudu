@@ -118,7 +118,7 @@ async function main() {
                     childId: child.id,
                     deviceId: device.id,
                     recordedAt: date,
-                    status: 'CLINICALLY_SUFFICIENT',
+                    status: 'CLINICALLY_DONE',
                     weight: weight,
                     height: height,
                     temperature: temp,
