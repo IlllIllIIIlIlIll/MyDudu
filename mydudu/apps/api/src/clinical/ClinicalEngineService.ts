@@ -132,8 +132,8 @@ export class ClinicalEngineService {
         // PHASE 5: Timeout Protection
         this.checkSessionTimeout(session);
 
-        // STEP 4: Emergency Hard Stop
-        if (session.examOutcome === 'EMERGENCY' || session.status === 'CLINICAL_ACTIVE') {
+        // STEP 4: Hard Stop — block answers if session is already finalized
+        if (session.examOutcome === 'EMERGENCY' || session.status === 'CLINICALLY_DONE') {
             throw new BadRequestException("Session already terminated.");
         }
 
@@ -311,7 +311,42 @@ export class ClinicalEngineService {
             }
         }
 
-        // If no more questions but still Pending? -> Inconclusive / Healthy?
+        // If no more questions but still PENDING:
+        // The tree traversal hit an OUTCOME node — finalize the session using that node's exam_outcome.
+        for (const res of results) {
+            if (res.outcome === 'PENDING') {
+                const pendingTree = activeTreeCache.find(t => t.diseaseId === res.diseaseId);
+                if (!pendingTree) continue;
+
+                // Trace the path to find the OUTCOME node we landed on
+                const answersForDisease = answersMap[res.diseaseId] || {};
+                let cursor = pendingTree.treeNodes.find(n => n.node_type === 'ENTRY_GATE') || pendingTree.treeNodes[0];
+                while (cursor) {
+                    if (cursor.node_type === 'OUTCOME') {
+                        // Found the terminal OUTCOME node — finalize session
+                        const finalOutcome: ExamOutcome = (cursor.exam_outcome as ExamOutcome) ?? 'PENDING';
+                        await this.prisma.session.update({
+                            where: { id: session.id },
+                            data: {
+                                examOutcome: finalOutcome,
+                                status: SessionStatus.CLINICALLY_DONE,
+                                diagnosisText: `Outcome: ${finalOutcome} (${res.diseaseId})`
+                            }
+                        });
+                        return {
+                            outcome: finalOutcome,
+                            diseaseId: res.diseaseId,
+                            message: 'Quiz complete.'
+                        };
+                    }
+                    const answer = answersForDisease[cursor.node_id];
+                    if (answer === undefined) break; // Unanswered — should not happen here
+                    cursor = ClinicalEngineRunner.getNextNode(cursor.node_id, answer, pendingTree.treeNodes)!;
+                }
+            }
+        }
+
+        // Absolute fallback — no tree matched
         return { outcome: 'PENDING', message: 'No more questions available.' };
     }
 
