@@ -58,10 +58,15 @@ export class OperatorDashboardService {
             uniqueChildren = distinctChildren.length;
         }
 
-        const recentSessions = await this.prisma.session.findMany({
-            where: sessionWhere,
-            orderBy: { recordedAt: 'desc' },
-            take: 6,
+        const recentSessionsRaw = await this.prisma.session.findMany({
+            where: {
+                ...sessionWhere,
+                status: SessionStatus.COMPLETE, // Only show completed sessions
+                measurementCompleted: true, // Only show sessions with measurements
+                recordedAt: { not: null },
+            },
+            orderBy: { recordedAt: 'desc' }, // Latest first
+            take: 50, // Fetch more to allow for filtering
             include: {
                 child: {
                     include: {
@@ -93,6 +98,17 @@ export class OperatorDashboardService {
                 },
             },
         });
+
+        // Filter for unique children manually to ensure global date order
+        const uniqueChildIds = new Set<number>();
+        const recentSessions = [];
+        for (const session of recentSessionsRaw) {
+            if (!uniqueChildIds.has(session.childId)) {
+                uniqueChildIds.add(session.childId);
+                recentSessions.push(session);
+                if (recentSessions.length >= 6) break;
+            }
+        }
 
         const upcomingSchedules =
             scope.isAdmin || scope.posyanduIds.length > 0

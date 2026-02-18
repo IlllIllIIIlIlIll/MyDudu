@@ -22,7 +22,7 @@ export function GrowthSummaryCard({
             heightForAgeZ,
             weightForHeightZ,
             bmiForAgeZ
-        ].map(z => getGrowthStatus(z));
+        ].map(z => getGrowthStatus(z)).filter((s): s is GrowthStatus => !!s);
     }, [weightForAgeZ, heightForAgeZ, weightForHeightZ, bmiForAgeZ]);
 
     const overallStatus = useMemo(() => {

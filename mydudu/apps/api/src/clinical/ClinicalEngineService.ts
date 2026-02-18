@@ -10,6 +10,7 @@ import {
 import * as crypto from 'crypto';
 import stringify = require('fast-json-stable-stringify');
 import { PrismaService } from '../prisma/prisma.service';
+import { SessionStatus } from '@prisma/client';
 import { ClinicalEngineRunner } from './ClinicalEngineRunner';
 import { ClinicalSpec, TreeNode, ExamOutcome } from './clinical.types';
 import { StartSessionDto, AnswerDto, SessionStatusDto } from './clinical.dto';
@@ -67,22 +68,35 @@ export class ClinicalEngineService {
             return acc;
         }, {} as Record<string, any>);
 
-        // PHASE 6: Transaction Atomicity - Session Creation
-        const session = await this.prisma.$transaction(async (tx) => {
-            return await tx.session.create({
-                data: {
-                    sessionUuid: crypto.randomUUID(),
-                    childId: dto.childId,
-                    deviceId: dto.deviceId,
-                    treeVersion: primaryTree.version, // Lock session to this version
-                    snapshotNodes: snapshotNodes, // PHASE 9: Store immutable snapshot
-                    status: 'IN_PROGRESS'
-                }
-            });
-        }, {
-            maxWait: 5000, // 5s max wait for connection
-            timeout: 10000 // 10s max transaction duration
+        // PHASE 6: Transaction Atomicity - Session Creation / Reuse
+        // Check for existing IN_PROGRESS session for same child
+        // Relaxing device constraint: If a session is open for this child, we reuse it regardless of device mismatch (e.g. tablet vs scale)
+        const existingSession = await this.prisma.session.findFirst({
+            where: {
+                childId: dto.childId,
+                examOutcome: 'PENDING',
+                measurementCompleted: true
+            },
+            orderBy: { recordedAt: 'desc' }
         });
+
+        let session;
+
+        if (existingSession) {
+            // Reuse existing session
+            // If clinical context missing (e.g. created by measurement only), update it
+            if (!existingSession.treeVersion || !existingSession.snapshotNodes) {
+                session = await this.prisma.session.update({
+                    where: { id: existingSession.id },
+                    data: {
+                        treeVersion: primaryTree.version,
+                        snapshotNodes: snapshotNodes
+                    }
+                });
+            } else {
+                session = existingSession;
+            }
+        }
 
         // 3. Return initial nodes (Entry Gates)
         const nodes = activeTrees.map(tree => {
@@ -260,7 +274,7 @@ export class ClinicalEngineService {
                 where: { id: session.id },
                 data: {
                     examOutcome: topResult.outcome,
-                    status: 'CLINICALLY_SUFFICIENT', // or COMPLETE
+                    status: SessionStatus.COMPLETE, // Use COMPLETE so it shows up in dashboard
                     diagnosisCode: null, // Should map outcome -> diagnosis code? Maybe later.
                     diagnosisText: `Automated Outcome: ${topResult.outcome} (${topResult.diseaseId})`
                 }

@@ -109,7 +109,7 @@ export class MqttService implements OnModuleInit {
         const existingSession = await this.prisma.session.findFirst({
             where: {
                 childId: Number(childId),
-                status: 'IN_PROGRESS',
+                examOutcome: 'PENDING',
                 recordedAt: {
                     gte: new Date(Date.now() - 60 * 60 * 1000) // Last 1 hour
                 }
