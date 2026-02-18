@@ -36,8 +36,8 @@ export class ValidationService {
         // 2b. Update session status based on decision
         const nextStatus =
             decision === 'approve'
-                ? SessionStatus.CLINICALLY_SUFFICIENT
-                : SessionStatus.INSUFFICIENT;
+                ? SessionStatus.CLINICALLY_DONE  // Doctor approved → finalized
+                : SessionStatus.MEASURED;         // Doctor rejected → back to measured, needs re-exam
 
         await this.prisma.session.update({
             where: { id: sessionId },

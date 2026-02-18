@@ -37,10 +37,10 @@ enum DeviceStatus {
 }
 
 enum SessionStatus {
-  IN_PROGRESS
-  COMPLETE
-  CLINICALLY_SUFFICIENT
-  INSUFFICIENT
+  IN_PROGRESS      // Measurement ongoing (device streaming)
+  MEASURED         // Measurement complete, quiz not yet started
+  CLINICAL_ACTIVE  // Quiz started / in progress
+  CLINICALLY_DONE  // Diagnosis finalized
 
   @@map("session_status")
 }

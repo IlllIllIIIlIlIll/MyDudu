@@ -4,6 +4,7 @@ import { CreateDeviceDto } from './dto/create-device.dto';
 import { UpdateDeviceDto } from './dto/update-device.dto';
 import { SystemLogsService, SystemLogAction } from '../system-logs/system-logs.service';
 import { NotificationService } from '../notifications/notifications.service';
+import { NutritionService } from '../telemetry/nutrition.service';
 import { SessionStatus, ExamOutcome } from '@prisma/client';
 
 @Injectable()
@@ -11,7 +12,8 @@ export class DeviceService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly systemLogsService: SystemLogsService,
-        private readonly notificationService: NotificationService
+        private readonly notificationService: NotificationService,
+        private readonly nutritionService: NutritionService
     ) { }
 
 
@@ -207,7 +209,7 @@ export class DeviceService {
                 childId: child.id,
                 deviceId: selectedDevice.id,
                 operatorId: operatorId, // Log who created this
-                status: SessionStatus.COMPLETE,
+                status: SessionStatus.MEASURED, // Measurement done, quiz not yet started
                 examOutcome: ExamOutcome.PENDING,
                 weight: data.weight,
                 height: data.height,
@@ -226,9 +228,8 @@ export class DeviceService {
             manual: true
         }, operatorId);
 
-        // 4. Compute Nutrition Status (Lazy load or inject service if needed. Using direct create here)
-        // Ideally inject NutritionService but avoiding circular deps if any.
-        // For now, let's assume it's just stored.
+        // 4. Compute & Persist Nutrition Status
+        await this.nutritionService.computeStatus(session.id);
 
         return session;
     }

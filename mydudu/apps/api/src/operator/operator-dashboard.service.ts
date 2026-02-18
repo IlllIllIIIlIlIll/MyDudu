@@ -61,7 +61,7 @@ export class OperatorDashboardService {
         const recentSessionsRaw = await this.prisma.session.findMany({
             where: {
                 ...sessionWhere,
-                status: SessionStatus.COMPLETE, // Only show completed sessions
+                status: SessionStatus.CLINICALLY_DONE, // Only show sessions with finalized diagnosis
                 measurementCompleted: true, // Only show sessions with measurements
                 recordedAt: { not: null },
             },

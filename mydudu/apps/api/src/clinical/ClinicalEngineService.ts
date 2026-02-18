@@ -133,7 +133,7 @@ export class ClinicalEngineService {
         this.checkSessionTimeout(session);
 
         // STEP 4: Emergency Hard Stop
-        if (session.examOutcome === 'EMERGENCY' || session.status === 'CLINICALLY_SUFFICIENT') {
+        if (session.examOutcome === 'EMERGENCY' || session.status === 'CLINICAL_ACTIVE') {
             throw new BadRequestException("Session already terminated.");
         }
 
@@ -274,7 +274,7 @@ export class ClinicalEngineService {
                 where: { id: session.id },
                 data: {
                     examOutcome: topResult.outcome,
-                    status: SessionStatus.COMPLETE, // Use COMPLETE so it shows up in dashboard
+                    status: SessionStatus.CLINICALLY_DONE, // Diagnosis finalized
                     diagnosisCode: null, // Should map outcome -> diagnosis code? Maybe later.
                     diagnosisText: `Automated Outcome: ${topResult.outcome} (${topResult.diseaseId})`
                 }
