@@ -248,19 +248,20 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
         // Final outcome reached
         setClinicalOutcome(response.outcome);
         setPhase('RESULT');
-      } else if (response.nextNodes && response.nextNodes.length > 0) {
-        // More questions to ask
-        const newNodes = response.nextNodes.reduce((acc, n) => {
-          acc[n.id] = n;
-          return acc;
-        }, {} as Record<string, ClinicalNode>);
+      } else if (response.nextNode) {
+        // More questions — backend drives navigation (multi-disease sequential)
+        const n = response.nextNode;
+        const nextNodeEntry: ClinicalNode = {
+          id: n.nodeId,
+          question: n.question,
+          layman: n.layman ?? '',
+          yesNodeId: null, // Backend drives flow; frontend doesn't need these
+          noNodeId: null,
+          diseaseId: n.diseaseId
+        };
 
-        setClinicalNodes(prev => ({ ...prev, ...newNodes }));
-
-        // Move to first next node
-        if (nextId && newNodes[nextId]) {
-          setCurrentNodeId(nextId);
-        }
+        setClinicalNodes(prev => ({ ...prev, [n.nodeId]: nextNodeEntry }));
+        setCurrentNodeId(n.nodeId);
       }
     } catch (error: any) {
       setApiError(error?.message || 'Gagal mengirim jawaban');

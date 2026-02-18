@@ -43,12 +43,14 @@ export class ClinicalEngineService {
      * Initialize session bound to a specific disease tree version.
      */
     async startSession(dto: StartSessionDto) {
-        // 1. Fetch active trees for requested diseases
+        // 1. Fetch active trees
+        // If diseaseIds provided, use those; otherwise fetch ALL active trees (screening mode)
+        const treeFilter = dto.diseaseIds && dto.diseaseIds.length > 0
+            ? { diseaseId: { in: dto.diseaseIds }, isActive: true }
+            : { isActive: true as true };
+
         const activeTrees = await this.prisma.clinicalDecisionTree.findMany({
-            where: {
-                diseaseId: { in: dto.diseaseIds },
-                isActive: true
-            }
+            where: treeFilter
         });
 
         if (activeTrees.length === 0) {
@@ -83,8 +85,7 @@ export class ClinicalEngineService {
         let session;
 
         if (existingSession) {
-            // Reuse existing session
-            // If clinical context missing (e.g. created by measurement only), update it
+            // Reuse existing session — update clinical context if missing
             if (!existingSession.treeVersion || !existingSession.snapshotNodes) {
                 session = await this.prisma.session.update({
                     where: { id: existingSession.id },
@@ -96,17 +97,22 @@ export class ClinicalEngineService {
             } else {
                 session = existingSession;
             }
+        } else {
+            // No existing session — measurement must be completed first
+            throw new NotFoundException(
+                'No pending session found for this child. Please complete measurement first.'
+            );
         }
 
-        // 3. Return initial nodes (Entry Gates)
+        // 3. Return initial nodes (Entry Gates) for all active trees
         const nodes = activeTrees.map(tree => {
             const treeNodes = tree.treeNodes as unknown as TreeNode[];
-            // Entry Gate is usually the first node, or strictly typed 'ENTRY_GATE'
             const entryNode = treeNodes.find(n => n.node_type === 'ENTRY_GATE');
             return {
                 diseaseId: tree.diseaseId,
                 nodeId: entryNode?.node_id,
-                question: entryNode?.question
+                question: entryNode?.question,
+                layman: entryNode?.layman
             };
         });
 
@@ -187,7 +193,7 @@ export class ClinicalEngineService {
         });
 
         // PHASE 2: Concurrency Guard - Transaction-based answer submission
-        const savedStep = await this.prisma.$transaction(async (tx) => {
+        await this.prisma.$transaction(async (tx) => {
             const existing = await tx.sessionQuizStep.findFirst({
                 where: {
                     sessionId: session.id,
@@ -196,18 +202,13 @@ export class ClinicalEngineService {
             });
 
             if (existing) {
-                // Idempotent: return existing if same answer
-                if (existing.answerYes === dto.answer) {
-                    return existing;
-                }
-                // Update if different answer
+                if (existing.answerYes === dto.answer) return existing; // Idempotent
                 return await tx.sessionQuizStep.update({
                     where: { id: existing.id },
                     data: { answerYes: dto.answer }
                 });
             }
 
-            // Create new step
             return await tx.sessionQuizStep.create({
                 data: {
                     sessionId: session.id,
@@ -220,14 +221,24 @@ export class ClinicalEngineService {
             });
         });
 
-        // 4. Re-Evaluate Outcome
-        // We need answers for ALL diseases in this session to support orchestration
-        // Use a generic findMany approach? Or just re-fetch steps?
+        // ── MULTI-DISEASE SCREENING ENGINE ────────────────────────────────────
+        //
+        // Strategy: Sequential
+        // 1. Rebuild per-disease answers map from all stored quiz steps
+        // 2. For each disease in the session snapshot, determine its state:
+        //    - ACTIVE:    findNextQuestion() returns a node
+        //    - EXCLUDED:  tree reached OUTCOME(EXCLUDED) node
+        //    - FINAL:     tree reached OUTCOME(DIAGNOSED/EMERGENCY/REFER)
+        // 3. If any disease is FINAL (high severity) → finalize session immediately
+        // 4. If all diseases are EXCLUDED → finalize with PENDING (no match)
+        // 5. Otherwise → return next question from first ACTIVE disease
+
+        // Re-fetch all steps (including the one just saved)
         const allSteps = await this.prisma.sessionQuizStep.findMany({
             where: { sessionId: session.id }
         });
 
-        // Re-construct answers map
+        // Build per-disease answers map (namespaced by disease prefix)
         const answersMap: Record<string, Record<string, boolean>> = {};
         allSteps.forEach(step => {
             const dId = step.nodeId.split('__')[0].toUpperCase();
@@ -235,12 +246,17 @@ export class ClinicalEngineService {
             answersMap[dId][step.nodeId] = step.answerYes;
         });
 
-        // Fetch active trees for these diseases
-        const affectedDiseaseIds = Object.keys(answersMap);
+        // Load per-disease outcomes from snapshotNodes.meta (persisted exclusions)
+        const snapshot = (session.snapshotNodes as Record<string, any>) || {};
+        const persistedMeta: Record<string, string> = snapshot.meta?.diseaseOutcomes || {};
+
+        // Fetch all active trees for this session (all diseases in snapshot)
+        const snapshotDiseaseIds = Object.keys(snapshot).filter(k => k !== 'meta');
         const activeTrees = await this.prisma.clinicalDecisionTree.findMany({
             where: {
-                diseaseId: { in: affectedDiseaseIds }, // Or satisfy session version
-                version: session.treeVersion || undefined
+                diseaseId: { in: snapshotDiseaseIds.length > 0 ? snapshotDiseaseIds : [diseaseId] },
+                version: session.treeVersion || undefined,
+                isActive: true
             }
         });
 
@@ -250,103 +266,134 @@ export class ClinicalEngineService {
             treeNodes: t.treeNodes as unknown as TreeNode[]
         }));
 
-        // Run Orchestrator
-        const results = ClinicalEngineService.evaluateSession(
-            answersMap,
-            activeTreeCache,
-            session.treeVersion || undefined
-        );
+        // ── STEP 1: Resolve per-disease state ─────────────────────────────────
+        type DiseaseState =
+            | { status: 'ACTIVE'; nextNode: TreeNode }
+            | { status: 'EXCLUDED' }
+            | { status: 'FINAL'; outcome: ExamOutcome; priority: number };
 
-        // Determine "Next Node" or Final Outcome
-        // Logic:
-        // 1. Look at top priority result.
-        // 2. If it's finalized (Diagnosed/Emergency/Refer), return that.
-        // 3. If Pending, find the next unanswered question in that tree.
+        const diseaseStates: Record<string, DiseaseState> = {};
 
-        const topResult = results[0]; // Highest priority
+        for (const cachedTree of activeTreeCache) {
+            const dId = cachedTree.diseaseId;
 
-        if (!topResult) return { status: 'PENDING', nextNode: null };
+            // If already persisted as excluded, skip re-evaluation
+            if (persistedMeta[dId] === 'EXCLUDED') {
+                diseaseStates[dId] = { status: 'EXCLUDED' };
+                continue;
+            }
 
-        if (['EMERGENCY', 'REFER_IMMEDIATELY', 'DIAGNOSED'].includes(topResult.outcome)) {
-            // Stop & Return Outcome
-            // Update Session outcome
-            await this.prisma.session.update({
-                where: { id: session.id },
-                data: {
-                    examOutcome: topResult.outcome,
-                    status: SessionStatus.CLINICALLY_DONE, // Diagnosis finalized
-                    diagnosisCode: null, // Should map outcome -> diagnosis code? Maybe later.
-                    diagnosisText: `Automated Outcome: ${topResult.outcome} (${topResult.diseaseId})`
+            const diseaseAnswers = answersMap[dId] || {};
+            const nextNode = ClinicalEngineRunner.findNextQuestion(diseaseAnswers, cachedTree.treeNodes);
+
+            if (nextNode) {
+                // Still has unanswered questions
+                diseaseStates[dId] = { status: 'ACTIVE', nextNode };
+            } else {
+                // No more questions — trace path to find terminal OUTCOME node
+                let cursor = cachedTree.treeNodes.find(n => n.node_type === 'ENTRY_GATE') || cachedTree.treeNodes[0];
+                let terminalOutcome: ExamOutcome = 'PENDING';
+
+                while (cursor) {
+                    if (cursor.node_type === 'OUTCOME') {
+                        terminalOutcome = (cursor.exam_outcome as ExamOutcome) ?? 'PENDING';
+                        break;
+                    }
+                    const answer = diseaseAnswers[cursor.node_id];
+                    if (answer === undefined) break;
+                    const next = ClinicalEngineRunner.getNextNode(cursor.node_id, answer, cachedTree.treeNodes);
+                    if (!next) break;
+                    cursor = next;
                 }
-            });
 
-            return {
-                outcome: topResult.outcome,
-                severityRank: topResult.priority,
-                diseaseId: topResult.diseaseId
-            };
-        }
-
-        // If PENDING, find next node in the Pending tree(s)
-        // We iterate results to find the first one that needs input
-        for (const res of results) {
-            if (res.outcome === 'PENDING') {
-                const tree = activeTreeCache.find(t => t.diseaseId === res.diseaseId);
-                if (!tree) continue;
-
-                const nextNode = ClinicalEngineRunner.findNextQuestion(
-                    answersMap[res.diseaseId] || {},
-                    tree.treeNodes
-                );
-
-                if (nextNode) {
-                    return {
-                        nextNode: {
-                            nodeId: nextNode.node_id,
-                            question: nextNode.question,
-                            diseaseId: res.diseaseId
-                        }
+                if (terminalOutcome === 'EXCLUDED' || terminalOutcome === 'PENDING') {
+                    diseaseStates[dId] = { status: 'EXCLUDED' };
+                } else {
+                    // DIAGNOSED, EMERGENCY, REFER_IMMEDIATELY
+                    diseaseStates[dId] = {
+                        status: 'FINAL',
+                        outcome: terminalOutcome,
+                        priority: ClinicalEngineService.getSeverityRank(terminalOutcome)
                     };
                 }
             }
         }
 
-        // If no more questions but still PENDING:
-        // The tree traversal hit an OUTCOME node — finalize the session using that node's exam_outcome.
-        for (const res of results) {
-            if (res.outcome === 'PENDING') {
-                const pendingTree = activeTreeCache.find(t => t.diseaseId === res.diseaseId);
-                if (!pendingTree) continue;
+        // ── STEP 2: Persist updated exclusions to snapshotNodes.meta ──────────
+        const updatedMeta: Record<string, string> = { ...persistedMeta };
+        for (const [dId, state] of Object.entries(diseaseStates)) {
+            if (state.status === 'EXCLUDED') updatedMeta[dId] = 'EXCLUDED';
+            if (state.status === 'FINAL') updatedMeta[dId] = state.outcome;
+        }
 
-                // Trace the path to find the OUTCOME node we landed on
-                const answersForDisease = answersMap[res.diseaseId] || {};
-                let cursor = pendingTree.treeNodes.find(n => n.node_type === 'ENTRY_GATE') || pendingTree.treeNodes[0];
-                while (cursor) {
-                    if (cursor.node_type === 'OUTCOME') {
-                        // Found the terminal OUTCOME node — finalize session
-                        const finalOutcome: ExamOutcome = (cursor.exam_outcome as ExamOutcome) ?? 'PENDING';
-                        await this.prisma.session.update({
-                            where: { id: session.id },
-                            data: {
-                                examOutcome: finalOutcome,
-                                status: SessionStatus.CLINICALLY_DONE,
-                                diagnosisText: `Outcome: ${finalOutcome} (${res.diseaseId})`
-                            }
-                        });
-                        return {
-                            outcome: finalOutcome,
-                            diseaseId: res.diseaseId,
-                            message: 'Quiz complete.'
-                        };
-                    }
-                    const answer = answersForDisease[cursor.node_id];
-                    if (answer === undefined) break; // Unanswered — should not happen here
-                    cursor = ClinicalEngineRunner.getNextNode(cursor.node_id, answer, pendingTree.treeNodes)!;
+        await this.prisma.session.update({
+            where: { id: session.id },
+            data: {
+                snapshotNodes: {
+                    ...snapshot,
+                    meta: { diseaseOutcomes: updatedMeta }
                 }
+            }
+        });
+
+        // ── STEP 3: Check for immediate high-severity finalization ─────────────
+        const finalStates = Object.entries(diseaseStates)
+            .filter(([, s]) => s.status === 'FINAL')
+            .map(([dId, s]) => ({ diseaseId: dId, ...(s as { status: 'FINAL'; outcome: ExamOutcome; priority: number }) }))
+            .sort((a, b) => b.priority - a.priority);
+
+        if (finalStates.length > 0) {
+            const top = finalStates[0];
+            await this.prisma.session.update({
+                where: { id: session.id },
+                data: {
+                    examOutcome: top.outcome,
+                    status: SessionStatus.CLINICALLY_DONE,
+                    diagnosisText: `Outcome: ${top.outcome} (${top.diseaseId})`
+                }
+            });
+            return {
+                outcome: top.outcome,
+                diseaseId: top.diseaseId,
+                severityRank: top.priority
+            };
+        }
+
+        // ── STEP 4: Check if all diseases are excluded ─────────────────────────
+        const allExcluded = Object.values(diseaseStates).every(s => s.status === 'EXCLUDED');
+        if (allExcluded) {
+            await this.prisma.session.update({
+                where: { id: session.id },
+                data: {
+                    examOutcome: 'PENDING',
+                    status: SessionStatus.CLINICALLY_DONE,
+                    diagnosisText: 'No disease matched screening criteria.'
+                }
+            });
+            return {
+                outcome: 'PENDING',
+                message: 'No disease matched. Session complete.'
+            };
+        }
+
+        // ── STEP 5: Return next question from first ACTIVE disease ─────────────
+        // Sequential strategy: diseases are processed in the order they appear in the snapshot
+        for (const cachedTree of activeTreeCache) {
+            const state = diseaseStates[cachedTree.diseaseId];
+            if (state?.status === 'ACTIVE') {
+                const next = state.nextNode;
+                return {
+                    nextNode: {
+                        nodeId: next.node_id,
+                        question: next.question,
+                        layman: next.layman,
+                        diseaseId: cachedTree.diseaseId
+                    }
+                };
             }
         }
 
-        // Absolute fallback — no tree matched
+        // Absolute fallback — should never reach here
         return { outcome: 'PENDING', message: 'No more questions available.' };
     }
 

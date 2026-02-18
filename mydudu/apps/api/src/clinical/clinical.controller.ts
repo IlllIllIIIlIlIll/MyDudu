@@ -66,21 +66,24 @@ export class ClinicalController {
         }
 
         // Start session with internal IDs
+        // Pass empty diseaseIds to trigger all-active-trees screening mode
         const result = await this.clinicalService.startSession({
             childId: child.id,
             deviceId,
-            diseaseIds: ['DENGUE'] // Hardcoded for now, could be dynamic based on symptoms
+            diseaseIds: [] // Empty = fetch ALL active disease trees
         });
 
         // Transform to frontend format
         return {
             sessionId: result.sessionId,
+            treeVersion: result.treeVersion,
             initialNodes: result.nodes.map(node => ({
                 id: node.nodeId,
                 question: node.question,
-                layman: node.question, // TODO: Add layman field to tree nodes
-                yesNodeId: null, // Will be determined by engine
+                layman: node.layman ?? node.question,
+                yesNodeId: null,
                 noNodeId: null,
+                diseaseId: node.diseaseId
             }))
         };
     }
@@ -101,24 +104,24 @@ export class ClinicalController {
             return {
                 outcome: result.outcome,
                 diseaseId: result.diseaseId,
+                message: (result as any).message
             };
         }
 
-        // Return next nodes
+        // Return next node (backend drives navigation in multi-disease mode)
         const nextNodeData = result.nextNode;
         if (nextNodeData) {
             return {
-                nextNodes: [{
-                    id: nextNodeData.nodeId,
+                nextNode: {
+                    nodeId: nextNodeData.nodeId,
                     question: nextNodeData.question,
-                    layman: nextNodeData.question,
-                    yesNodeId: null,
-                    noNodeId: null,
-                }]
+                    layman: nextNodeData.layman,
+                    diseaseId: nextNodeData.diseaseId
+                }
             };
         }
 
-        return { nextNodes: [] };
+        return { outcome: 'PENDING', message: 'No more questions available.' };
     }
 
     @Get('status/:sessionId')
