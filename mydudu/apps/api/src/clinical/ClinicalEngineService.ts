@@ -70,38 +70,47 @@ export class ClinicalEngineService {
             return acc;
         }, {} as Record<string, any>);
 
-        // PHASE 6: Transaction Atomicity - Session Creation / Reuse
-        // Check for existing IN_PROGRESS session for same child
-        // Relaxing device constraint: If a session is open for this child, we reuse it regardless of device mismatch (e.g. tablet vs scale)
+        // PHASE 6: Find the most recent session for this child
+        // Priority: PENDING (quiz not done) > CLINICALLY_DONE (already complete, read-only)
         const existingSession = await this.prisma.session.findFirst({
             where: {
                 childId: dto.childId,
-                examOutcome: 'PENDING',
-                measurementCompleted: true
+                measurementCompleted: true,
+                status: { not: 'IN_PROGRESS' } // Must have completed measurement
             },
             orderBy: { recordedAt: 'desc' }
         });
 
         let session;
 
-        if (existingSession) {
-            // Reuse existing session — update clinical context if missing
-            if (!existingSession.treeVersion || !existingSession.snapshotNodes) {
-                session = await this.prisma.session.update({
-                    where: { id: existingSession.id },
-                    data: {
-                        treeVersion: primaryTree.version,
-                        snapshotNodes: snapshotNodes
-                    }
-                });
-            } else {
-                session = existingSession;
-            }
-        } else {
-            // No existing session — measurement must be completed first
+        if (!existingSession) {
             throw new NotFoundException(
-                'No pending session found for this child. Please complete measurement first.'
+                'No session found for this child. Please complete measurement first.'
             );
+        }
+
+        // If session is already finalized, return it in read-only mode
+        if (existingSession.status === 'CLINICALLY_DONE') {
+            return {
+                sessionId: existingSession.sessionUuid,
+                treeVersion: existingSession.treeVersion,
+                nodes: [],
+                alreadyComplete: true,
+                examOutcome: existingSession.examOutcome
+            };
+        }
+
+        // Session is MEASURED or CLINICAL_ACTIVE — attach clinical context if missing
+        if (!existingSession.treeVersion || !existingSession.snapshotNodes) {
+            session = await this.prisma.session.update({
+                where: { id: existingSession.id },
+                data: {
+                    treeVersion: primaryTree.version,
+                    snapshotNodes: snapshotNodes
+                }
+            });
+        } else {
+            session = existingSession;
         }
 
         // 3. Return initial nodes (Entry Gates) for all active trees
@@ -118,8 +127,10 @@ export class ClinicalEngineService {
 
         return {
             sessionId: session.sessionUuid,
-            treeVersion: session.treeVersion, // Required for hardening test verification
-            nodes
+            treeVersion: session.treeVersion,
+            nodes,
+            alreadyComplete: false,
+            examOutcome: null
         };
     }
 
@@ -138,9 +149,14 @@ export class ClinicalEngineService {
         // PHASE 5: Timeout Protection
         this.checkSessionTimeout(session);
 
-        // STEP 4: Hard Stop — block answers if session is already finalized
-        if (session.examOutcome === 'EMERGENCY' || session.status === 'CLINICALLY_DONE') {
-            throw new BadRequestException("Session already terminated.");
+        // STEP 4: Hard Stop — if session is already finalized, return existing outcome gracefully
+        // (Do NOT throw — the frontend may navigate here from the queue list)
+        if (session.status === 'CLINICALLY_DONE') {
+            return {
+                outcome: (session.examOutcome as ExamOutcome) ?? 'PENDING',
+                diseaseId: undefined,
+                message: 'Session already complete.'
+            };
         }
 
         // 2. Security Check: Validate Node belongs to locked tree version

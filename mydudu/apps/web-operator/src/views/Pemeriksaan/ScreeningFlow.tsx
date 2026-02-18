@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import {
   Activity,
   ChevronRight,
@@ -171,15 +171,22 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
     }
   }, [vitalsStatus]);
 
+  // Keep a ref to phase so the lock-renewal interval can read it without being a dep
+  const phaseRef = useRef(phase);
+  useEffect(() => { phaseRef.current = phase; }, [phase]);
+
   useEffect(() => {
     if (!selectedSession?.lockToken || !user?.id) return;
     const timer = setInterval(async () => {
+      // Don't renew lock if session is already in RESULT phase (CLINICALLY_DONE)
+      if (phaseRef.current === 'RESULT') return;
       try {
         await fetchWithAuth(`/operator/pemeriksaan/${selectedSession.sessionId}/renew-lock?userId=${user.id}`, {
           method: 'POST',
           body: JSON.stringify({ lockToken: selectedSession.lockToken }),
         });
       } catch {
+        // Silently ignore — session may have been completed or lock expired
       }
     }, 120000);
     return () => clearInterval(timer);
@@ -197,6 +204,13 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
           );
 
           setClinicalSessionId(response.sessionId);
+
+          // If session is already complete, skip to RESULT phase
+          if (response.alreadyComplete && response.examOutcome) {
+            setClinicalOutcome(response.examOutcome);
+            setPhase('RESULT');
+            return;
+          }
 
           // Convert initial nodes to Record format
           const nodesMap = response.initialNodes.reduce((acc, node) => {

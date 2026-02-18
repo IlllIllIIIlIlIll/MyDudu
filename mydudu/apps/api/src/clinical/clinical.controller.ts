@@ -77,6 +77,8 @@ export class ClinicalController {
         return {
             sessionId: result.sessionId,
             treeVersion: result.treeVersion,
+            alreadyComplete: result.alreadyComplete,
+            examOutcome: result.examOutcome,
             initialNodes: result.nodes.map(node => ({
                 id: node.nodeId,
                 question: node.question,

@@ -66,7 +66,7 @@ export class OperatorDashboardService {
                 recordedAt: { not: null },
             },
             orderBy: { recordedAt: 'desc' }, // Latest first
-            take: 50, // Fetch more to allow for filtering
+            take: 5, // Only need the 5 most recent
             include: {
                 child: {
                     include: {
@@ -99,16 +99,8 @@ export class OperatorDashboardService {
             },
         });
 
-        // Filter for unique children manually to ensure global date order
-        const uniqueChildIds = new Set<number>();
-        const recentSessions = [];
-        for (const session of recentSessionsRaw) {
-            if (!uniqueChildIds.has(session.childId)) {
-                uniqueChildIds.add(session.childId);
-                recentSessions.push(session);
-                if (recentSessions.length >= 6) break;
-            }
-        }
+        // Take the 5 most recent sessions directly — no deduplication needed
+        const recentSessions = recentSessionsRaw.slice(0, 5);
 
         const upcomingSchedules =
             scope.isAdmin || scope.posyanduIds.length > 0
