@@ -1,4 +1,5 @@
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import styles from './ReportChart.module.css';
 
 interface ReportChartProps {
   type: 'bar' | 'pie';
@@ -16,13 +17,16 @@ export function ReportChart({ type, data, title }: ReportChartProps) {
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
             <XAxis dataKey="month" tick={{ fontSize: 14 }} />
             <YAxis tick={{ fontSize: 14 }} />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: 'white', 
+
+
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'white',
                 border: '1px solid #E5E7EB',
                 borderRadius: '8px',
                 fontSize: '14px'
-              }} 
+              }}
+              cursor={{ fill: 'transparent' }}
             />
             <Legend wrapperStyle={{ fontSize: '14px' }} />
             <Bar dataKey="normal" fill="#38EF7D" name="Normal" radius={[8, 8, 0, 0]} />
@@ -54,22 +58,22 @@ export function ReportChart({ type, data, title }: ReportChartProps) {
               <Cell key={`cell-${index}`} fill={entry.color} />
             ))}
           </Pie>
-          <Tooltip 
-            contentStyle={{ 
-              backgroundColor: 'white', 
+          <Tooltip
+            contentStyle={{
+              backgroundColor: 'white',
               border: '1px solid #E5E7EB',
               borderRadius: '8px',
               fontSize: '14px'
-            }} 
+            }}
           />
         </PieChart>
       </ResponsiveContainer>
       <div className="grid grid-cols-2 gap-4 mt-6">
         {data.map((item, index) => (
           <div key={index} className="flex items-center gap-2">
-            <div 
-              className="w-4 h-4 rounded-full" 
-              style={{ backgroundColor: item.color }}
+            <div
+              className={`w-4 h-4 rounded-full ${styles.legendColorBox}`}
+              style={{ '--item-color': item.color } as React.CSSProperties}
             />
             <span className="text-[14px] text-gray-700">
               {item.name}: <span className="font-semibold">{item.value}</span>

@@ -1,0 +1,20 @@
+.statusBadge {
+    background-color: var(--badge-color);
+}
+
+.scaleTrack {
+    background: linear-gradient(to right, #dc2626 0%, #f97316 15%, #facc15 30%, #22c55e 50%, #facc15 70%, #f97316 85%, #dc2626 100%);
+}
+
+.trail {
+    left: var(--trail-left);
+    width: var(--trail-width);
+}
+
+.marker {
+    left: calc(var(--marker-left) - 3px);
+}
+
+.ghostMarker {
+    left: calc(var(--ghost-left) - 8px);
+}

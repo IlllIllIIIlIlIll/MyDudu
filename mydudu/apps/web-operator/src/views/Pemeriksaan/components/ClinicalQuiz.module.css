@@ -1,0 +1,47 @@
+/* Question Header */
+.questionText {
+    font-size: clamp(1.75rem, 6vw, 3rem);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    color: var(--question-text-color);
+}
+
+.laymanText {
+    font-size: clamp(0.95rem, 2vw, 1.125rem);
+    color: #64748B;
+    max-width: 100%;
+}
+
+/* Progress Indicator */
+.progressIndicator {
+    font-size: var(--progress-size);
+    font-weight: var(--progress-weight);
+    color: var(--progress-text-color);
+    white-space: nowrap;
+}
+
+/* Clinical Quiz Card */
+.quizCard {
+    border-width: var(--card-border-width);
+    border-color: var(--card-border-color);
+    border-style: solid;
+    box-shadow: var(--card-shadow);
+}
+
+.cardBackground {
+    background: var(--card-bg-gradient);
+}
+
+.overlayGradient {
+    background: var(--overlay-gradient);
+}
+
+.cardText {
+    color: var(--card-text-primary);
+    font-size: clamp(1.5rem, 8vw, 2.5rem);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.fadeOverlay {
+    background-color: #000000;
+}

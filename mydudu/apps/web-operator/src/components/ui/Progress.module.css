@@ -1,0 +1,3 @@
+.indicator {
+    transform: translateX(calc(-1% * var(--progress-inverse)));
+}

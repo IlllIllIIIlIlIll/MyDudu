@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { getGrowthStatus, GrowthStatus, calculateValueFromZ, calculateExplorerBoundaries, GrowthIndicator } from '../utils/growthLogic';
 import { AlertCircle, ChevronRight, Info, X, Compass } from 'lucide-react';
+import styles from './GrowthScale.module.css';
 
 interface GrowthScaleProps {
     label: string;      // e.g., "Berat dibanding Tinggi Badan"
@@ -90,8 +91,8 @@ export function GrowthScale({ label, value, zScore, deviation, ideal, unit, colo
         <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm relative overflow-hidden transition-all duration-300">
 
             {/* Status Badge */}
-            <div className="absolute top-0 right-0 px-3 py-1.5 rounded-bl-xl text-[10px] font-bold uppercase tracking-wider text-white z-10"
-                style={{ backgroundColor: isExplorerOpen ? ghostStatus.color : status.color }}>
+            <div className={`absolute top-0 right-0 px-3 py-1.5 rounded-bl-xl text-[10px] font-bold uppercase tracking-wider text-white z-10 ${styles.statusBadge}`}
+                style={{ '--badge-color': isExplorerOpen ? ghostStatus.color : status.color } as React.CSSProperties}>
                 {isExplorerOpen ? 'Simulasi: ' + ghostStatus.label : status.label}
             </div>
 
@@ -137,10 +138,7 @@ export function GrowthScale({ label, value, zScore, deviation, ideal, unit, colo
             {/* Scale Track */}
             <div
                 ref={containerRef}
-                className={`relative h-3 w-full rounded-full overflow-hidden mt-2 mb-6 shadow-inner ${isExplorerOpen ? 'cursor-ew-resize touch-none' : ''}`}
-                style={{
-                    background: `linear-gradient(to right, #dc2626 0%, #f97316 15%, #facc15 30%, #22c55e 50%, #facc15 70%, #f97316 85%, #dc2626 100%)`
-                }}
+                className={`relative h-3 w-full rounded-full overflow-hidden mt-2 mb-6 shadow-inner ${isExplorerOpen ? 'cursor-ew-resize touch-none' : ''} ${styles.scaleTrack}`}
                 onMouseDown={isExplorerOpen ? handleScaleInteraction : undefined}
                 onTouchMove={isExplorerOpen ? handleScaleInteraction : undefined}
                 onTouchStart={isExplorerOpen ? handleScaleInteraction : undefined}
@@ -150,25 +148,25 @@ export function GrowthScale({ label, value, zScore, deviation, ideal, unit, colo
                 {/* Trail (Ghost to Actual) */}
                 {isExplorerOpen && (
                     <motion.div
-                        className="absolute top-0 bottom-0 bg-white/50 z-0"
+                        className={`absolute top-0 bottom-0 bg-white/50 z-0 ${styles.trail}`}
                         style={{
-                            left: `${Math.min(position, ghostPosition)}%`,
-                            width: `${Math.abs(ghostPosition - position)}%`
-                        }}
+                            '--trail-left': `${Math.min(position, ghostPosition)}%`,
+                            '--trail-width': `${Math.abs(ghostPosition - position)}%`
+                        } as React.CSSProperties}
                     />
                 )}
 
                 {/* Actual Marker (Fixed) */}
                 <div
-                    className={`absolute top-0 bottom-0 w-1.5 bg-white border-2 border-slate-600 shadow-md rounded-full z-10 transition-opacity ${isExplorerOpen ? 'opacity-40' : 'opacity-100'}`}
-                    style={{ left: `calc(${position}% - 3px)` }}
+                    className={`absolute top-0 bottom-0 w-1.5 bg-white border-2 border-slate-600 shadow-md rounded-full z-10 transition-opacity ${isExplorerOpen ? 'opacity-40' : 'opacity-100'} ${styles.marker}`}
+                    style={{ '--marker-left': `${position}%` } as React.CSSProperties}
                 />
 
                 {/* Ghost Marker (Draggable) */}
                 {isExplorerOpen && (
                     <motion.div
-                        className="absolute top-[1px] bottom-[1px] w-4 h-4 -mt-0.5 bg-white border-2 border-slate-800 shadow-lg rounded-full z-20"
-                        style={{ left: `calc(${ghostPosition}% - 8px)` }}
+                        className={`absolute top-[1px] bottom-[1px] w-4 h-4 -mt-0.5 bg-white border-2 border-slate-800 shadow-lg rounded-full z-20 ${styles.ghostMarker}`}
+                        style={{ '--ghost-left': `${ghostPosition}%` } as React.CSSProperties}
                         layoutId="ghostMarker"
                     />
                 )}

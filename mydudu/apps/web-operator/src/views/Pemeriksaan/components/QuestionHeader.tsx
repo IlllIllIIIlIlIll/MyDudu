@@ -8,6 +8,8 @@ interface QuestionHeaderProps {
   layman?: string;
 }
 
+import styles from './ClinicalQuiz.module.css';
+
 export function QuestionHeader({ question, layman }: QuestionHeaderProps) {
   return (
     <motion.div
@@ -17,25 +19,13 @@ export function QuestionHeader({ question, layman }: QuestionHeaderProps) {
       className="text-center px-4 lg:px-8 max-w-4xl"
     >
       <h2
-        className="font-extrabold tracking-tight leading-tight mb-4 lg:mb-5"
-        style={{
-          fontSize: 'clamp(1.75rem, 6vw, 3rem)',
-          color: CLINICAL_QUIZ_COLORS.QUESTION_TEXT,
-          lineHeight: 1.1,
-          letterSpacing: '-0.01em',
-        }}
+        className={`font-extrabold tracking-tight leading-tight mb-4 lg:mb-5 ${styles.questionText}`}
+        style={{ '--question-text-color': CLINICAL_QUIZ_COLORS.QUESTION_TEXT } as React.CSSProperties}
       >
         {question}
       </h2>
       {layman && (
-        <p
-          className="font-medium leading-relaxed"
-          style={{
-            fontSize: 'clamp(0.95rem, 2vw, 1.125rem)',
-            color: '#64748B',
-            maxWidth: '100%',
-          }}
-        >
+        <p className={`font-medium leading-relaxed ${styles.laymanText}`}>
           {layman}
         </p>
       )}

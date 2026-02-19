@@ -1,4 +1,5 @@
 import { LucideIcon } from 'lucide-react';
+import styles from './DashboardCards.module.css';
 
 interface OverviewCardProps {
   title: string;
@@ -14,14 +15,22 @@ export function OverviewCard({ title, value, icon: Icon, color, subtitle }: Over
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-gray-600 text-[15px] mb-2">{title}</p>
-          <h2 className="text-[36px] font-extrabold" style={{ color }}>{value}</h2>
+          <h2
+            className={`text-[36px] font-extrabold ${styles.overviewValue}`}
+            style={{ '--card-color': color } as React.CSSProperties}
+          >
+            {value}
+          </h2>
           {subtitle && <p className="text-gray-500 text-[13px] mt-1">{subtitle}</p>}
         </div>
-        <div 
-          className="w-14 h-14 rounded-xl flex items-center justify-center"
-          style={{ backgroundColor: `${color}15` }}
+        <div
+          className={`w-14 h-14 rounded-xl flex items-center justify-center ${styles.iconWrapper}`}
+          style={{ '--icon-bg-color': `${color}15` } as React.CSSProperties}
         >
-          <Icon className="w-7 h-7" style={{ color }} />
+          <Icon
+            className={`w-7 h-7 ${styles.icon}`}
+            style={{ '--icon-color': color } as React.CSSProperties}
+          />
         </div>
       </div>
     </div>

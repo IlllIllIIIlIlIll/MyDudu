@@ -1,0 +1,10 @@
+.legendColorBox {
+    background-color: var(--item-color);
+}
+
+.tooltipContent {
+    background-color: white;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    font-size: 14px;
+}

@@ -1,0 +1,17 @@
+/* Overview Card */
+.overviewValue {
+    color: var(--card-color);
+}
+
+.iconWrapper {
+    background-color: var(--icon-bg-color);
+}
+
+.icon {
+    color: var(--icon-color);
+}
+
+/* Observability Card */
+.progressBar {
+    width: var(--progress-width);
+}

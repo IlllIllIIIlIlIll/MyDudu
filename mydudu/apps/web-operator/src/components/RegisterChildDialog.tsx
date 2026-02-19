@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Baby } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
+import styles from './Dialogs.module.css';
 
 interface RegisterChildDialogProps {
     onSuccess?: () => void;
@@ -182,8 +183,10 @@ export function RegisterChildDialog({ onSuccess, trigger }: RegisterChildDialogP
                                     // onBlur={() => setTimeout(() => setShowParentDropdown(false), 200)} // Delayed close to allow click
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
                                 />
+
+
                                 {showParentDropdown && (
-                                    <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto mt-1" style={{ backgroundColor: 'white' }}>
+                                    <div className={`absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto mt-1 ${styles.dropdown}`}>
                                         {filteredParents.length > 0 ? (
                                             filteredParents.map((parent) => (
                                                 <button

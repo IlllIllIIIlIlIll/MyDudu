@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { X, UserPlus } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
+import styles from './Dialogs.module.css';
 
 interface RegisterParentDialogProps {
     onSuccess?: () => void;
@@ -130,9 +131,11 @@ export function RegisterParentDialog({ onSuccess, trigger }: RegisterParentDialo
                                     }}
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
                                 />
+
+
                                 {/* Autocomplete Dropdown */}
                                 {showVillageDropdown && (
-                                    <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto mt-1" style={{ backgroundColor: 'white' }}>
+                                    <div className={`absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto mt-1 ${styles.dropdown}`}>
                                         {villages.length > 0 ? (
                                             villages.map((village) => (
                                                 <button

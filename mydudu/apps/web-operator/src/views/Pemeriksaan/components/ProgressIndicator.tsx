@@ -8,6 +8,8 @@ interface ProgressIndicatorProps {
   total: number;
 }
 
+import styles from './ClinicalQuiz.module.css';
+
 export function ProgressIndicator({ current, total }: ProgressIndicatorProps) {
   return (
     <motion.div
@@ -17,12 +19,12 @@ export function ProgressIndicator({ current, total }: ProgressIndicatorProps) {
       className="absolute top-4 right-4 lg:top-6 lg:right-6 z-20 bg-white rounded-full px-4 py-2 shadow-md border border-slate-200"
     >
       <p
+        className={styles.progressIndicator}
         style={{
-          fontSize: CLINICAL_QUIZ_TYPOGRAPHY.PROGRESS_SIZE,
-          fontWeight: CLINICAL_QUIZ_TYPOGRAPHY.PROGRESS_WEIGHT,
-          color: CLINICAL_QUIZ_COLORS.PROGRESS_TEXT,
-          whiteSpace: 'nowrap',
-        }}
+          '--progress-size': CLINICAL_QUIZ_TYPOGRAPHY.PROGRESS_SIZE,
+          '--progress-weight': CLINICAL_QUIZ_TYPOGRAPHY.PROGRESS_WEIGHT,
+          '--progress-text-color': CLINICAL_QUIZ_COLORS.PROGRESS_TEXT,
+        } as React.CSSProperties}
       >
         {current} / {total}
       </p>

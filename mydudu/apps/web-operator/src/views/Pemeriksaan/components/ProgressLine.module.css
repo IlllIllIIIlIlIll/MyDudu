@@ -1,0 +1,25 @@
+.track {
+    flex: 1;
+    height: 8px;
+    background: #eef2f7;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.bar {
+    height: 100%;
+    border-radius: 999px;
+    width: var(--progress-width);
+}
+
+.fillBlue {
+    background: #dbe5f2;
+}
+
+.fillOrange {
+    background: #dbe5f2;
+}
+
+.fillGreen {
+    background: #dbe5f2;
+}

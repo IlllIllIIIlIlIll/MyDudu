@@ -5,6 +5,7 @@ import { auth } from '@/lib/firebase';
 import { ImageCropper } from './ImageCropper';
 import { getCroppedImg } from '@/utils/getCroppedImg';
 import { Area } from 'react-easy-crop';
+import styles from './Dialogs.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -172,14 +173,15 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   <User className="w-12 h-12 text-white" />
                 )}
               </div>
-              <label className="absolute bottom-0 right-0 w-8 h-8 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors cursor-pointer" title="Change Photo" style={{ display: 'none' }}>
+
+
+              <label className="absolute bottom-0 right-0 w-8 h-8 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors cursor-pointer" title="Change Photo">
                 <Camera className="w-4 h-4 text-gray-600" />
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
-                  className="hidden"
-                  style={{ display: 'none' }}
+                  className={`hidden ${styles.hiddenInput}`}
                 />
               </label>
             </div>

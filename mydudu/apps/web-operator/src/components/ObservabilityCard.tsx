@@ -1,4 +1,5 @@
 import { AlertTriangle, CheckCircle, HelpCircle, XCircle } from 'lucide-react';
+import styles from './DashboardCards.module.css';
 
 interface ObservabilityCardProps {
     provider: string; // e.g. 'Vercel', 'Render'
@@ -68,10 +69,15 @@ export function ObservabilityCard({
                 )}
             </div>
 
+
+
             {/* Progress Bar (if limit exists) */}
             {limit && (
                 <div className="w-full bg-gray-100 rounded-full h-1.5 mb-2 overflow-hidden">
-                    <div className={`h-full rounded-full ${progressColor}`} style={{ width: `${percentage}%` }}></div>
+                    <div
+                        className={`h-full rounded-full ${progressColor} ${styles.progressBar}`}
+                        style={{ '--progress-width': `${percentage}%` } as React.CSSProperties}
+                    ></div>
                 </div>
             )}
 
