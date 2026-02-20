@@ -34,9 +34,9 @@ export function ClinicalQuizPage({
     >
       {/* Progress */}
       <div className="shrink-0">
-        <ProgressLine 
-          label="Pertanyaan" 
-          value={(currentQuestionIndex / totalQuestions) * 100} 
+        <ProgressLine
+          label="Pertanyaan"
+          value={(currentQuestionIndex / totalQuestions) * 100}
           color="blue"
           labelValue={`${currentQuestionIndex}/${totalQuestions}`}
         />
@@ -73,7 +73,7 @@ export function ClinicalQuizPage({
             <QuizCard
               label="YA"
               type="yes"
-              image="placeholder-yes.jpg"
+              image="placeholder1.png"
               onClick={() => !isSubmitting && onAnswer('yes')}
             />
           </div>
@@ -89,7 +89,7 @@ export function ClinicalQuizPage({
             <QuizCard
               label="TIDAK"
               type="no"
-              image="placeholder-no.jpg"
+              image="placeholder2.png"
               onClick={() => !isSubmitting && onAnswer('no')}
             />
           </div>
