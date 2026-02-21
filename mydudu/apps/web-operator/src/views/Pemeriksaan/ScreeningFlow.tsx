@@ -5,7 +5,201 @@ import {
   Thermometer,
   Weight,
   Ruler,
+  Scale,
+  Wind,
+  Info,
+  AlertCircle,
+  TrendingUp,
+  Heart,
 } from 'lucide-react';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+/** 
+ * --- UTILITY ---
+ */
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+/**
+ * --- COMPONENTS ---
+ */
+const BiometricCard = ({ label, value, unit, icon, isCritical, loading }: any) => {
+  return (
+    <div
+      className={cn(
+        "bg-white p-6 rounded-xl border border-slate-300 shadow-md",
+        isCritical ? "border-red-500 bg-red-50" : ""
+      )}
+    >
+      <div className="flex justify-between items-start mb-3">
+        <div className={cn(
+          "p-2.5 rounded-xl",
+          isCritical ? "bg-red-100 text-red-700" : "bg-slate-50 text-slate-500"
+        )}>
+          {icon}
+        </div>
+        {isCritical && (
+          <span className="flex items-center gap-1 text-[10px] font-bold text-red-700 uppercase tracking-wider bg-red-100 px-2 py-0.5 rounded-full">
+            <AlertCircle className="w-3 h-3" /> Kritikal
+          </span>
+        )}
+      </div>
+      <div>
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+        <div className="flex items-baseline gap-1 mt-1">
+          {loading ? (
+            <div className="h-8 w-16 bg-slate-100 animate-pulse rounded" />
+          ) : (
+            <h3 className={cn("text-4xl font-bold tabular-nums", isCritical ? "text-red-700" : "text-slate-900")}>
+              {value}
+            </h3>
+          )}
+          <span className="text-sm font-semibold text-slate-600">{unit}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const GrowthZScoreSlider = ({ label, zScore, value, unit, ideal }: any) => {
+  const [currentZ, setCurrentZ] = useState(zScore);
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  const getPercentage = (z: number) => {
+    const clamped = Math.max(-3.5, Math.min(3.5, z));
+    return ((clamped + 3) / 6) * 100;
+  };
+
+  const initialPercentage = getPercentage(zScore);
+
+  const getStatusInfo = (z: number) => {
+    if (z <= -3) return { label: 'Sangat Kurus/Pendek', color: 'text-red-700', bg: 'bg-red-600', border: 'border-red-500' };
+    if (z <= -2) return { label: 'Kurus/Pendek', color: 'text-orange-700', bg: 'bg-orange-500', border: 'border-orange-500' };
+    if (z >= 3) return { label: 'Obesitas/Sangat Tinggi', color: 'text-red-700', bg: 'bg-red-600', border: 'border-red-500' };
+    if (z >= 2) return { label: 'Gemuk/Tinggi', color: 'text-orange-700', bg: 'bg-orange-500', border: 'border-orange-500' };
+    return { label: 'Normal', color: 'text-green-700', bg: 'bg-green-600', border: 'border-green-500' };
+  };
+
+  const currentStatus = getStatusInfo(currentZ);
+
+  const handleDrag = (event: any, info: any) => {
+    if (trackRef.current) {
+      const rect = trackRef.current.getBoundingClientRect();
+      const x = Math.max(0, Math.min(rect.width, info.point.x - rect.left));
+      const percentage = x / rect.width;
+      const newZ = (percentage * 6) - 3;
+      setCurrentZ(newZ);
+    }
+  };
+
+  return (
+    <div className="bg-slate-50 p-6 rounded-xl border border-slate-300 shadow-inner overflow-hidden group">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+          <h4 className="text-sm font-bold text-slate-700 mb-1">{label}</h4>
+          <div className="flex items-center gap-2">
+            <motion.span
+              layout
+              className={cn("text-xs font-bold px-2 py-0.5 rounded-lg border transition-colors",
+                currentStatus.border,
+                currentStatus.color.replace('text', 'bg').replace('600', '50'),
+                currentStatus.color
+              )}
+            >
+              {currentStatus.label}
+            </motion.span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              Z-Score: {currentZ.toFixed(2)}
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-6">
+          <div className="text-right">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Initial Data</p>
+            <p className="text-lg font-black text-slate-400">{value} <span className="text-xs font-bold text-slate-300">{unit}</span></p>
+          </div>
+          <div className="w-px h-8 bg-slate-100" />
+          <div className="text-right">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-emerald-500">Ideal (Median)</p>
+            <p className="text-lg font-black text-emerald-600">{ideal?.toFixed(1) || '?'} <span className="text-xs font-bold text-emerald-400">{unit}</span></p>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative pt-6 pb-2">
+        <div
+          ref={trackRef}
+          className="h-3 w-full rounded-full bg-slate-100 relative overflow-hidden cursor-pointer"
+          onClick={(e) => {
+            const rect = trackRef.current?.getBoundingClientRect();
+            if (rect) {
+              const x = e.clientX - rect.left;
+              const percentage = x / rect.width;
+              setCurrentZ((percentage * 6) - 3);
+            }
+          }}
+        >
+          <div className="absolute inset-0 flex">
+            <div className="h-full w-[16.66%] bg-red-600 opacity-80" />
+            <div className="h-full w-[16.66%] bg-orange-500 opacity-80" />
+            <div className="h-full w-[33.34%] bg-green-600 opacity-80" />
+            <div className="h-full w-[16.66%] bg-orange-500 opacity-80" />
+            <div className="h-full w-[16.66%] bg-red-600 opacity-80" />
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-r from-black/5 via-transparent to-black/5" />
+        </div>
+
+        <div className="flex justify-between mt-3 px-0.5 pointer-events-none">
+          {['-3', '-2', '-1', '0', '+1', '+2', '+3'].map((mark) => (
+            <div key={mark} className="flex flex-col items-center">
+              <div className="w-px h-1.5 bg-slate-200 mb-1" />
+              <span className="text-[10px] font-bold text-slate-400">{mark}</span>
+            </div>
+          ))}
+        </div>
+
+        <div
+          className="absolute top-[22px] -translate-x-1/2 flex flex-col items-center pointer-events-none opacity-40"
+          style={{ left: `${initialPercentage}%` }}
+        >
+          <div className="w-1 h-3 bg-white/60 rounded-full z-10" />
+          <div className="absolute -top-4 text-[9px] font-black text-slate-400 uppercase tracking-tighter whitespace-nowrap">
+            Initial
+          </div>
+          <div className="w-5 h-5 rounded-full border-2 border-slate-300 bg-slate-100 shadow-sm" />
+        </div>
+
+        <motion.div
+          drag="x"
+          dragMomentum={false}
+          dragConstraints={trackRef}
+          onDrag={handleDrag}
+          animate={{ left: `${getPercentage(currentZ)}%` }}
+          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+          className="absolute top-0 -translate-x-1/2 flex flex-col items-center cursor-grab active:cursor-grabbing z-30"
+        >
+          <div className={cn(
+            "w-5 h-5 rounded-full border-4 border-white shadow-xl transition-colors",
+            currentStatus.bg
+          )} />
+          <div className="mt-2 bg-slate-900 text-white text-[10px] font-black px-2 py-0.5 rounded-md whitespace-nowrap shadow-2xl">
+            {currentZ > 0 ? '+' : ''}{currentZ.toFixed(2)} SD
+          </div>
+        </motion.div>
+      </div>
+
+      <div className="mt-8 flex items-start gap-3 p-3 bg-slate-100 rounded-xl border border-slate-300">
+        <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+        <p className="text-sm text-slate-800 leading-relaxed">
+          Gunakan slider untuk melihat interpretasi pada level Z-score yang berbeda.
+          {currentZ < -2 || currentZ > 2 ? ' Status saat ini menunjukkan deviasi dari standar normal.' : ' Status saat ini berada dalam rentang pertumbuhan sehat.'}
+        </p>
+      </div>
+    </div>
+  );
+};
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
 import { fetchWithAuth } from '../../lib/api';
@@ -197,6 +391,10 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
     if (phase === 'QUIZ' && !clinicalSessionId && selectedSession) {
       const startClinicalSession = async () => {
         setClinicalLoading(true);
+        // Reset any leftover outcome states before fetching
+        setClinicalOutcome(null);
+        setApiError(null);
+
         try {
           const response = await clinicalApi.startSession(
             selectedSession.child.childUuid
@@ -391,7 +589,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
   ];
 
   return (
-    <div className={`${styles.pedsScope} fixed inset-0 z-50 h-screen w-screen flex overflow-hidden font-sans`}>
+    <div className={`${styles.pedsScope} fixed inset-0 z-50 bg-slate-200 flex font-sans`}>
 
       {/* 2. Patient Sidebar */}
       {selectedPatient && (
@@ -409,9 +607,9 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
       )}
 
       {/* 3. Main Stage */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col transition-all duration-300">
 
-        <div className="flex-1 flex flex-col min-h-0 bg-transparent overflow-hidden">
+        <main className="flex-1 flex flex-col min-h-0 bg-white">
           {phase === 'RESULT' && selectedPatient && clinicalOutcome ? (
             <div className="flex-1 min-h-0 flex flex-col px-4 py-3">
               <ScreeningResultView
@@ -433,183 +631,230 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
 
             {/* --- PHASE 2: VITALS (AUTO) --- */}
             {phase === 'VITALS' && selectedPatient && selectedSession && (
-              <motion.div
-                key="vitals" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-                className={`${styles.vitalsWrap} w-full h-full flex flex-col px-4 py-6`}
-              >
-                {/* SECTION 1: RAW DATA (Measurements only, no interpretation) */}
-                <div className="flex-1 overflow-y-auto">
-                  <div className="text-center mb-6">
-                    <h2 className={`mb-2 ${styles.vitalsTitle}`}>Data Biometrik Pasien</h2>
-                    <p className={`max-w-md mx-auto ${styles.vitalsSubtitle}`}>Hasil pengukuran dari perangkat Dudu</p>
+              <div className="h-full w-full px-12 py-8">
+
+                <div className="h-full grid grid-rows-[auto_auto_1fr_auto] gap-8 max-w-[1600px] mx-auto">
+
+                  {/* ================= HEADER ================= */}
+                  <div>
+                    <h1 className="text-3xl font-bold text-slate-900">
+                      Data Biometrik Pasien
+                    </h1>
+                    <p className="text-slate-600 mt-1">
+                      Hasil pengukuran perangkat terintegrasi
+                    </p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                    <RawMeasurementCard
-                      label="Berat Badan"
-                      value={vitalsData.weight.value}
-                      unit={vitalsData.weight.unit}
-                      icon={vitalsData.weight.icon}
-                      loading={vitalsStatus === 'FETCHING'}
-                    />
-                    <RawMeasurementCard
-                      label="Tinggi Badan"
-                      value={vitalsData.height.value}
-                      unit={vitalsData.height.unit}
-                      icon={vitalsData.height.icon}
-                      loading={vitalsStatus === 'FETCHING'}
-                    />
-                    <RawMeasurementCard
-                      label="Suhu Tubuh"
-                      value={vitalsData.temp.value}
-                      unit={vitalsData.temp.unit}
-                      icon={vitalsData.temp.icon}
-                      loading={vitalsStatus === 'FETCHING'}
-                      isCritical={vitalsData.temp.value > 37.5}
-                    />
-                    <RawMeasurementCard
-                      label="Detak Jantung"
-                      value={vitalsData.heartRate.value}
-                      unit={vitalsData.heartRate.unit}
-                      icon={vitalsData.heartRate.icon}
-                      loading={vitalsStatus === 'FETCHING'}
-                    />
-                    <RawMeasurementCard
-                      label="Saturasi O2"
-                      value={vitalsData.spo2.value}
-                      unit={vitalsData.spo2.unit}
-                      icon={vitalsData.spo2.icon}
-                      loading={vitalsStatus === 'FETCHING'}
-                      isCritical={vitalsData.spo2.value < 95}
-                    />
+                  {/* ================= ROW 1 — MEASUREMENTS ================= */}
+                  <div className="grid grid-cols-5 gap-6">
+
+                    {[
+                      { label: "Berat Badan", value: vitalsData.weight.value, unit: vitalsData.weight.unit, emphasize: true },
+                      { label: "Tinggi Badan", value: vitalsData.height.value, unit: vitalsData.height.unit, emphasize: true },
+                      { label: "Suhu", value: vitalsData.temp.value, unit: vitalsData.temp.unit },
+                      { label: "Detak Jantung", value: vitalsData.heartRate.value, unit: vitalsData.heartRate.unit },
+                      { label: "Saturasi O2", value: vitalsData.spo2.value, unit: vitalsData.spo2.unit },
+                    ].map((item, i) => (
+                      <div
+                        key={i}
+                        className="bg-white border border-slate-300 rounded-xl px-6 py-5 flex flex-col justify-center"
+                      >
+                        <div className="text-sm font-semibold text-slate-600">
+                          {item.label}
+                        </div>
+
+                        <div className="mt-3 flex items-baseline gap-2">
+                          <span className={`tabular-nums font-bold ${item.emphasize ? "text-4xl" : "text-3xl"}`}>
+                            {item.value}
+                          </span>
+                          <span className="text-lg text-slate-500">
+                            {item.unit}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+
                   </div>
-                </div>
 
-                {/* SECTION 2: GROWTH INTERPRETATION (Status & Explanation only) */}
-                <div className="pt-2 border-t border-slate-100">
-                  <h3 className={`mb-4 ${styles.kmsTitle}`}>Interpretasi Pertumbuhan</h3>
+                  {/* ================= ROW 2 — SUMMARY ================= */}
+                  <div className="bg-slate-900 text-white rounded-xl px-8 py-4 flex items-center justify-between">
 
-                  {selectedSession.growthAnalysis ? (
-                    <div className="space-y-4">
-                      {/* 1. Overall Summary Card */}
-                      <GrowthSummaryCard
-                        weightForAgeZ={selectedSession.growthAnalysis['WEIGHT_FOR_AGE']?.zScore}
-                        heightForAgeZ={selectedSession.growthAnalysis['LENGTH_HEIGHT_FOR_AGE']?.zScore}
-                        weightForHeightZ={
-                          selectedSession.growthAnalysis['WEIGHT_FOR_HEIGHT']?.zScore ??
-                          selectedSession.growthAnalysis['WEIGHT_FOR_LENGTH']?.zScore
-                        }
-                        bmiForAgeZ={selectedSession.growthAnalysis['BMI_FOR_AGE']?.zScore}
-                      />
+                    <div className="text-lg font-semibold">
+                      Ringkasan Status
+                    </div>
 
-                      <div className="grid grid-cols-1 gap-4">
-                        {/* 2. Weight-for-Age */}
-                        {selectedSession.growthAnalysis['WEIGHT_FOR_AGE'] && (
-                          <GrowthScale
-                            label="Berat dibanding Umur"
-                            value={selectedSession.weight || 0}
-                            unit="kg"
-                            zScore={selectedSession.growthAnalysis['WEIGHT_FOR_AGE'].zScore}
-                            deviation={selectedSession.growthAnalysis['WEIGHT_FOR_AGE'].deviation}
-                            ideal={selectedSession.growthAnalysis['WEIGHT_FOR_AGE'].ideal}
-                            lms={selectedSession.growthAnalysis['WEIGHT_FOR_AGE'].lms}
-                            indicator="WEIGHT_FOR_AGE"
-                          />
-                        )}
-
-                        {/* 3. Length/Height-for-Age */}
-                        {selectedSession.growthAnalysis['LENGTH_HEIGHT_FOR_AGE'] && (
-                          <GrowthScale
-                            label="Tinggi dibanding Umur"
-                            value={selectedSession.height || 0}
-                            unit="cm"
-                            zScore={selectedSession.growthAnalysis['LENGTH_HEIGHT_FOR_AGE'].zScore}
-                            deviation={selectedSession.growthAnalysis['LENGTH_HEIGHT_FOR_AGE'].deviation}
-                            ideal={selectedSession.growthAnalysis['LENGTH_HEIGHT_FOR_AGE'].ideal}
-                            lms={selectedSession.growthAnalysis['LENGTH_HEIGHT_FOR_AGE'].lms}
-                            indicator="LENGTH_HEIGHT_FOR_AGE"
-                          />
-                        )}
-
-                        {/* 4. Combined Weight-for-Length/Height */}
-                        {/* Logic: Show ONE card for WFH/WFL based on backend availability. Label is always consistent. */}
-                        {(selectedSession.growthAnalysis['WEIGHT_FOR_LENGTH'] || selectedSession.growthAnalysis['WEIGHT_FOR_HEIGHT']) && (
-                          (() => {
-                            // Prioritize what exists. Usually backend handles the choice based on age/mode.
-                            const indicator = selectedSession.growthAnalysis['WEIGHT_FOR_LENGTH'] ? 'WEIGHT_FOR_LENGTH' : 'WEIGHT_FOR_HEIGHT';
-                            const analysis = selectedSession.growthAnalysis[indicator]!;
-                            return (
-                              <GrowthScale
-                                label="Berat dibanding Tinggi Badan"
-                                value={selectedSession.weight || 0}
-                                unit="kg"
-                                zScore={analysis.zScore}
-                                deviation={analysis.deviation}
-                                ideal={analysis.ideal}
-                                lms={analysis.lms}
-                                indicator={indicator as any}
-                              />
-                            );
-                          })()
-                        )}
-
-                        {/* 5. BMI-for-Age */}
-                        {selectedSession.growthAnalysis['BMI_FOR_AGE'] && (
-                          <GrowthScale
-                            label="Indeks Massa Tubuh dibanding Umur"
-                            value={Number((selectedSession.weight! / Math.pow(selectedSession.height! / 100, 2)).toFixed(1))}
-                            unit="kg/m²"
-                            zScore={selectedSession.growthAnalysis['BMI_FOR_AGE'].zScore}
-                            deviation={selectedSession.growthAnalysis['BMI_FOR_AGE'].deviation}
-                            ideal={selectedSession.growthAnalysis['BMI_FOR_AGE'].ideal}
-                            lms={selectedSession.growthAnalysis['BMI_FOR_AGE'].lms}
-                            indicator="BMI_FOR_AGE"
-                          />
-                        )}
+                    <div className="flex items-center gap-10 text-sm font-medium">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-red-600 rounded-sm" />
+                        Kritikal
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-orange-500 rounded-sm" />
+                        Waspada
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-green-600 rounded-sm" />
+                        Normal
                       </div>
                     </div>
-                  ) : (
-                    <div className="bg-slate-50 rounded-xl p-8 text-center border border-slate-100">
-                      <p className="text-slate-500 text-sm">
-                        Data pertumbuhan belum tersedia untuk dianalisis.
-                      </p>
-                      <p className="text-xs text-slate-400 mt-1">
-                        Pastikan data berat, tinggi, dan tanggal lahir pasien lengkap.
-                      </p>
-                    </div>
-                  )}
+
+                  </div>
+
+                  {/* ================= ROW 3 — INTERPRETATION ================= */}
+                  <div className="grid grid-cols-3 gap-8">
+
+                    {selectedSession.growthAnalysis &&
+                      Object.entries(selectedSession.growthAnalysis).slice(0, 3).map(([key, analysis], i) => {
+
+                        const z = analysis.zScore;
+                        const percentage = ((Math.max(-3, Math.min(3, z)) + 3) / 6) * 100;
+
+                        const getZoneColor = (z: number) => {
+                          if (z <= -3 || z >= 3) return "#b91c1c";   // Severe
+                          if (z <= -2 || z >= 2) return "#d97706";   // Moderate
+                          return "#15803d";                          // Normal
+                        };
+
+                        const getStatusMeta = (z: number) => {
+                          if (z <= -3) return { label: "Sangat Kurus / Sangat Pendek", color: "#b91c1c", bg: "#fee2e2" };
+                          if (z <= -2) return { label: "Kurus / Pendek", color: "#d97706", bg: "#fef3c7" };
+                          if (z >= 3) return { label: "Obesitas Berat / Sangat Tinggi", color: "#b91c1c", bg: "#fee2e2" };
+                          if (z >= 2) return { label: "Gemuk / Tinggi", color: "#d97706", bg: "#fef3c7" };
+                          return { label: "Normal", color: "#15803d", bg: "#dcfce7" };
+                        };
+
+                        const status = getStatusMeta(z);
+
+                        return (
+                          <div
+                            key={i}
+                            className="bg-white border border-slate-300 rounded-xl p-6 flex flex-col justify-center"
+                          >
+                            <div className="flex justify-between items-start mb-4">
+                              <div className="text-base font-semibold text-slate-800">
+                                {key.replace(/_/g, " ")}
+                              </div>
+                              <span
+                                className="px-2 py-1 rounded-md text-xs font-semibold"
+                                style={{
+                                  color: status.color,
+                                  backgroundColor: status.bg
+                                }}
+                              >
+                                {status.label}
+                              </span>
+                            </div>
+
+                            <div className="relative h-5 flex items-center">
+
+                              <div className="absolute inset-x-0 h-3 rounded-full overflow-hidden bg-slate-200">
+                                <div
+                                  className="absolute inset-0 rounded-full"
+                                  style={{
+                                    background: `
+                        linear-gradient(
+                          to right,
+                          #b91c1c 0%,
+                          #d97706 18%,
+                          #15803d 36%,
+                          #15803d 64%,
+                          #d97706 82%,
+                          #b91c1c 100%
+                        )
+                      `
+                                  }}
+                                />
+                              </div>
+
+                              <div
+                                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
+                                style={{ left: `${percentage}%` }}
+                              >
+                                <div
+                                  className="w-5 h-5 rounded-full border-4 border-white shadow-lg"
+                                  style={{
+                                    backgroundColor: getZoneColor(z)
+                                  }}
+                                />
+                              </div>
+
+                            </div>
+
+                            <div className="mt-4 text-sm text-slate-600">
+                              Z-Score: <span className="font-semibold">{z.toFixed(2)}</span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    }
+
+                  </div>
+
+                  {/* ================= CTA ================= */}
+                  <div>
+                    <button
+                      onClick={() => {
+                        setClinicalSessionId(null);
+                        setClinicalNodes({});
+                        setClinicalOutcome(null);
+                        setPhase('QUIZ');
+                      }}
+                      className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-lg font-semibold transition-all"
+                    >
+                      Analisis Gejala Lanjutan
+                    </button>
+                  </div>
+
                 </div>
 
-                <button
-                  onClick={() => setPhase('QUIZ')}
-                  disabled={submitting}
-                  className={`w-full transition-all flex items-center justify-center gap-3 ${styles.ctaPrimary}`}
-                >
-                  Analisis Gejala Lanjutan <ChevronRight className="w-5 h-5" />
-                </button>
-              </motion.div>
+              </div>
             )}
 
             {/* --- PHASE 3: CLINICAL QUIZ --- */}
-            {phase === 'QUIZ' && selectedSession && currentNode && (
-              <ClinicalQuizPage
-                currentQuestion={{
-                  id: currentNodeId,
-                  question: currentNode.question,
-                  layman: currentNode.layman,
-                  yesNodeId: currentNode.yesNodeId ?? null,
-                  noNodeId: currentNode.noNodeId ?? null,
-                }}
-                currentQuestionIndex={quizHistory.length + 1}
-                totalQuestions={Object.keys(clinicalNodes).length}
-                onAnswer={handleDecision}
-                isSubmitting={submitting || clinicalLoading}
-              />
+            {phase === 'QUIZ' && selectedSession && (
+              <>
+                {clinicalLoading && Object.keys(clinicalNodes).length === 0 ? (
+                  <div className="flex-1 flex items-center justify-center bg-slate-50">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="w-8 h-8 rounded-full border-4 border-slate-200 border-t-slate-800 animate-spin" />
+                      <p className="text-sm font-semibold text-slate-500">Mempersiapkan Analisis Klinis...</p>
+                    </div>
+                  </div>
+                ) : currentNode ? (
+                  <ClinicalQuizPage
+                    currentQuestion={{
+                      id: currentNodeId,
+                      question: currentNode.question,
+                      layman: currentNode.layman,
+                      yesNodeId: currentNode.yesNodeId ?? null,
+                      noNodeId: currentNode.noNodeId ?? null,
+                    }}
+                    currentQuestionIndex={quizHistory.length + 1}
+                    totalQuestions={Object.keys(clinicalNodes).length}
+                    onAnswer={handleDecision}
+                    isSubmitting={submitting || clinicalLoading}
+                  />
+                ) : apiError ? (
+                  <div className="flex-1 flex flex-col items-center justify-center p-8 bg-slate-50">
+                    <div className="bg-red-50 text-red-600 p-6 rounded-xl border border-red-200 max-w-md text-center">
+                      <AlertCircle className="w-8 h-8 mx-auto mb-3 text-red-500" />
+                      <h3 className="text-lg font-bold mb-1">Gagal Memuat Analisis</h3>
+                      <p className="text-sm">{apiError}</p>
+                      <button
+                        onClick={() => setPhase('VITALS')}
+                        className="mt-4 px-4 py-2 bg-white rounded-lg text-sm font-semibold border border-red-200 shadow-sm hover:bg-red-50"
+                      >
+                        Kembali ke Vitals
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </>
             )}
 
           </AnimatePresence>
-        </div>
-      </main >
-    </div >
+        </main>
+      </div>
+    </div>
   );
 }
