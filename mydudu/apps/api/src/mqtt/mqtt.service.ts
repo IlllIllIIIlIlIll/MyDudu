@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SystemLogsService, SystemLogAction } from '../system-logs/system-logs.service';
 import { NotificationService } from '../notifications/notifications.service';
 import { NutritionService } from '../telemetry/nutrition.service';
-import { NotifType } from '@prisma/client';
+import { NotifType, SessionStatus } from '@prisma/client';
 // SensorType enum removed from Prisma schema, so we define it here or just check strings
 // But we still need to validate/map inputs.
 
@@ -233,6 +233,7 @@ export class MqttService implements OnModuleInit {
 
         sessionData.measurementCompleted = measurementCompleted;
         sessionData.measurementCompletedAt = measurementCompletedAt;
+        sessionData.status = measurementCompleted ? SessionStatus.MEASURED : SessionStatus.IN_PROGRESS;
 
         // 5. Save Data (Create or Update)
         try {

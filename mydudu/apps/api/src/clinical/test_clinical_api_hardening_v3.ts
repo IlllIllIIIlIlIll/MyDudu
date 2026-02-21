@@ -85,7 +85,7 @@ async function runHardeningTest() {
         // TEST 1: START SESSION & LOCK VERSION
         process.stdout.write('\n🔒 TEST 1: Version Locking\n');
         const startRes = await service.startSession({
-            childId: child.id,
+            sessionId: 'dummy-session-uuid',
             deviceId: device.id,
             diseaseIds: [diseaseId]
         });

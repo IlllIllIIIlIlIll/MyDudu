@@ -3,13 +3,13 @@ import { IsArray, IsBoolean, IsInt, IsNotEmpty, IsString, IsOptional, IsEnum } f
 import { ExamOutcome } from './clinical.types';
 
 export class StartSessionDto {
-    @IsInt()
+    @IsString()
     @IsNotEmpty()
-    childId: number;
+    sessionId: string;
 
+    @IsOptional()
     @IsInt()
-    @IsNotEmpty()
-    deviceId: number;
+    deviceId?: number;
 
     @IsArray()
     @IsString({ each: true })

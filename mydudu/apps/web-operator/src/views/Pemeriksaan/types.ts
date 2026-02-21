@@ -31,6 +31,7 @@ export interface Patient {
 
 export interface QueueSession {
     sessionId: number;
+    sessionUuid: string;
     version: number;
     recordedAt: string;
     weight: number | null;

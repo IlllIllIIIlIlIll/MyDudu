@@ -57,6 +57,7 @@ export class OperatorSessionService {
 
         return {
             sessionId: session.id,
+            sessionUuid: session.sessionUuid,
             recordedAt: session.recordedAt,
             version: session.version,
             weight: session.weight ? Number(session.weight) : null,

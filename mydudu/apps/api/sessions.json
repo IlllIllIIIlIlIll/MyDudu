@@ -1,0 +1,65 @@
+[
+  {
+    "id": 34,
+    "sessionUuid": "manual-1771657476146",
+    "status": "MEASURED",
+    "childId": 5,
+    "measurementCompleted": true,
+    "examOutcome": "PENDING",
+    "recordedAt": "2026-02-21T07:04:36.146Z"
+  },
+  {
+    "id": 33,
+    "sessionUuid": "manual-1771555109138",
+    "status": "MEASURED",
+    "childId": 4,
+    "measurementCompleted": true,
+    "examOutcome": "PENDING",
+    "recordedAt": "2026-02-20T02:38:29.138Z"
+  },
+  {
+    "id": 32,
+    "sessionUuid": "manual-1771528779519",
+    "status": "CLINICALLY_DONE",
+    "childId": 1,
+    "measurementCompleted": true,
+    "examOutcome": "EMERGENCY",
+    "recordedAt": "2026-02-19T19:19:39.519Z"
+  },
+  {
+    "id": 31,
+    "sessionUuid": "manual-1771407985730",
+    "status": "CLINICALLY_DONE",
+    "childId": 1,
+    "measurementCompleted": true,
+    "examOutcome": "EMERGENCY",
+    "recordedAt": "2026-02-18T09:46:25.730Z"
+  },
+  {
+    "id": 30,
+    "sessionUuid": "manual-1771407927772",
+    "status": "MEASURED",
+    "childId": 1,
+    "measurementCompleted": true,
+    "examOutcome": "PENDING",
+    "recordedAt": "2026-02-18T09:45:27.772Z"
+  },
+  {
+    "id": 29,
+    "sessionUuid": "manual-1771402433222",
+    "status": "CLINICALLY_DONE",
+    "childId": 1,
+    "measurementCompleted": true,
+    "examOutcome": "EMERGENCY",
+    "recordedAt": "2026-02-18T08:13:53.222Z"
+  },
+  {
+    "id": 28,
+    "sessionUuid": "manual-1771401908741",
+    "status": "CLINICALLY_DONE",
+    "childId": 1,
+    "measurementCompleted": true,
+    "examOutcome": "EMERGENCY",
+    "recordedAt": "2026-02-18T08:05:08.741Z"
+  }
+]

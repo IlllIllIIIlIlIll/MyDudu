@@ -3,8 +3,8 @@ import { ClinicalEngineService } from './ClinicalEngineService';
 import { PrismaService } from '../prisma/prisma.service';
 
 interface StartSessionRequest {
-    childUuid: string;  // Changed from childId
-    deviceUuid?: string; // Changed from deviceId, optional
+    sessionUuid: string;
+    deviceUuid?: string; // optional
 }
 
 interface SubmitAnswerRequest {
@@ -22,21 +22,21 @@ export class ClinicalController {
 
     @Get('start')
     async startSessionGet() {
-        throw new MethodNotAllowedException('This endpoint only accepts POST requests with a JSON body (childUuid, deviceUuid).');
+        throw new MethodNotAllowedException('This endpoint only accepts POST requests with a JSON body (sessionUuid, deviceUuid).');
     }
 
     @Post('start')
     async startSession(@Body() req: StartSessionRequest) {
-        const { childUuid, deviceUuid } = req;
+        const { sessionUuid, deviceUuid } = req;
 
-        // Query child by UUID to get internal ID
-        const child = await this.prisma.child.findUnique({
-            where: { childUuid },
-            select: { id: true, fullName: true }
+        // Find session by UUID
+        const session = await this.prisma.session.findUnique({
+            where: { sessionUuid },
+            select: { id: true }
         });
 
-        if (!child) {
-            throw new NotFoundException(`Child with UUID ${childUuid} not found`);
+        if (!session) {
+            throw new NotFoundException(`Session with UUID ${sessionUuid} not found`);
         }
 
         // Query device by UUID or use first available device
@@ -68,7 +68,7 @@ export class ClinicalController {
         // Start session with internal IDs
         // Pass empty diseaseIds to trigger all-active-trees screening mode
         const result = await this.clinicalService.startSession({
-            childId: child.id,
+            sessionId: sessionUuid,
             deviceId,
             diseaseIds: [] // Empty = fetch ALL active disease trees
         });

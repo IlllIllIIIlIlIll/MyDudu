@@ -137,7 +137,7 @@ async function runApiTest() {
     }
 
     const startDto: StartSessionDto = {
-        childId: child.id,
+        sessionId: 'dummy-session-uuid',
         deviceId: device.id,
         diseaseIds: [diseaseId]
     };

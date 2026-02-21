@@ -65,7 +65,7 @@ async function runLoadTest() {
     for (let i = 0; i < TOTAL_SESSIONS; i += CHUNK_SIZE) {
         const promises = [];
         for (let j = 0; j < CHUNK_SIZE && (i + j) < TOTAL_SESSIONS; j++) {
-            promises.push(runSingleSession(service, child.id, device.id, diseaseId, ANSWERS_PER_SESSION));
+            promises.push(runSingleSession(service, 'dummy-session-uuid', device.id, diseaseId, ANSWERS_PER_SESSION));
         }
 
         await Promise.all(promises);
@@ -80,10 +80,10 @@ async function runLoadTest() {
     // We can do a random check or aggregate query (complex).
     // Let's just trust the individual run checks.
 
-    async function runSingleSession(srv: ClinicalEngineService, childId: number, deviceId: number, dId: string, maxSteps: number) {
+    async function runSingleSession(srv: ClinicalEngineService, sessionIdInput: 'dummy-session-uuid', deviceId: number, dId: string, maxSteps: number) {
         try {
             // Start
-            const start = await srv.startSession({ childId, deviceId, diseaseIds: [dId] });
+            const start = await srv.startSession({ sessionId: 'dummy-session-uuid', deviceId, diseaseIds: [dId] });
             let sessionId = start.sessionId;
             let currentNodeId = start.nodes[0].nodeId; // Entry
 

@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notifications/notifications.service';
-import { NotifType, SessionStatus } from '@prisma/client';
 
 @Injectable()
 export class ValidationService {
@@ -36,8 +35,8 @@ export class ValidationService {
         // 2b. Update session status based on decision
         const nextStatus =
             decision === 'approve'
-                ? SessionStatus.CLINICALLY_DONE  // Doctor approved → finalized
-                : SessionStatus.MEASURED;         // Doctor rejected → back to measured, needs re-exam
+                ? 'CLINICALLY_DONE'  // Doctor approved → finalized
+                : 'MEASURED';         // Doctor rejected → back to measured, needs re-exam
 
         await this.prisma.session.update({
             where: { id: sessionId },
@@ -54,7 +53,7 @@ export class ValidationService {
             await this.notificationService.notifyOperator(
                 session.operatorId,
                 message,
-                NotifType.RESULT
+                'RESULT' as any
             );
         }
 

@@ -70,23 +70,19 @@ export class ClinicalEngineService {
             return acc;
         }, {} as Record<string, any>);
 
-        // PHASE 6: Find the most recent session for this child
-        // Priority: PENDING (quiz not done) > CLINICALLY_DONE (already complete, read-only)
-        const existingSession = await this.prisma.session.findFirst({
-            where: {
-                childId: dto.childId,
-                measurementCompleted: true,
-                status: { not: 'IN_PROGRESS' } // Must have completed measurement
-            },
-            orderBy: { recordedAt: 'desc' }
+        // PHASE 6: Find the requested session by UUID
+        const existingSession = await this.prisma.session.findUnique({
+            where: { sessionUuid: dto.sessionId }
         });
 
         let session;
 
         if (!existingSession) {
-            throw new NotFoundException(
-                'No session found for this child. Please complete measurement first.'
-            );
+            throw new NotFoundException('Session not found.');
+        }
+
+        if (!existingSession.measurementCompleted) {
+            throw new BadRequestException('Session has not completed measurement yet.');
         }
 
         // If session is already finalized, return it in read-only mode
