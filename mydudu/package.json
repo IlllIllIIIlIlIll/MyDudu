@@ -19,11 +19,14 @@
     "packages/*"
   ],
   "devDependencies": {
-    "baseline-browser-mapping": "^2.9.19",
-    "prisma": "^5.10.2"
+    "baseline-browser-mapping": "^2.10.0",
+    "prisma": "^7.4.1"
   },
   "dependencies": {
-    "@prisma/client": "^5.10.2",
+    "@prisma/client": "^7.4.1",
     "fast-json-stable-stringify": "^2.1.0"
+  },
+  "directories": {
+    "doc": "docs"
   }
 }
