@@ -84,16 +84,6 @@ const GrowthZScoreSlider = ({ label, zScore, value, unit, ideal }: any) => {
 
   const currentStatus = getStatusInfo(currentZ);
 
-  const handleDrag = (event: any, info: any) => {
-    if (trackRef.current) {
-      const rect = trackRef.current.getBoundingClientRect();
-      const x = Math.max(0, Math.min(rect.width, info.point.x - rect.left));
-      const percentage = x / rect.width;
-      const newZ = (percentage * 6) - 3;
-      setCurrentZ(newZ);
-    }
-  };
-
   return (
     <div className="bg-slate-50 p-6 rounded-xl border border-slate-300 shadow-inner overflow-hidden group">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -129,65 +119,54 @@ const GrowthZScoreSlider = ({ label, zScore, value, unit, ideal }: any) => {
       </div>
 
       <div className="relative pt-6 pb-2">
-        <div
-          ref={trackRef}
-          className="h-3 w-full rounded-full bg-slate-100 relative overflow-hidden cursor-pointer"
-          onClick={(e) => {
-            const rect = trackRef.current?.getBoundingClientRect();
-            if (rect) {
-              const x = e.clientX - rect.left;
-              const percentage = x / rect.width;
-              setCurrentZ((percentage * 6) - 3);
-            }
+        <input
+          type="range"
+          min={-3}
+          max={3}
+          step={0.01}
+          value={currentZ}
+          onChange={(e) => setCurrentZ(parseFloat(e.target.value))}
+          className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+          style={{
+            background: `linear-gradient(to right, #b91c1c 0%, #d97706 18%, #15803d 36%, #15803d 64%, #d97706 82%, #b91c1c 100%)`
           }}
-        >
-          <div className="absolute inset-0 flex">
-            <div className="h-full w-[16.66%] bg-red-600 opacity-80" />
-            <div className="h-full w-[16.66%] bg-orange-500 opacity-80" />
-            <div className="h-full w-[33.34%] bg-green-600 opacity-80" />
-            <div className="h-full w-[16.66%] bg-orange-500 opacity-80" />
-            <div className="h-full w-[16.66%] bg-red-600 opacity-80" />
-          </div>
-          <div className="absolute inset-0 bg-gradient-to-r from-black/5 via-transparent to-black/5" />
+        />
+
+        <div className="flex justify-between text-xs font-bold text-slate-400 mt-2 px-1">
+          <span>-3</span>
+          <span>0</span>
+          <span>+3</span>
         </div>
 
-        <div className="flex justify-between mt-3 px-0.5 pointer-events-none">
-          {['-3', '-2', '-1', '0', '+1', '+2', '+3'].map((mark) => (
-            <div key={mark} className="flex flex-col items-center">
-              <div className="w-px h-1.5 bg-slate-200 mb-1" />
-              <span className="text-[10px] font-bold text-slate-400">{mark}</span>
-            </div>
-          ))}
-        </div>
+        <style jsx>{`
+          input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            background: #111827;
+            border: 4px solid white;
+            border-radius: 9999px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            cursor: pointer;
+            margin-top: -11px;
+          }
 
-        <div
-          className="absolute top-[22px] -translate-x-1/2 flex flex-col items-center pointer-events-none opacity-40"
-          style={{ left: `${initialPercentage}%` }}
-        >
-          <div className="w-1 h-3 bg-white/60 rounded-full z-10" />
-          <div className="absolute -top-4 text-[9px] font-black text-slate-400 uppercase tracking-tighter whitespace-nowrap">
-            Initial
-          </div>
-          <div className="w-5 h-5 rounded-full border-2 border-slate-300 bg-slate-100 shadow-sm" />
-        </div>
+          input[type="range"]::-webkit-slider-runnable-track {
+            height: 8px;
+            border-radius: 9999px;
+          }
 
-        <motion.div
-          drag="x"
-          dragMomentum={false}
-          dragConstraints={trackRef}
-          onDrag={handleDrag}
-          animate={{ left: `${getPercentage(currentZ)}%` }}
-          transition={{ type: "spring", stiffness: 400, damping: 30 }}
-          className="absolute top-0 -translate-x-1/2 flex flex-col items-center cursor-grab active:cursor-grabbing z-30"
-        >
-          <div className={cn(
-            "w-5 h-5 rounded-full border-4 border-white shadow-xl transition-colors",
-            currentStatus.bg
-          )} />
-          <div className="mt-2 bg-slate-900 text-white text-[10px] font-black px-2 py-0.5 rounded-md whitespace-nowrap shadow-2xl">
-            {currentZ > 0 ? '+' : ''}{currentZ.toFixed(2)} SD
-          </div>
-        </motion.div>
+          input[type="range"]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            background: #111827;
+            border: 4px solid white;
+            border-radius: 9999px;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+          }
+        `}</style>
       </div>
 
       <div className="mt-8 flex items-start gap-3 p-3 bg-slate-100 rounded-xl border border-slate-300">
@@ -215,6 +194,64 @@ import { GrowthScale } from '../../components/GrowthScale';
 import { GrowthSummaryCard } from '../../components/GrowthSummaryCard';
 import { RawMeasurementCard } from './components/RawMeasurementCard';
 import { ClinicalQuizPage } from './components/ClinicalQuizPage';
+
+const GrowthCard = ({ titleKey, analysis }: { titleKey: string; analysis: any }) => {
+  const [localZ, setLocalZ] = useState(analysis.zScore);
+
+  const getStatusMeta = (z: number) => {
+    if (z <= -3) return { label: "Sangat Kurus / Sangat Pendek", color: "#b91c1c", bg: "#fee2e2" };
+    if (z <= -2) return { label: "Kurus / Pendek", color: "#d97706", bg: "#fef3c7" };
+    if (z >= 3) return { label: "Obesitas Berat / Sangat Tinggi", color: "#b91c1c", bg: "#fee2e2" };
+    if (z >= 2) return { label: "Gemuk / Tinggi", color: "#d97706", bg: "#fef3c7" };
+    return { label: "Normal", color: "#15803d", bg: "#dcfce7" };
+  };
+
+  const status = getStatusMeta(localZ);
+
+  return (
+    <div className="bg-white border border-slate-300 rounded-xl p-6 flex flex-col justify-center">
+      <div className="flex justify-between items-start mb-4">
+        <div className="text-base font-semibold text-slate-800">
+          {titleKey.replace(/_/g, " ")}
+        </div>
+        <span
+          className="px-2 py-1 rounded-md text-xs font-semibold"
+          style={{
+            color: status.color,
+            backgroundColor: status.bg
+          }}
+        >
+          {status.label}
+        </span>
+      </div>
+
+      <div className="mt-2">
+        <input
+          type="range"
+          min={-3}
+          max={3}
+          step={0.01}
+          value={localZ}
+          onChange={(e) => setLocalZ(parseFloat(e.target.value))}
+          className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+          style={{
+            background: `linear-gradient(to right, #b91c1c 0%, #d97706 18%, #15803d 36%, #15803d 64%, #d97706 82%, #b91c1c 100%)`
+          }}
+        />
+
+        <div className="flex justify-between text-xs font-bold text-slate-400 mt-2 px-1">
+          <span>-3</span>
+          <span>0</span>
+          <span>+3</span>
+        </div>
+      </div>
+
+      <div className="mt-4 text-sm text-slate-600">
+        Z-Score: <span className="font-semibold">{localZ.toFixed(2)}</span>
+      </div>
+    </div>
+  );
+};
 
 interface ScreeningFlowProps {
   onExit: () => void;
@@ -646,7 +683,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                   </div>
 
                   {/* ================= ROW 1 — MEASUREMENTS ================= */}
-                  <div className="grid grid-cols-5 gap-6">
+                  <div className="flex flex-wrap gap-6 [&>*]:flex-1 [&>*]:min-w-[180px]">
 
                     {[
                       { label: "Berat Badan", value: vitalsData.weight.value, unit: vitalsData.weight.unit, emphasize: true },
@@ -706,85 +743,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                     {selectedSession.growthAnalysis &&
                       Object.entries(selectedSession.growthAnalysis).slice(0, 3).map(([key, analysis], i) => {
 
-                        const z = analysis.zScore;
-                        const percentage = ((Math.max(-3, Math.min(3, z)) + 3) / 6) * 100;
-
-                        const getZoneColor = (z: number) => {
-                          if (z <= -3 || z >= 3) return "#b91c1c";   // Severe
-                          if (z <= -2 || z >= 2) return "#d97706";   // Moderate
-                          return "#15803d";                          // Normal
-                        };
-
-                        const getStatusMeta = (z: number) => {
-                          if (z <= -3) return { label: "Sangat Kurus / Sangat Pendek", color: "#b91c1c", bg: "#fee2e2" };
-                          if (z <= -2) return { label: "Kurus / Pendek", color: "#d97706", bg: "#fef3c7" };
-                          if (z >= 3) return { label: "Obesitas Berat / Sangat Tinggi", color: "#b91c1c", bg: "#fee2e2" };
-                          if (z >= 2) return { label: "Gemuk / Tinggi", color: "#d97706", bg: "#fef3c7" };
-                          return { label: "Normal", color: "#15803d", bg: "#dcfce7" };
-                        };
-
-                        const status = getStatusMeta(z);
-
-                        return (
-                          <div
-                            key={i}
-                            className="bg-white border border-slate-300 rounded-xl p-6 flex flex-col justify-center"
-                          >
-                            <div className="flex justify-between items-start mb-4">
-                              <div className="text-base font-semibold text-slate-800">
-                                {key.replace(/_/g, " ")}
-                              </div>
-                              <span
-                                className="px-2 py-1 rounded-md text-xs font-semibold"
-                                style={{
-                                  color: status.color,
-                                  backgroundColor: status.bg
-                                }}
-                              >
-                                {status.label}
-                              </span>
-                            </div>
-
-                            <div className="relative h-5 flex items-center">
-
-                              <div className="absolute inset-x-0 h-3 rounded-full overflow-hidden bg-slate-200">
-                                <div
-                                  className="absolute inset-0 rounded-full"
-                                  style={{
-                                    background: `
-                        linear-gradient(
-                          to right,
-                          #b91c1c 0%,
-                          #d97706 18%,
-                          #15803d 36%,
-                          #15803d 64%,
-                          #d97706 82%,
-                          #b91c1c 100%
-                        )
-                      `
-                                  }}
-                                />
-                              </div>
-
-                              <div
-                                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
-                                style={{ left: `${percentage}%` }}
-                              >
-                                <div
-                                  className="w-5 h-5 rounded-full border-4 border-white shadow-lg"
-                                  style={{
-                                    backgroundColor: getZoneColor(z)
-                                  }}
-                                />
-                              </div>
-
-                            </div>
-
-                            <div className="mt-4 text-sm text-slate-600">
-                              Z-Score: <span className="font-semibold">{z.toFixed(2)}</span>
-                            </div>
-                          </div>
-                        );
+                        return <GrowthCard key={i} titleKey={key} analysis={analysis} />;
                       })
                     }
 

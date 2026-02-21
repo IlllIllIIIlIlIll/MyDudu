@@ -30,18 +30,8 @@ export function ClinicalQuizPage({
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="w-full flex flex-col flex-1 min-h-0"
+      className="w-full flex flex-col flex-1 min-h-0 pt-8"
     >
-      {/* Progress */}
-      <div className="shrink-0">
-        <ProgressLine
-          label="Pertanyaan"
-          value={(currentQuestionIndex / totalQuestions) * 100}
-          color="blue"
-          labelValue={`${currentQuestionIndex}/${totalQuestions}`}
-        />
-      </div>
-
       {/* Question */}
       <div className="text-center mb-4 shrink-0 px-6">
         <div className={`mb-2 ${styles.quizTitleText}`}>
@@ -55,21 +45,9 @@ export function ClinicalQuizPage({
       </div>
 
       {/* Answers */}
-      <div className="flex-1 min-h-0 flex items-center justify-center px-6 pb-6">
-        <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 place-items-center">
-          {/* Size rule:
-              - primary sizing uses vmin (responsive, square-friendly)
-              - capped by remaining viewport height so it never gets cut
-              - clamped so it never becomes too tiny or too huge
-           */}
-          <div
-            className="
-              w-[clamp(180px,30vmin,420px)]
-              aspect-square
-              max-w-full
-              max-h-[calc(100dvh-260px)]
-            "
-          >
+      <div className="flex-1 min-h-0 flex items-center justify-center px-6 pb-8">
+        <div className="w-full max-w-6xl flex flex-col md:flex-row gap-6 md:gap-12 items-center justify-center h-full">
+          <div className="w-[min(100%,_40vh)] md:w-[min(45%,_65vh)] aspect-square relative">
             <QuizCard
               label="YA"
               type="yes"
@@ -78,14 +56,7 @@ export function ClinicalQuizPage({
             />
           </div>
 
-          <div
-            className="
-              w-[clamp(180px,30vmin,420px)]
-              aspect-square
-              max-w-full
-              max-h-[calc(100dvh-260px)]
-            "
-          >
+          <div className="w-[min(100%,_40vh)] md:w-[min(45%,_65vh)] aspect-square relative">
             <QuizCard
               label="TIDAK"
               type="no"
