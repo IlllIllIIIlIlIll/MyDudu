@@ -18,8 +18,11 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const { user } = useAuth();
   const [displayName, setDisplayName] = useState(user?.fullName || '');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [dbUser, setDbUser] = useState<any>(null); // Store full DB user object including ID
+  const [dbUser, setDbUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   // Image Cropper State
   const [tempImageSrc, setTempImageSrc] = useState<string | null>(null);
@@ -63,22 +66,38 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     e.target.value = ''; // Reset input
   };
 
+  // #3: Compress image to ≤256px JPEG before upload to avoid 413 Payload Too Large
+  const compressImage = (dataUrl: string, maxSize = 256, quality = 0.75): Promise<string> =>
+    new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = dataUrl;
+    });
+
   // Upload Logic
   const handleSaveCroppedImage = async (croppedAreaPixels: Area, rotation: number) => {
     if (!tempImageSrc || !croppedAreaPixels || !dbUser?.id) return;
 
     try {
       setLoading(true);
+      setImageError(null);
       const croppedImageBlob = await getCroppedImg(tempImageSrc, croppedAreaPixels, rotation);
 
       if (croppedImageBlob) {
-        // Convert Blob to Base64
         const reader = new FileReader();
         reader.readAsDataURL(croppedImageBlob);
         reader.onloadend = async () => {
-          const base64data = reader.result;
+          const rawBase64 = reader.result as string;
+          // Compress before sending to avoid 413
+          const base64data = await compressImage(rawBase64);
 
-          // Send PATCH request with new profile picture
           const token = await auth.currentUser?.getIdToken();
           const res = await fetch(`${API_URL}/users/${dbUser.id}`, {
             method: 'PATCH',
@@ -91,18 +110,17 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
           if (res.ok) {
             const updated = await res.json();
-            setDbUser(updated); // Update local state
+            setDbUser(updated);
             setShowCropper(false);
             setTempImageSrc(null);
-            // Optional: Force reload or notify AuthContext if needed
           } else {
-            alert("Failed to upload image");
+            setImageError('Gagal mengunggah foto profil.');
           }
         };
       }
     } catch (e) {
-      console.error("Failed to process/upload image", e);
-      alert("Error processing image");
+      console.error('Failed to process/upload image', e);
+      setImageError('Gagal memproses foto.');
     } finally {
       setLoading(false);
     }
@@ -111,6 +129,8 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   // Profile Update (Name)
   const handleSave = async () => {
     if (!dbUser?.id) return;
+    setSaveError(null);
+    setSaveSuccess(null);
     try {
       setLoading(true);
       const token = await auth.currentUser?.getIdToken();
@@ -124,14 +144,14 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       });
 
       if (res.ok) {
-        alert('Profil berhasil diperbarui');
-        onClose();
+        setSaveSuccess('Profil berhasil diperbarui.');
+        setTimeout(() => { setSaveSuccess(null); onClose(); }, 1200);
       } else {
-        alert('Gagal memperbarui profil');
+        setSaveError('Gagal memperbarui profil. Coba lagi.');
       }
     } catch (e) {
       console.error(e);
-      alert('Terjadi kesalahan');
+      setSaveError('Terjadi kesalahan jaringan.');
     } finally {
       setLoading(false);
     }
@@ -254,33 +274,27 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             {/* ... other fields ... */}
           </div>
 
-          {/* ... Notification Preferences ... */}
-          <div className="border-t border-gray-200 pt-6">
-            <h3 className="font-bold text-[16px] mb-4">Preferensi Notifikasi</h3>
-            <div className="space-y-3">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" defaultChecked className="w-5 h-5 rounded border-gray-300 text-[#11998E] focus:ring-[#11998E]" />
-                <span className="text-[15px]">Notifikasi validasi dokter</span>
-              </label>
-              {/* Other checkboxes */}
-            </div>
-          </div>
+          {/* Notification preferences removed (#4) */}
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-4">
-            <button
-              onClick={onClose}
-              className="flex-1 px-6 py-3 border border-gray-300 rounded-lg font-semibold text-[15px] hover:bg-gray-50 transition-colors"
-            >
-              Batal
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={loading}
-              className="flex-1 gradient-primary text-white px-6 py-3 rounded-lg font-semibold text-[15px] hover:opacity-90 transition-opacity disabled:opacity-50"
-            >
-              {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
-            </button>
+          <div className="flex flex-col gap-2">
+            {saveError && <p className="text-red-500 text-[13px] text-center">{saveError}</p>}
+            {saveSuccess && <p className="text-green-600 text-[13px] text-center">{saveSuccess}</p>}
+            {imageError && <p className="text-red-500 text-[13px] text-center">{imageError}</p>}
+            <div className="flex gap-3">
+              <button
+                onClick={onClose}
+                className="flex-1 px-6 py-3 border border-gray-300 rounded-lg font-semibold text-[15px] hover:bg-gray-50 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={loading}
+                className="flex-1 gradient-primary text-white px-6 py-3 rounded-lg font-semibold text-[15px] hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
+              </button>
+            </div>
           </div>
         </div>
       </div>

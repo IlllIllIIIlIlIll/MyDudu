@@ -196,59 +196,63 @@ import { RawMeasurementCard } from './components/RawMeasurementCard';
 import { ClinicalQuizPage } from './components/ClinicalQuizPage';
 
 const GrowthCard = ({ titleKey, analysis }: { titleKey: string; analysis: any }) => {
-  const [localZ, setLocalZ] = useState(analysis.zScore);
+  const z = analysis.zScore as number;
 
   const getStatusMeta = (z: number) => {
-    if (z <= -3) return { label: "Sangat Kurus / Sangat Pendek", color: "#b91c1c", bg: "#fee2e2" };
-    if (z <= -2) return { label: "Kurus / Pendek", color: "#d97706", bg: "#fef3c7" };
-    if (z >= 3) return { label: "Obesitas Berat / Sangat Tinggi", color: "#b91c1c", bg: "#fee2e2" };
-    if (z >= 2) return { label: "Gemuk / Tinggi", color: "#d97706", bg: "#fef3c7" };
-    return { label: "Normal", color: "#15803d", bg: "#dcfce7" };
+    if (z <= -3) return { label: "Sangat Kurus / Sangat Pendek", color: "#b91c1c", bg: "#fee2e2", border: "#fca5a5" };
+    if (z <= -2) return { label: "Kurus / Pendek", color: "#d97706", bg: "#fef3c7", border: "#fcd34d" };
+    if (z >= 3) return { label: "Obesitas Berat / Sangat Tinggi", color: "#b91c1c", bg: "#fee2e2", border: "#fca5a5" };
+    if (z >= 2) return { label: "Gemuk / Tinggi", color: "#d97706", bg: "#fef3c7", border: "#fcd34d" };
+    return { label: "Normal", color: "#15803d", bg: "#dcfce7", border: "#86efac" };
   };
 
-  const status = getStatusMeta(localZ);
+  const status = getStatusMeta(z);
+  // Friendly measurement names from the titleKey
+  const title = titleKey
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
 
   return (
-    <div className="bg-white border border-slate-300 rounded-xl p-6 flex flex-col justify-center">
-      <div className="flex justify-between items-start mb-4">
-        <div className="text-base font-semibold text-slate-800">
-          {titleKey.replace(/_/g, " ")}
-        </div>
+    <div
+      className="border rounded-xl p-5 flex flex-col justify-between gap-3 transition-all"
+      style={{ backgroundColor: status.bg, borderColor: status.border }}
+    >
+      {/* Title & label */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="text-sm font-bold text-slate-700 leading-tight">{title}</div>
         <span
-          className="px-2 py-1 rounded-md text-xs font-semibold"
-          style={{
-            color: status.color,
-            backgroundColor: status.bg
-          }}
+          className="shrink-0 px-2.5 py-1 rounded-full text-xs font-bold"
+          style={{ color: status.color, backgroundColor: 'rgba(255,255,255,0.6)' }}
         >
           {status.label}
         </span>
       </div>
 
-      <div className="mt-2">
-        <input
-          type="range"
-          min={-3}
-          max={3}
-          step={0.01}
-          value={localZ}
-          onChange={(e) => setLocalZ(parseFloat(e.target.value))}
-          className="w-full h-2 rounded-lg appearance-none cursor-pointer"
-          style={{
-            background: `linear-gradient(to right, #b91c1c 0%, #d97706 18%, #15803d 36%, #15803d 64%, #d97706 82%, #b91c1c 100%)`
-          }}
+      {/* Static spectrum bar (read-only) */}
+      <div className="relative h-2 rounded-full overflow-hidden"
+        style={{ background: 'linear-gradient(to right, #b91c1c 0%, #d97706 18%, #15803d 36%, #15803d 64%, #d97706 82%, #b91c1c 100%)' }}
+      >
+        {/* Indicator pin */}
+        <div
+          className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white border-2 border-slate-700 shadow"
+          style={{ left: `${Math.min(100, Math.max(0, ((Math.max(-3, Math.min(3, z)) + 3) / 6) * 100))}%`, transform: 'translate(-50%, -50%)' }}
         />
+      </div>
+      <div className="flex justify-between text-[10px] font-bold text-slate-400 px-0.5">
+        <span>-3</span><span>0</span><span>+3</span>
+      </div>
 
-        <div className="flex justify-between text-xs font-bold text-slate-400 mt-2 px-1">
-          <span>-3</span>
-          <span>0</span>
-          <span>+3</span>
+      {/* Raw values */}
+      {analysis.measurements && (
+        <div className="flex gap-3 flex-wrap">
+          {Object.entries(analysis.measurements as Record<string, { value: number; unit: string }>).map(([k, v]) => (
+            <div key={k} className="text-xs">
+              <span className="font-bold text-slate-500 uppercase tracking-wide">{k}: </span>
+              <span className="font-semibold text-slate-800">{v.value} {v.unit}</span>
+            </div>
+          ))}
         </div>
-      </div>
-
-      <div className="mt-4 text-sm text-slate-600">
-        Z-Score: <span className="font-semibold">{localZ.toFixed(2)}</span>
-      </div>
+      )}
     </div>
   );
 };
@@ -564,8 +568,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
 
   const handleCancelSession = async () => {
     if (!selectedSession?.lockToken || !user?.id) return;
-    if (!window.confirm('Batalkan sesi ini?')) return;
-
+    // #11: Removed window.confirm — renamed to 'Selesaikan Sesi' which is clear enough intent
     setSubmitting(true);
     try {
       await fetchWithAuth(`/operator/pemeriksaan/${selectedSession.sessionId}/cancel?userId=${user.id}`, {
@@ -577,7 +580,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
       });
       await loadQueue(false);
     } catch (error: any) {
-      setApiError(error?.message || 'Gagal membatalkan sesi');
+      setApiError(error?.message || 'Gagal menyelesaikan sesi');
     } finally {
       setSubmitting(false);
     }

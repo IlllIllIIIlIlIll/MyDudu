@@ -81,7 +81,7 @@ export function Dashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1>Beranda</h1>
-          <p className="text-gray-600 text-[15px] mt-1">
+          <p className="text-gray-600 text-[15px] mt-1 whitespace-nowrap">
             {headerDate}
           </p>
         </div>
@@ -95,11 +95,11 @@ export function Dashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <OverviewCard
-          title={user?.role === 'puskesmas' ? 'Total Anak Terdata' : 'Pemeriksaan Hari Ini'}
-          value={user?.role === 'puskesmas' ? overview?.counts.uniqueChildren || 0 : overview?.counts.sessionsToday || 0}
+          title="Pemeriksaan Hari Ini"
+          value={overview?.counts.sessionsToday || 0}
           icon={Users}
           color="#11998E"
-          subtitle={user?.role === 'puskesmas' ? 'Berdasarkan pengukuran' : 'Sesi ter-record hari ini'}
+          subtitle="Sesi ter-record hari ini"
         />
         <OverviewCard
           title="Total Alat Dudu"
@@ -108,19 +108,22 @@ export function Dashboard() {
           color="#38EF7D"
           subtitle={`${overview?.counts.devicesActive || 0} aktif`}
         />
+        {/* #5: Menunggu Validasi is disabled — greyed out, not clickable */}
+        <div className="opacity-50 cursor-not-allowed" title="Fitur belum tersedia">
+          <OverviewCard
+            title="Menunggu Validasi"
+            value={overview?.counts.pendingValidations || 0}
+            icon={FileCheck}
+            color="#9CA3AF"
+            subtitle="Segera hadir"
+          />
+        </div>
         <OverviewCard
-          title="Menunggu Validasi"
-          value={overview?.counts.pendingValidations || 0}
-          icon={FileCheck}
-          color="#FF9800"
-          subtitle="Memerlukan tinjauan"
-        />
-        <OverviewCard
-          title="Total Anak"
-          value={overview?.counts.uniqueChildren || 0}
+          title="Data Anak Terdaftar"
+          value={overview?.counts.uniqueChildren ?? 0}
           icon={Users}
           color="#3B82F6"
-          subtitle="Data anak terdaftar"
+          subtitle="Total anak terdaftar di sistem"
         />
       </div>
 

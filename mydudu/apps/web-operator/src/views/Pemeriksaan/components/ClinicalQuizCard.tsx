@@ -71,21 +71,27 @@ export function ClinicalQuizCard({
       />
 
       {/* Content */}
-      <div className="relative z-10 w-full h-full flex flex-col items-center justify-center p-6 text-center">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.1, duration: 0.3 }}
+      <div className="relative z-10 w-full h-full flex flex-col items-center justify-center p-4 text-center">
+        {/* Large translucent circular background behind label */}
+        <div
+          className="flex items-center justify-center rounded-full"
+          style={{
+            width: '55%',
+            aspectRatio: '1',
+            backgroundColor: isYes ? 'rgba(239,68,68,0.18)' : 'rgba(59,130,246,0.18)',
+          }}
         >
           <h3
-            className={`font-bold tracking-tight ${styles.cardText}`}
+            className="font-black tracking-tight select-none"
             style={{
-              '--card-text-primary': CLINICAL_QUIZ_COLORS.TEXT_PRIMARY,
-            } as React.CSSProperties}
+              fontSize: 'clamp(2.5rem, 8vw, 5rem)',
+              color: isYes ? '#b91c1c' : '#1d4ed8',
+              lineHeight: 1,
+            }}
           >
             {label}
           </h3>
-        </motion.div>
+        </div>
       </div>
 
       {/* Fade effect for unselected cards */}

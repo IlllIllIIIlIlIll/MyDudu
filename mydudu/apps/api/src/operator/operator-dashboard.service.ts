@@ -15,12 +15,8 @@ export class OperatorDashboardService {
         const deviceWhere = this.scopeService.getDeviceWhere(scope);
         const sessionWhere = this.scopeService.getSessionWhere(scope);
 
-        // Use UTC midnight of today for the date comparison.
-        // This avoids timezone mismatches when the Render server runs in UTC
-        // but the eventDate was saved as a local date string (e.g., 2026-02-23T00:00:00.000Z)
-        const todayUTC = new Date();
-        todayUTC.setUTCHours(0, 0, 0, 0);
-        const startOfDay = todayUTC;
+        // Filter to only truly upcoming events (after exact current time, not just today midnight)
+        const startOfDay = new Date();
 
         const startOfMonth = new Date(startOfDay);
         startOfMonth.setDate(1);

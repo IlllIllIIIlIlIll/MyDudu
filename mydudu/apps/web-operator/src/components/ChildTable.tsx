@@ -1,4 +1,4 @@
-import { Eye, Search, X } from 'lucide-react';
+import { Eye, Search, Wifi } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { OperatorChildRecord, NutritionCategory } from '../types/operator';
 import { useAuth } from '../context/AuthContext';
@@ -142,7 +142,7 @@ export function ChildTable({ children, onSelect }: ChildTableProps) {
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">ID</th>
+              <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Status Pengukuran</th>
               <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Nama Anak</th>
               <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Nama Wali</th>
               <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Umur</th>
@@ -160,7 +160,17 @@ export function ChildTable({ children, onSelect }: ChildTableProps) {
                 : null;
               return (
                 <tr key={child.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-mono text-[14px] text-gray-600">{child.id}</td>
+                  <td className="px-6 py-4">
+                    {/* #10: measurement status — always shows Connect since live status requires queue data */}
+                    <button
+                      onClick={() => onSelect(child)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 text-teal-700 rounded-lg text-[13px] font-semibold hover:bg-teal-100 border border-teal-200 transition-colors"
+                      title="Mulai Pengukuran"
+                    >
+                      <Wifi className="w-4 h-4" />
+                      Connect
+                    </button>
+                  </td>
                   <td className="px-6 py-4 font-semibold text-[15px]">{child.fullName}</td>
                   <td className="px-6 py-4 text-[15px] text-gray-600">{child.parentName || '-'}</td>
                   <td className="px-6 py-4 text-[15px] text-gray-600">

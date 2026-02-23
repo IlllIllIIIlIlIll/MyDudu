@@ -105,7 +105,7 @@ export const SidebarPanel = ({
                 className={`${isMinimized ? styles.miniAction : 'w-full'} flex items-center justify-center gap-2 font-bold py-3 transition-all ${isMinimized ? styles.miniDanger : styles.sidebarButtonDanger}`}
             >
                 <XCircle className="w-4 h-4" />
-                {!isMinimized && <span className="text-xs">Batal Sesi</span>}
+                {!isMinimized && <span className="text-xs">Selesaikan Sesi</span>}
             </button>
             <button
                 onClick={onExit}
