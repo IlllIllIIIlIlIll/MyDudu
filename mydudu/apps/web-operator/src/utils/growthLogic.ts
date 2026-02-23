@@ -149,8 +149,8 @@ export function getGrowthStatus(zScore: number | null | undefined, indicator?: G
     // Fallback / Generic Logic if indicator unseen
     if (zScore < -3) return GROWTH_STATUS_MAP.SANGAT_KURANG;
     if (zScore < -2) return GROWTH_STATUS_MAP.KURANG;
-    if (zScore > 3) return GROWTH_STATUS_MAP.SANGAT_LEBIH; // Generic High
-    if (zScore > 2) return GROWTH_STATUS_MAP.LEBIH;        // Generic High
+    if (zScore > 3) return GROWTH_STATUS_MAP.OBESITAS; // SANGAT_LEBIH doesn't exist — use OBESITAS
+    if (zScore > 2) return GROWTH_STATUS_MAP.LEBIH;
     return GROWTH_STATUS_MAP.NORMAL;
 }
 
