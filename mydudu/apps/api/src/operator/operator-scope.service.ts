@@ -5,7 +5,7 @@ import { UserRole } from '@prisma/client';
 export type OperatorScope = {
     userId: number;
     role: UserRole;
-    posyanduIds: number[];
+    villageIds: number[];
     isAdmin: boolean;
     villageId?: number | null;
     districtId?: number | null;
@@ -22,7 +22,6 @@ export class OperatorScopeService {
                 village: {
                     include: {
                         district: true,
-                        posyandus: true, // Fetch all posyandus in the village
                     },
                 },
                 district: true,
@@ -34,25 +33,22 @@ export class OperatorScopeService {
         }
 
         const isAdmin = user.role === UserRole.ADMIN;
-        let posyanduIds: number[] = [];
+        let villageIds: number[] = [];
 
         if (user.role === UserRole.POSYANDU && user.villageId) {
-            // Operator is assigned to a Village, so they manage ALL Posyandus in that village
-            if (user.village?.posyandus) {
-                posyanduIds = user.village.posyandus.map((p) => p.id);
-            }
+            villageIds = [user.villageId];
         } else if (user.role === UserRole.PUSKESMAS && user.districtId) {
-            const posyandus = await this.prisma.posyandu.findMany({
-                where: { village: { districtId: user.districtId } },
+            const villages = await this.prisma.village.findMany({
+                where: { districtId: user.districtId },
                 select: { id: true },
             });
-            posyanduIds = posyandus.map((posyandu) => posyandu.id);
+            villageIds = villages.map((v) => v.id);
         }
 
         return {
             userId: user.id,
             role: user.role,
-            posyanduIds,
+            villageIds,
             isAdmin,
             villageId: user.villageId,
             districtId: user.districtId,
@@ -61,18 +57,18 @@ export class OperatorScopeService {
 
     getDeviceWhere(scope: OperatorScope) {
         if (scope.isAdmin) return {};
-        if (scope.posyanduIds.length === 0) {
-            return { posyanduId: { in: [-1] } };
+        if (scope.villageIds.length === 0) {
+            return { villageId: { in: [-1] } };
         }
-        return { posyanduId: { in: scope.posyanduIds } };
+        return { villageId: { in: scope.villageIds } };
     }
 
     getSessionWhere(scope: OperatorScope) {
         if (scope.isAdmin) return {};
-        if (scope.posyanduIds.length === 0) {
-            // Return a condition that matches nothing if no posyandus are in scope
-            return { device: { posyanduId: { in: [-1] } } };
+        if (scope.villageIds.length === 0) {
+            // Return a condition that matches nothing if no villages are in scope
+            return { device: { villageId: { in: [-1] } } };
         }
-        return { device: { posyanduId: { in: scope.posyanduIds } } };
+        return { device: { villageId: { in: scope.villageIds } } };
     }
 }

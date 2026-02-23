@@ -15,6 +15,7 @@ import { OperatorDashboardOverview, NutritionCategory } from '../types/operator'
 import { ManualEntryDialog } from '../components/ManualEntryDialog';
 import { RegisterParentDialog } from '../components/RegisterParentDialog';
 import { RegisterChildDialog } from '../components/RegisterChildDialog';
+import { ScheduleDialog } from '../components/ScheduleDialog';
 import { Plus } from 'lucide-react';
 
 const sessionStatusConfig: Record<string, { label: string; bg: string; text: string }> = {
@@ -85,7 +86,8 @@ export function Dashboard() {
           </p>
         </div>
         {user?.role === 'posyandu' && (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full overflow-x-auto pb-2 sm:pb-0">
+            <ScheduleDialog onSuccess={() => mutate()} />
             <RegisterParentDialog onSuccess={() => mutate()} />
             <RegisterChildDialog onSuccess={() => mutate()} />
           </div>
@@ -227,39 +229,37 @@ export function Dashboard() {
 
             {/* Agenda Section */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h3 className="text-[18px] font-bold mb-4">Agenda Posyandu Mendatang (Februari 2026)</h3>
+              <h3 className="text-[18px] font-bold mb-4">Agenda Posyandu Mendatang</h3>
               <div className="space-y-3">
-                {/* Hardcoded Example for Feb 2026 as requested */}
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-[15px] font-semibold">Posyandu Rutin (Imunisasi)</p>
-                      <p className="text-[13px] text-gray-500">
-                        Posyandu Xx Kelurahan Xx
-                      </p>
+                {overview?.upcomingSchedules?.map((schedule: any) => (
+                  <div key={schedule.id} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-[15px] font-semibold">{schedule.title}</p>
+                        <p className="text-[13px] text-gray-500">
+                          {schedule.posyanduName || schedule.villageName || 'Lokasi tidak diketahui'}
+                          {schedule.districtName ? ` • ${schedule.districtName}` : ''}
+                        </p>
+                      </div>
+                      <span className="text-[13px] font-semibold text-[#11998E]">
+                        {formatDate(schedule.eventDate)}
+                      </span>
                     </div>
-                    <span className="text-[13px] font-semibold text-[#11998E]">
-                      10 Feb 2026
-                    </span>
-                  </div>
-                  <p className="text-[13px] text-gray-600 mt-2">Pemeriksaan rutin dan imunisasi dasar lengkap.</p>
-                  <p className="text-[12px] text-gray-500 mt-1">08:00 - 12:00</p>
-                </div>
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-[15px] font-semibold">Penyuluhan Gizi Anak</p>
-                      <p className="text-[13px] text-gray-500">
-                        Balai Desa • Kecamatan Contoh
+                    {schedule.description && (
+                      <p className="text-[13px] text-gray-600 mt-2">{schedule.description}</p>
+                    )}
+                    {(schedule.startTime || schedule.endTime) && (
+                      <p className="text-[12px] text-gray-500 mt-1">
+                        {schedule.startTime ? formatTime(schedule.startTime) : ''} - {schedule.endTime ? formatTime(schedule.endTime) : ''}
                       </p>
-                    </div>
-                    <span className="text-[13px] font-semibold text-[#11998E]">
-                      24 Feb 2026
-                    </span>
+                    )}
                   </div>
-                  <p className="text-[13px] text-gray-600 mt-2">Edukasi gizi seimbang untuk balita dan ibu hamil.</p>
-                  <p className="text-[12px] text-gray-500 mt-1">09:00 - 11:30</p>
-                </div>
+                ))}
+                {(!overview?.upcomingSchedules || overview.upcomingSchedules.length === 0) && (
+                  <div className="text-center py-6 text-gray-500 text-[14px]">
+                    Tidak ada agenda posyandu mendatang.
+                  </div>
+                )}
               </div>
             </div>
           </>

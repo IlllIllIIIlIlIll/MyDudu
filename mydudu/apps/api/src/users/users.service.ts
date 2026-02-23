@@ -190,20 +190,24 @@ export class UsersService {
     }
 
     async searchPosyandus(query: string) {
-        return this.prisma.posyandu.findMany({
+        const villages = await this.prisma.village.findMany({
             where: {
                 name: { contains: query, mode: 'insensitive' }
             },
             take: 10,
             include: {
-                village: {
-                    select: {
-                        name: true,
-                        district: { select: { name: true } }
-                    }
-                }
+                district: { select: { name: true } }
             }
         });
+
+        return villages.map(v => ({
+            id: v.id,
+            name: `Posyandu ${v.name}`,
+            village: {
+                name: v.name,
+                district: { name: v.district?.name || '' }
+            }
+        }));
     }
 
     async findByEmail(email: string) {

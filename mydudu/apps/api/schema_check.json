@@ -1,0 +1,29 @@
+[
+  {
+    "column_name": "village_id"
+  },
+  {
+    "column_name": "end_time"
+  },
+  {
+    "column_name": "created_by"
+  },
+  {
+    "column_name": "id"
+  },
+  {
+    "column_name": "event_date"
+  },
+  {
+    "column_name": "start_time"
+  },
+  {
+    "column_name": "title"
+  },
+  {
+    "column_name": "description"
+  },
+  {
+    "column_name": "posyandu_name"
+  }
+]

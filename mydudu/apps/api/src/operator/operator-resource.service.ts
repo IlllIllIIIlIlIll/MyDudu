@@ -49,13 +49,9 @@ export class OperatorResourceService {
                         },
                         device: {
                             include: {
-                                posyandu: {
+                                village: {
                                     include: {
-                                        village: {
-                                            include: {
-                                                district: true,
-                                            },
-                                        },
+                                        district: true,
                                     },
                                 },
                             },
@@ -112,9 +108,9 @@ export class OperatorResourceService {
                         growthAnalysis, // Enhanced data
                         deviceName: lastSession.device?.name || null,
                         deviceUuid: lastSession.device?.deviceUuid || null,
-                        posyanduName: lastSession.device?.posyandu?.name || null,
-                        villageName: lastSession.device?.posyandu?.village?.name || null,
-                        districtName: lastSession.device?.posyandu?.village?.district?.name || null,
+                        posyanduName: null,
+                        villageName: lastSession.device?.village?.name || null,
+                        districtName: lastSession.device?.village?.district?.name || null,
                     }
                     : null,
             };
@@ -129,13 +125,9 @@ export class OperatorResourceService {
             where: deviceWhere,
             orderBy: { id: 'desc' },
             include: {
-                posyandu: {
+                village: {
                     include: {
-                        village: {
-                            include: {
-                                district: true,
-                            },
-                        },
+                        district: true,
                     },
                 },
                 sessions: {
@@ -154,9 +146,9 @@ export class OperatorResourceService {
             deviceUuid: device.deviceUuid,
             name: device.name,
             status: device.status,
-            posyanduName: device.posyandu?.name || null,
-            villageName: device.posyandu?.village?.name || null,
-            districtName: device.posyandu?.village?.district?.name || null,
+            posyanduName: null,
+            villageName: device.village?.name || null,
+            districtName: device.village?.district?.name || null,
             lastSessionAt: device.sessions?.[0]?.recordedAt || null,
             sessionsCount: device._count?.sessions || 0,
         }));
@@ -181,10 +173,10 @@ export class OperatorResourceService {
         }
 
         const where: any = {
-            posyandu: { villageId },
+            villageId,
         };
         if (!scope.isAdmin) {
-            where.posyanduId = { in: scope.posyanduIds.length ? scope.posyanduIds : [-1] };
+            where.villageId = { in: scope.villageIds.length ? scope.villageIds : [-1] };
         }
         if (query.trim()) {
             where.OR = [
@@ -197,11 +189,7 @@ export class OperatorResourceService {
             where,
             orderBy: [{ name: 'asc' }, { id: 'asc' }],
             include: {
-                posyandu: {
-                    include: {
-                        village: true,
-                    },
-                },
+                village: true,
             },
             take: 20,
         });
@@ -210,8 +198,8 @@ export class OperatorResourceService {
             id: device.id,
             name: device.name,
             deviceUuid: device.deviceUuid,
-            posyanduName: device.posyandu?.name || null,
-            villageName: device.posyandu?.village?.name || null,
+            posyanduName: null,
+            villageName: device.village?.name || null,
         }));
     }
 

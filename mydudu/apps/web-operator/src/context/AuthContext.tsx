@@ -10,6 +10,7 @@ export interface AppUser extends User {
   id?: number;
   fullName?: string;
   role?: string;
+  villageId?: number;
   assignedLocation?: {
     kecamatan?: string;
     village?: string;
@@ -52,6 +53,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             appUser.id = dbUser.id;
             appUser.fullName = dbUser.fullName;
             appUser.role = dbUser.role ? dbUser.role.toLowerCase() : undefined;
+            appUser.villageId = dbUser.villageId;
             appUser.assignedLocation = dbUser.assignedLocation;
             setUser(appUser);
           } else {

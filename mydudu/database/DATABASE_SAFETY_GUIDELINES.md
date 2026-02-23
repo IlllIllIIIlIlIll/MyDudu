@@ -9,7 +9,8 @@
 2. [Migration Safety Protocol](#migration-safety-protocol)
 3. [Database Tables Reference](#database-tables-reference)
 4. [CRUD Operation Guidelines](#crud-operation-guidelines)
-5. [Backup and Recovery](#backup-and-recovery)
+5. [Seeding Safety Protocol](#seeding-safety-protocol)
+6. [Backup and Recovery](#backup-and-recovery)
 
 ---
 
@@ -39,7 +40,7 @@ DATABASE_URL="postgresql://...test-db..."
 | Environment | Database | Migrations | Seed Data | Purpose |
 | :--- | :--- | :--- | :--- | :--- |
 | **Production** | Neon Production | `prisma migrate deploy` only | ❌ Never | Live patient data |
-| **Development** | Neon Dev Branch or Local | `prisma migrate dev` | ✅ Safe | Local testing |
+| **Development** | Neon Dev Branch or Local | `prisma migrate dev` | ⚠️ Safe only after Backup | Local testing |
 | **Testing** | Separate test DB | Reset before each test | ✅ Required | Automated tests |
 
 ---
@@ -213,6 +214,20 @@ await prisma.whoGrowthStandard.deleteMany();
 // ❌ NEVER truncate tables
 await prisma.$executeRaw`TRUNCATE TABLE children CASCADE`;
 ```
+
+---
+
+## Seeding Safety Protocol
+
+### ⚠️ CRITICAL RULES FOR SEEDING
+- **NEVER** run `prisma db seed` without first storing all existing database values into a local SQL backup or creating a Neon branch/snapshot.
+- **NEVER** use destructive cleanup (like `deleteMany()`) in seed scripts on any database containing real or test data unless it is a purely ephemeral database.
+- Every time you want to use seeding, you **MUST** store all values within the database by exporting them first.
+
+#### Required Steps Before Seeding:
+1. Ensure `DATABASE_URL` is pointing to the correct environment.
+2. Run a database backup command (e.g. `pg_dump` or create a point-in-time branch in Neon).
+3. Do not run destructive `deleteMany` scripts blindly.
 
 ---
 

@@ -81,13 +81,9 @@ export class OperatorDashboardService {
                 },
                 device: {
                     include: {
-                        posyandu: {
+                        village: {
                             include: {
-                                village: {
-                                    include: {
-                                        district: true,
-                                    },
-                                },
+                                district: true,
                             },
                         },
                     },
@@ -103,20 +99,16 @@ export class OperatorDashboardService {
         const recentSessions = recentSessionsRaw.slice(0, 5);
 
         const upcomingSchedules =
-            scope.isAdmin || scope.posyanduIds.length > 0
+            scope.isAdmin || scope.villageIds.length > 0
                 ? await this.prisma.schedule.findMany({
                     where: {
-                        ...(scope.isAdmin ? {} : { posyanduId: { in: scope.posyanduIds } }),
+                        ...(scope.isAdmin ? {} : { villageId: { in: scope.villageIds } }),
                         eventDate: { gte: startOfDay },
                     },
                     include: {
-                        posyandu: {
+                        village: {
                             include: {
-                                village: {
-                                    include: {
-                                        district: true,
-                                    },
-                                },
+                                district: true,
                             },
                         },
                     },
@@ -125,22 +117,22 @@ export class OperatorDashboardService {
                 })
                 : [];
 
-        let posyanduSummary: any[] = [];
-        if (scope.role === UserRole.PUSKESMAS && scope.posyanduIds.length > 0) {
-            const [posyandus, devices, sessions] = await Promise.all([
-                this.prisma.posyandu.findMany({
-                    where: { id: { in: scope.posyanduIds } },
-                    include: { village: { include: { district: true } } },
+        let villageSummary: any[] = [];
+        if (scope.role === UserRole.PUSKESMAS && scope.villageIds.length > 0) {
+            const [villages, devices, sessions] = await Promise.all([
+                this.prisma.village.findMany({
+                    where: { id: { in: scope.villageIds } },
+                    include: { district: true },
                 }),
                 this.prisma.device.findMany({
                     where: deviceWhere,
-                    select: { id: true, posyanduId: true, status: true },
+                    select: { id: true, villageId: true, status: true },
                 }),
                 this.prisma.session.findMany({
                     where: sessionWhere,
                     select: {
                         childId: true,
-                        device: { select: { posyanduId: true } },
+                        device: { select: { villageId: true } },
                         nutritionStatuses: {
                             orderBy: { id: 'desc' },
                             take: 1,
@@ -151,12 +143,11 @@ export class OperatorDashboardService {
             ]);
 
             const summaryMap = new Map<number, any>();
-            posyandus.forEach((posyandu) => {
-                summaryMap.set(posyandu.id, {
-                    posyanduId: posyandu.id,
-                    posyanduName: posyandu.name,
-                    villageName: posyandu.village?.name || null,
-                    districtName: posyandu.village?.district?.name || null,
+            villages.forEach((village) => {
+                summaryMap.set(village.id, {
+                    villageId: village.id,
+                    villageName: village.name,
+                    districtName: village.district?.name || null,
                     childrenCount: 0,
                     devicesCount: 0,
                     activeDevicesCount: 0,
@@ -170,8 +161,8 @@ export class OperatorDashboardService {
             });
 
             devices.forEach((device) => {
-                if (!device.posyanduId) return;
-                const entry = summaryMap.get(device.posyanduId);
+                if (!device.villageId) return;
+                const entry = summaryMap.get(device.villageId);
                 if (!entry) return;
                 entry.devicesCount += 1;
                 if (device.status === 'AVAILABLE' || device.status === 'WAITING') {
@@ -179,27 +170,27 @@ export class OperatorDashboardService {
                 }
             });
 
-            const childrenByPosyandu = new Map<number, Set<number>>();
+            const childrenByVillage = new Map<number, Set<number>>();
             sessions.forEach((session) => {
-                const posyanduId = session.device?.posyanduId;
-                if (!posyanduId) return;
-                if (!childrenByPosyandu.has(posyanduId)) {
-                    childrenByPosyandu.set(posyanduId, new Set());
+                const villageId = session.device?.villageId;
+                if (!villageId) return;
+                if (!childrenByVillage.has(villageId)) {
+                    childrenByVillage.set(villageId, new Set());
                 }
-                childrenByPosyandu.get(posyanduId)?.add(session.childId);
+                childrenByVillage.get(villageId)?.add(session.childId);
 
                 const category = session.nutritionStatuses?.[0]?.category;
-                const entry = summaryMap.get(posyanduId);
+                const entry = summaryMap.get(villageId);
                 if (entry && category) {
                     entry.nutrition[category] = (entry.nutrition[category] || 0) + 1;
                 }
             });
 
-            summaryMap.forEach((entry, posyanduId) => {
-                entry.childrenCount = childrenByPosyandu.get(posyanduId)?.size || 0;
+            summaryMap.forEach((entry, vId) => {
+                entry.childrenCount = childrenByVillage.get(vId)?.size || 0;
             });
 
-            posyanduSummary = Array.from(summaryMap.values());
+            villageSummary = Array.from(summaryMap.values());
         }
 
         return {
@@ -231,9 +222,9 @@ export class OperatorDashboardService {
                     id: session.device?.id,
                     name: session.device?.name,
                     deviceUuid: session.device?.deviceUuid,
-                    posyanduName: session.device?.posyandu?.name || null,
-                    villageName: session.device?.posyandu?.village?.name || null,
-                    districtName: session.device?.posyandu?.village?.district?.name || null,
+                    posyanduName: null,
+                    villageName: session.device?.village?.name || null,
+                    districtName: session.device?.village?.district?.name || null,
                 },
                 nutritionCategory: session.nutritionStatuses?.[0]?.category || null,
             })),
@@ -244,11 +235,11 @@ export class OperatorDashboardService {
                 eventDate: schedule.eventDate,
                 startTime: schedule.startTime,
                 endTime: schedule.endTime,
-                posyanduName: schedule.posyandu?.name || null,
-                villageName: schedule.posyandu?.village?.name || null,
-                districtName: schedule.posyandu?.village?.district?.name || null,
+                posyanduName: schedule.posyanduName || null,
+                villageName: schedule.village?.name || null,
+                districtName: schedule.village?.district?.name || null,
             })),
-            posyanduSummary,
+            posyanduSummary: villageSummary,
         };
     }
 

@@ -193,12 +193,12 @@ export class MqttService implements OnModuleInit {
 
                         const deviceWithLoc = await this.prisma.device.findUnique({
                             where: { id: device.id },
-                            include: { posyandu: true }
+                            include: { village: true }
                         });
 
-                        if (deviceWithLoc?.posyandu?.villageId) {
+                        if (deviceWithLoc?.villageId) {
                             const posyanduUsers = await this.prisma.user.findMany({
-                                where: { villageId: deviceWithLoc.posyandu.villageId }
+                                where: { villageId: deviceWithLoc.villageId }
                             });
                             for (const u of posyanduUsers) {
                                 await this.notificationService.notifyOperator(u.id, `Baterai alat lemah (${val}%)`, NotifType.SYSTEM);

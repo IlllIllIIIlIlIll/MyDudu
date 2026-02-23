@@ -32,16 +32,16 @@ export class CronService {
                     lt: nextDay
                 }
             },
-            include: { posyandu: { include: { village: { include: { users: true } } } } }
+            include: { village: { include: { users: true } } }
         });
 
         for (const schedule of schedules) {
-            // Updated Path: Schedule -> Posyandu -> Village -> Users
-            if (schedule.posyandu?.village?.users) {
-                for (const user of schedule.posyandu.village.users) {
+            // Updated Path: Schedule -> Village -> Users
+            if (schedule.village?.users) {
+                for (const user of schedule.village.users) {
                     await this.notificationService.notifyOperator(
                         user.id,
-                        `Jadwal Posyandu ${schedule.posyandu.name} besok: ${schedule.title}`,
+                        `Jadwal Posyandu ${schedule.posyanduName || schedule.village.name} besok: ${schedule.title}`,
                         NotifType.REMINDER
                     );
                 }

@@ -668,9 +668,9 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
 
             {/* --- PHASE 2: VITALS (AUTO) --- */}
             {phase === 'VITALS' && selectedPatient && selectedSession && (
-              <div className="h-full w-full px-12 py-8">
+              <div className="h-full w-full flex-1 flex flex-col px-4 md:px-8 lg:px-12 py-4 md:py-8 overflow-y-auto overflow-x-hidden">
 
-                <div className="h-full grid grid-rows-[auto_auto_1fr_auto] gap-8 max-w-[1600px] mx-auto">
+                <div className="h-full grid grid-rows-[auto_auto_1fr_auto] gap-8">
 
                   {/* ================= HEADER ================= */}
                   <div>

@@ -39,13 +39,13 @@ export class DeviceService {
             data: {
                 deviceUuid: deviceUuid,
                 name: createDeviceDto.name,
-                posyanduId: createDeviceDto.posyanduId,
+                villageId: (createDeviceDto as any).villageId || (createDeviceDto as any).posyanduId,
             },
         });
 
         await this.systemLogsService.logEvent(SystemLogAction.DEVICE_REGISTER, {
             name: device.name,
-            posyanduId: device.posyanduId
+            villageId: device.villageId
         }, undefined, device.deviceUuid);
 
         return device;
@@ -66,17 +66,13 @@ export class DeviceService {
             if (user) {
                 if (user.role === 'PUSKESMAS' && user.districtId) {
                     whereClause = {
-                        posyandu: {
-                            village: {
-                                districtId: user.districtId
-                            }
+                        village: {
+                            districtId: user.districtId
                         }
                     };
                 } else if (user.role === 'POSYANDU' && user.villageId) {
                     whereClause = {
-                        posyandu: {
-                            villageId: user.villageId
-                        }
+                        villageId: user.villageId
                     };
                 }
                 // Admin sees all, so empty whereClause
@@ -86,7 +82,7 @@ export class DeviceService {
         return this.prisma.device.findMany({
             where: whereClause,
             include: {
-                posyandu: true,
+                village: true,
             },
             orderBy: {
                 id: 'desc',
@@ -98,7 +94,7 @@ export class DeviceService {
         return this.prisma.device.findUnique({
             where: { id },
             include: {
-                posyandu: true,
+                village: true,
             },
         });
     }
@@ -108,7 +104,7 @@ export class DeviceService {
             where: { id },
             data: updateDeviceDto,
             include: {
-                posyandu: true,
+                village: true,
             },
         });
 
@@ -178,13 +174,13 @@ export class DeviceService {
             selectedDevice = await this.prisma.device.findFirst({
                 where: {
                     id: data.deviceId,
-                    posyandu: { villageId: targetVillageId },
+                    villageId: targetVillageId,
                 },
                 select: { id: true },
             });
         } else {
             selectedDevice = await this.prisma.device.findFirst({
-                where: { posyandu: { villageId: targetVillageId } },
+                where: { villageId: targetVillageId },
                 orderBy: [{ name: 'asc' }, { id: 'asc' }],
                 select: { id: true },
             });

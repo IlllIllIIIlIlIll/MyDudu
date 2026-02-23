@@ -1,0 +1,52 @@
+[
+  {
+    "id": "70b03a01-c61c-4a0c-9254-d4b4f8bd074c",
+    "checksum": "12bc8c747d7f5765e412f2bca90b356b261b93fffcb9fb1675f00043d4a20808",
+    "finished_at": "2026-02-23T05:10:34.293Z",
+    "migration_name": "20260223040224_change_posyandu_schema",
+    "logs": null,
+    "rolled_back_at": null,
+    "started_at": "2026-02-23T05:10:33.773Z",
+    "applied_steps_count": 1
+  },
+  {
+    "id": "52dc7827-dec4-4ac4-8180-96a6f66149a8",
+    "checksum": "c6be37a90a712d074bfcd27b8dbc325d030a0017286ee595837e628e3399e7ea",
+    "finished_at": "2026-02-23T04:02:11.774Z",
+    "migration_name": "20260218032959_rename_session_status",
+    "logs": null,
+    "rolled_back_at": null,
+    "started_at": "2026-02-23T04:02:11.456Z",
+    "applied_steps_count": 1
+  },
+  {
+    "id": "e68c04d4-4b6c-433c-8cf0-c29c6491b0b1",
+    "checksum": "35fa3f696549d7681dcbedca8a1d768ddd5fb03b57a50a7b12782a615edef2c8",
+    "finished_at": "2026-02-23T04:02:11.325Z",
+    "migration_name": "20260217110000_lock_who_growth_standards",
+    "logs": null,
+    "rolled_back_at": null,
+    "started_at": "2026-02-23T04:02:10.994Z",
+    "applied_steps_count": 1
+  },
+  {
+    "id": "181a4a40-088f-4367-9845-4f779b7e7a49",
+    "checksum": "6175f2cc5cb7b15abf57f38a918a1e89ed10a472f8e9a47c2db088d7702fc717",
+    "finished_at": "2026-02-23T04:02:10.802Z",
+    "migration_name": "20260217100015_add_idempotency",
+    "logs": null,
+    "rolled_back_at": null,
+    "started_at": "2026-02-23T04:02:10.482Z",
+    "applied_steps_count": 1
+  },
+  {
+    "id": "dd69a258-2e3f-494f-8a89-2ad88417eda4",
+    "checksum": "2056ee477bc1e2809438f041b6114463725c8be328a7463f9c87cf9e872501a9",
+    "finished_at": "2026-02-23T04:02:10.336Z",
+    "migration_name": "20260217100000_add_integrity_constraints",
+    "logs": null,
+    "rolled_back_at": null,
+    "started_at": "2026-02-23T04:02:09.348Z",
+    "applied_steps_count": 1
+  }
+]

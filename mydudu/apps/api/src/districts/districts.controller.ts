@@ -12,8 +12,4 @@ export class DistrictsController {
     return this.districtsService.findAll();
   }
 
-  @Post('posyandu')
-  createPosyandu(@Body() body: { name: string, villageId: number }) {
-    return this.districtsService.createPosyandu(body.name, body.villageId);
-  }
 }

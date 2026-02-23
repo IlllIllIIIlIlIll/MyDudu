@@ -77,7 +77,7 @@ export class AuthService {
                                     include: {
                                         device: {
                                             include: {
-                                                posyandu: true
+                                                village: true
                                             }
                                         },
                                         validationRecords: true

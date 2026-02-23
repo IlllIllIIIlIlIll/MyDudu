@@ -95,11 +95,8 @@ async function main() {
             const village = await prisma.village.create({
                 data: { name: 'Demo Village', code: 'DMO-V1', districtId: district.id }
             });
-            const posyandu = await prisma.posyandu.create({
-                data: { name: 'Demo Posyandu', villageId: village.id }
-            });
             device = await prisma.device.create({
-                data: { deviceUuid: 'DEMO-001', name: 'Demo Scale', posyanduId: posyandu.id, status: 'AVAILABLE' }
+                data: { deviceUuid: 'DEMO-001', name: 'Demo Scale', villageId: village.id, status: 'AVAILABLE' }
             });
         }
 

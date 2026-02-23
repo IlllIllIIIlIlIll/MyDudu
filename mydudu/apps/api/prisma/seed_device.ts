@@ -32,24 +32,7 @@ async function main() {
     });
     console.log(`Village ensured: ${village.name}`);
 
-    // 3. Create or Find Posyandu
-    // Note: Posyandu doesn't have a unique code in schema globally, but let's try to find by name/village
-    let posyandu = await prisma.posyandu.findFirst({
-        where: { name: 'Posyandu Melati', villageId: village.id }
-    });
-
-    if (!posyandu) {
-        posyandu = await prisma.posyandu.create({
-            data: {
-                name: 'Posyandu Melati',
-                villageId: village.id,
-                address: 'Jl. Mawar No. 123',
-            }
-        });
-        console.log(`Posyandu created: ${posyandu.name}`);
-    } else {
-        console.log(`Posyandu found: ${posyandu.name}`);
-    }
+    // 3. Removed Posyandu creation
 
     // 4. Create Devices
     const devicesData = [
@@ -62,12 +45,12 @@ async function main() {
         const device = await prisma.device.upsert({
             where: { deviceUuid: d.uuid },
             update: {
-                posyanduId: posyandu.id, // Update relation just in case
+                villageId: village.id, // Update relation just in case
             },
             create: {
                 deviceUuid: d.uuid,
                 name: d.name,
-                posyanduId: posyandu.id,
+                villageId: village.id,
                 status: 'AVAILABLE',
             },
         });

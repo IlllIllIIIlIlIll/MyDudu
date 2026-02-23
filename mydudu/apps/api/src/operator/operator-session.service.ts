@@ -77,7 +77,8 @@ export class OperatorSessionService {
                 id: session.device?.id,
                 name: session.device?.name || null,
                 deviceUuid: session.device?.deviceUuid || null,
-                posyanduName: session.device?.posyandu?.name || null,
+                posyanduName: null,
+                villageName: session.device?.village?.name || null,
             },
             lock: {
                 lockedByOperatorId: session.lockedByOperatorId,
@@ -114,7 +115,7 @@ export class OperatorSessionService {
                 },
                 device: {
                     include: {
-                        posyandu: true,
+                        village: true,
                     },
                 },
             },
@@ -152,7 +153,7 @@ export class OperatorSessionService {
                 },
                 device: {
                     include: {
-                        posyandu: true,
+                        village: true,
                     },
                 },
             },

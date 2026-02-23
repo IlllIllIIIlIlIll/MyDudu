@@ -24,6 +24,7 @@ import { ChildrenModule } from './children/children.module';
 import { ObservabilityModule } from './observability/observability.module';
 import { TelemetryMiddleware } from './observability/telemetry.middleware';
 import { ClinicalModule } from './clinical/clinical.module';
+import { ScheduleModule as PosyanduScheduleModule } from './schedule/schedule.module';
 
 @Module({
     imports: [
@@ -48,6 +49,7 @@ import { ClinicalModule } from './clinical/clinical.module';
         ChildrenModule,
         ObservabilityModule,
         ClinicalModule,
+        PosyanduScheduleModule,
     ],
     controllers: [AppController, ReportsController],
     providers: [AppService],

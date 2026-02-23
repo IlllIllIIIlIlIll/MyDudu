@@ -17,7 +17,6 @@ async function main() {
         await prisma.device.deleteMany();
         await prisma.parent.deleteMany();
         await prisma.user.deleteMany();
-        await prisma.posyandu.deleteMany();
         await prisma.village.deleteMany();
         await prisma.district.deleteMany();
         console.log('Destructive cleanup completed (ALLOW_DESTRUCTIVE_SEED=1).');
@@ -59,7 +58,7 @@ async function main() {
     };
 
     let districtPakuhajiId = null;
-    let posyanduId = null;
+    let fallbackVillageId = null;
 
     for (const [districtName, villages] of Object.entries(locations)) {
         const district = await prisma.district.upsert({
@@ -86,20 +85,8 @@ async function main() {
                 },
             });
 
-            // Create at least one Posyandu per village
-            const p = await prisma.posyandu.upsert({
-                where: { id: (district.id * 100) + index }, // Simple deterministic ID generation attempt, or let DB handle it if we remove ID.
-                // Actually, let's just findFirst or create.
-                update: {},
-                create: {
-                    name: `Posyandu ${villageName}`,
-                    address: `Jl. ${villageName} No. 1`,
-                    villageId: village.id,
-                },
-            });
-
             if (villageName === 'Desa Kiara Payung') {
-                posyanduId = p.id;
+                fallbackVillageId = village.id;
             }
         }
     }
@@ -168,42 +155,33 @@ async function main() {
         console.log('Created Posyandu User: Abir Nurchiyah');
 
         // Create Devices for Buaran Mangga
-        // Find the Posyandu entity first
-        const posyanduBuaran = await prisma.posyandu.findFirst({
-            where: { villageId: buaranMangga.id }
-        });
+        for (let i = 1; i <= 5; i++) {
+            const deviceName = `Burma ${i.toString().padStart(2, '0')}`;
+            const deviceUuid = `BURMA-${i.toString().padStart(3, '0')}`;
 
-        if (posyanduBuaran) {
-            for (let i = 1; i <= 5; i++) {
-                const deviceName = `Burma ${i.toString().padStart(2, '0')}`;
-                const deviceUuid = `BURMA-${i.toString().padStart(3, '0')}`;
-
-                await prisma.device.upsert({
-                    where: { deviceUuid: deviceUuid },
-                    update: {
-                        posyanduId: posyanduBuaran.id
-                    },
-                    create: {
-                        deviceUuid: deviceUuid,
-                        name: deviceName,
-                        posyanduId: posyanduBuaran.id,
-                        status: 'AVAILABLE',
-                    },
-                });
-            }
-            console.log('Created 5 Burma devices for Posyandu Buaran Mangga');
-        } else {
-            console.warn('Posyandu Buaran Mangga not found, skipping devices.');
+            await prisma.device.upsert({
+                where: { deviceUuid: deviceUuid },
+                update: {
+                    villageId: buaranMangga.id
+                },
+                create: {
+                    deviceUuid: deviceUuid,
+                    name: deviceName,
+                    villageId: buaranMangga.id,
+                    status: 'AVAILABLE',
+                },
+            });
         }
+        console.log('Created 5 Burma devices for Posyandu Buaran Mangga');
     } else {
         console.warn('Village Buaran Mangga not found!');
     }
 
-    // 4. Devices (Linked to the generated posyanduId for Pakuhaji/Kiara Payung if avail, else just first one)
-    if (!posyanduId) {
-        // Fallback if not found logic (should be found)
-        const anyPosyandu = await prisma.posyandu.findFirst();
-        posyanduId = anyPosyandu.id;
+    // 4. Devices (Linked to the generated fallbackVillageId for Pakuhaji/Kiara Payung if avail, else just first one)
+    if (!fallbackVillageId) {
+        // Fallback if not found logic
+        const anyVillage = await prisma.village.findFirst();
+        fallbackVillageId = anyVillage.id;
     }
 
     const devices = [];
@@ -214,7 +192,7 @@ async function main() {
             create: {
                 deviceUuid: `DEV-${i.toString().padStart(3, '0')}`,
                 name: `Dudu Scale ${i}`,
-                posyanduId: posyanduId,
+                villageId: fallbackVillageId,
                 status: 'INACTIVE',
             },
         });

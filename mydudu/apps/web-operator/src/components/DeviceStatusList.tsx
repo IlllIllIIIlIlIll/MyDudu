@@ -77,9 +77,6 @@ export function DeviceStatusList({ devices }: DeviceStatusListProps) {
               <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Kode Alat</th>
               <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Nama Alat</th>
               <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Status</th>
-              {user?.role === 'puskesmas' && (
-                <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Posyandu</th>
-              )}
               <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Desa</th>
               <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Aksi</th>
             </tr>
@@ -101,17 +98,14 @@ export function DeviceStatusList({ devices }: DeviceStatusListProps) {
                       {device.status}
                     </Badge>
                   </td>
-                  {user?.role === 'puskesmas' && (
-                    <td className="px-6 py-4 text-[14px] text-gray-600">{device.posyanduName || '-'}</td>
-                  )}
                   <td className="px-6 py-4 text-[15px] text-gray-600">{device.villageName || '-'}</td>
                   <td className="px-6 py-4">
                     <button
                       onClick={() => handleConnect(device)}
                       disabled={!isAvailable}
                       className={`px-4 py-2 text-[14px] font-semibold rounded-lg transition-colors flex items-center gap-2 ${isAvailable
-                          ? "bg-[#11998E] text-white hover:opacity-90"
-                          : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        ? "bg-[#11998E] text-white hover:opacity-90"
+                        : "bg-gray-100 text-gray-400 cursor-not-allowed"
                         }`}
                     >
                       <Zap className="w-4 h-4" />
@@ -147,10 +141,7 @@ export function DeviceStatusList({ devices }: DeviceStatusListProps) {
                   <p className="text-gray-500">Status</p>
                   <p className="font-semibold">{selectedDevice.status}</p>
                 </div>
-                <div>
-                  <p className="text-gray-500">Posyandu</p>
-                  <p className="font-semibold">{selectedDevice.posyanduName || '-'}</p>
-                </div>
+
                 <div>
                   <p className="text-gray-500">Desa</p>
                   <p className="font-semibold">{selectedDevice.villageName || '-'}</p>

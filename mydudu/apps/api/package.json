@@ -23,7 +23,7 @@
         "test:e2e": "jest --config ./test/jest-e2e.json"
     },
     "prisma": {
-        "seed": "node prisma/seed.js"
+        "seed": "ts-node prisma/backup.ts && node prisma/seed.js"
     },
     "dependencies": {
         "@nestjs/cli": "^11.0.16",

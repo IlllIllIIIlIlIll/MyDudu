@@ -18,17 +18,6 @@ async function main() {
     create: { districtId: district.id, name: 'Dummy Village', code: 'DUM-V1' },
   });
 
-  const posyandu = await prisma.posyandu.upsert({
-    where: { id: 99001 },
-    update: {},
-    create: {
-      id: 99001,
-      villageId: village.id,
-      name: 'Posyandu Dummy Pemeriksaan',
-      address: 'Jl. Dummy No. 1',
-    },
-  });
-
   const operator = await prisma.user.upsert({
     where: { email: 'operator.pemeriksaan.dummy@mydudu.local' },
     update: { role: UserRole.POSYANDU, status: UserStatus.ACTIVE, villageId: village.id },
@@ -79,11 +68,11 @@ async function main() {
 
   const device = await prisma.device.upsert({
     where: { deviceUuid: 'DUMMY-PEMERIKSAAN-001' },
-    update: { name: 'Dummy Device Pemeriksaan', posyanduId: posyandu.id, status: DeviceStatus.AVAILABLE },
+    update: { name: 'Dummy Device Pemeriksaan', villageId: village.id, status: DeviceStatus.AVAILABLE },
     create: {
       deviceUuid: 'DUMMY-PEMERIKSAAN-001',
       name: 'Dummy Device Pemeriksaan',
-      posyanduId: posyandu.id,
+      villageId: village.id,
       status: DeviceStatus.AVAILABLE,
     },
   });

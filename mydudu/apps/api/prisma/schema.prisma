@@ -118,27 +118,14 @@ model Village {
   name       String     @db.VarChar(100)
   code       String?    @unique @db.VarChar(20)
   district   District   @relation(fields: [districtId], references: [id], onDelete: Cascade)
-  posyandus  Posyandu[]
   users      User[]
   Parent     Parent[]
 
+  devices    Device[]
+  schedules  Schedule[]
+
   @@map("villages")
 }
-
-model Posyandu {
-  id        Int     @id @default(autoincrement())
-  villageId Int     @map("village_id")
-  name      String  @db.VarChar(100)
-  address   String? @db.Text
-  village   Village @relation(fields: [villageId], references: [id], onDelete: Cascade)
-
-  devices   Device[]
-  schedules Schedule[]
-
-  @@map("posyandus")
-}
-
-// ============================================================
 // USERS
 // ============================================================
 
@@ -226,13 +213,13 @@ model Device {
   id         Int          @id @default(autoincrement())
   deviceUuid String       @unique @map("device_uuid") @db.VarChar(64)
   name       String       @db.VarChar(50)
-  posyanduId Int?         @map("posyandu_id")
+  villageId  Int?         @map("village_id")
   status     DeviceStatus @default(INACTIVE) @map("status")
   // batteryLevel Int?         @map("battery_level") @db.SmallInt // Removed
   // lastSync     DateTime?    @map("last_sync") @db.Timestamp(6) // Removed
   deletedAt  DateTime?    @map("deleted_at") @db.Timestamp(6) // Soft Delete
 
-  posyandu  Posyandu?  @relation(fields: [posyanduId], references: [id])
+  village   Village?   @relation(fields: [villageId], references: [id])
   // logs      DeviceLog[] // Removed
   incidents Incident[]
   sessions  Session[]
@@ -420,16 +407,17 @@ model EducationArticle {
 // ============================================================
 
 model Schedule {
-  id          Int       @id @default(autoincrement())
-  posyanduId  Int?      @map("posyandu_id")
-  title       String    @db.VarChar(100)
-  description String?   @db.Text
-  eventDate   DateTime  @map("event_date") @db.Date
-  startTime   DateTime? @map("start_time") @db.Time
-  endTime     DateTime? @map("end_time") @db.Time
-  createdBy   Int?      @map("created_by")
+  id           Int       @id @default(autoincrement())
+  villageId    Int?      @map("village_id")
+  posyanduName String    @map("posyandu_name") @db.VarChar(100)
+  title        String    @db.VarChar(100)
+  description  String?   @db.Text
+  eventDate    DateTime  @map("event_date") @db.Date
+  startTime    DateTime? @map("start_time") @db.Time
+  endTime      DateTime? @map("end_time") @db.Time
+  createdBy    Int?      @map("created_by")
 
-  posyandu Posyandu? @relation(fields: [posyanduId], references: [id], onDelete: Cascade)
+  village  Village?  @relation(fields: [villageId], references: [id], onDelete: Cascade)
   creator  User?     @relation(fields: [createdBy], references: [id], onDelete: SetNull)
 
   @@map("schedules")
