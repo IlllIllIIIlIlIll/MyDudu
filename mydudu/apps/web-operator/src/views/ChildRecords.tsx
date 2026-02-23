@@ -9,7 +9,7 @@ import { NutritionCategory, OperatorChildRecord, OperatorParentRecord } from '..
 import { ParentTable } from '../components/ParentTable';
 import { Button } from '../components/ui/button';
 import { ChildDetailDialog } from '../components/ChildDetailDialog';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 export function ChildRecords({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const { user } = useAuth();
@@ -39,6 +39,31 @@ export function ChildRecords({ onNavigate }: { onNavigate?: (page: string) => vo
 
   const [selectedChild, setSelectedChild] = useState<OperatorChildRecord | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [connectStatus, setConnectStatus] = useState<{ childId: number; msg: string; ok: boolean } | null>(null);
+
+  const handleConnect = useCallback(async (child: OperatorChildRecord) => {
+    const deviceUuid = child.lastSession?.deviceUuid;
+    if (!deviceUuid) {
+      setConnectStatus({ childId: child.id, msg: 'Tidak ada perangkat terhubung pada sesi terakhir anak ini. Pastikan perangkat sudah aktif.', ok: false });
+      setTimeout(() => setConnectStatus(null), 4000);
+      return;
+    }
+    setConnectStatus({ childId: child.id, msg: 'Menghubungkan...', ok: true });
+    try {
+      await fetchWithAuth(`/operator/device/${deviceUuid}/start`, {
+        method: 'POST',
+        body: JSON.stringify({
+          childId: child.id,
+          parentId: child.parentId,
+          name: child.fullName,
+        }),
+      });
+      setConnectStatus({ childId: child.id, msg: `✓ START dikirim ke ${deviceUuid}`, ok: true });
+    } catch (e: any) {
+      setConnectStatus({ childId: child.id, msg: e?.message || 'Gagal mengirim perintah ke perangkat', ok: false });
+    }
+    setTimeout(() => setConnectStatus(null), 4000);
+  }, []);
 
   return (
     <div className="p-8 space-y-6">
@@ -79,17 +104,22 @@ export function ChildRecords({ onNavigate }: { onNavigate?: (page: string) => vo
           Memuat data anak...
         </div>
       ) : (
-        <ChildTable
-          children={children}
-          onSelect={(child) => {
-            setSelectedChild(child);
-            setDetailOpen(true);
-          }}
-          onConnect={(_child) => {
-            // #2: Navigate to Pemeriksaan page like Alat Dudu does
-            onNavigate?.('pemeriksaan');
-          }}
-        />
+        <>
+          <ChildTable
+            children={children}
+            onSelect={(child) => {
+              setSelectedChild(child);
+              setDetailOpen(true);
+            }}
+            onConnect={handleConnect}
+          />
+          {connectStatus && (
+            <div className={`mt-3 px-4 py-3 rounded-xl text-sm font-medium border ${connectStatus.ok ? 'bg-teal-50 text-teal-800 border-teal-200' : 'bg-red-50 text-red-800 border-red-200'
+              }`}>
+              {connectStatus.msg}
+            </div>
+          )}
+        </>
       )}
 
       {isLoadingParents ? (

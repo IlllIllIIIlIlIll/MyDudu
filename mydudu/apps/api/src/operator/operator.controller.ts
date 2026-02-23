@@ -3,6 +3,7 @@ import { CancelSessionDto, DiagnoseSessionDto, ReleaseLockDto, RenewLockDto } fr
 import { OperatorDashboardService } from './operator-dashboard.service';
 import { OperatorResourceService } from './operator-resource.service';
 import { OperatorSessionService } from './operator-session.service';
+import { MqttService } from '../mqtt/mqtt.service';
 
 @Controller('operator')
 export class OperatorController {
@@ -10,6 +11,7 @@ export class OperatorController {
     private readonly dashboardService: OperatorDashboardService,
     private readonly resourceService: OperatorResourceService,
     private readonly sessionService: OperatorSessionService,
+    private readonly mqttService: MqttService,
   ) { }
 
   @Get('overview')
@@ -106,5 +108,25 @@ export class OperatorController {
     @Body() dto: CancelSessionDto,
   ) {
     return this.sessionService.cancelPemeriksaanSession(userId, sessionId, dto);
+  }
+
+  /**
+   * POST /operator/device/:deviceUuid/start
+   * Publishes an MQTT START command to activate a measurement device for a specific child.
+   * Payload: { cmd: 'START', childId, parentId, name }
+   */
+  @Post('device/:deviceUuid/start')
+  startDevice(
+    @Param('deviceUuid') deviceUuid: string,
+    @Body() body: { childId: number; parentId: number; name: string },
+  ) {
+    const topic = `dudu/v1/dev/${deviceUuid}/cmd`;
+    this.mqttService.publish(topic, {
+      cmd: 'START',
+      childId: body.childId,
+      parentId: body.parentId,
+      name: body.name,
+    });
+    return { ok: true, topic, childId: body.childId };
   }
 }

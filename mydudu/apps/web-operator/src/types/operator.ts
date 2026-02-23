@@ -79,6 +79,7 @@ export interface GrowthAnalysisResult {
 
 export interface OperatorChildRecord {
   id: number;
+  parentId: number;           // needed for MQTT START payload
   fullName: string;
   birthDate: string;
   gender: string | null;

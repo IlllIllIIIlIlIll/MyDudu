@@ -67,6 +67,21 @@ export class MqttService implements OnModuleInit {
         });
     }
 
+    /**
+     * Publish a message to any MQTT topic.
+     * Topic convention for device commands: dudu/v1/dev/{deviceUuid}/cmd
+     */
+    publish(topic: string, payload: object): void {
+        const message = JSON.stringify(payload);
+        this.client.publish(topic, message, { qos: 1 }, (err) => {
+            if (err) {
+                this.logger.error(`Failed to publish to ${topic}`, err);
+            } else {
+                this.logger.log(`Published to ${topic}: ${message}`);
+            }
+        });
+    }
+
     private async handleMessage(topic: string, message: Buffer) {
         try {
             const payload = JSON.parse(message.toString());

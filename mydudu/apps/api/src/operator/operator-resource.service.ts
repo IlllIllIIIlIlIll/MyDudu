@@ -91,6 +91,7 @@ export class OperatorResourceService {
 
             return {
                 id: child.id,
+                parentId: child.parentId,          // needed for MQTT START payload
                 fullName: child.fullName,
                 birthDate: child.birthDate,
                 gender: child.gender,

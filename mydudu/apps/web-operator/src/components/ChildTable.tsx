@@ -162,11 +162,10 @@ export function ChildTable({ children, onSelect, onConnect }: ChildTableProps) {
               return (
                 <tr key={child.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
-                    {/* #2: Connect button navigates to Pemeriksaan */}
                     <button
                       onClick={() => onConnect ? onConnect(child) : onSelect(child)}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 text-teal-700 rounded-lg text-[13px] font-semibold hover:bg-teal-100 border border-teal-200 transition-colors"
-                      title="Mulai Pengukuran"
+                      title={`Kirim START ke perangkat untuk ${child.fullName}`}
                     >
                       <Wifi className="w-4 h-4" />
                       Connect
