@@ -144,7 +144,7 @@ export function ChildTable({ children, onSelect }: ChildTableProps) {
             <tr>
               <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">ID</th>
               <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Nama Anak</th>
-              <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Nama Ortu</th>
+              <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Nama Wali</th>
               <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Umur</th>
               <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Jenis Kelamin</th>
               <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Golongan Darah</th>

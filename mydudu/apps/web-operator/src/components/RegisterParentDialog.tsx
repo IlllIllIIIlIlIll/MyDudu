@@ -52,8 +52,7 @@ export function RegisterParentDialog({ onSuccess, trigger }: RegisterParentDialo
                     villageId: Number(form.villageId),
                 })
             });
-            alert("Orang tua berhasil didaftarkan!");
-            alert("Orang tua berhasil didaftarkan!");
+            alert("Wali berhasil didaftarkan!");
             setForm({ fullName: '', phoneNumber: '', villageId: '', villageName: '' });
             setOpen(false);
             if (onSuccess) onSuccess();
@@ -70,7 +69,7 @@ export function RegisterParentDialog({ onSuccess, trigger }: RegisterParentDialo
                 {trigger || (
                     <button className="bg-[#11998E] hover:bg-[#0e8076] text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm active:scale-95 transition-all cursor-pointer">
                         <UserPlus className="w-4 h-4" />
-                        <span className="font-semibold">Daftar Ortu</span>
+                        <span className="font-semibold">Daftar Wali</span>
                     </button>
                 )}
             </div>
@@ -88,8 +87,8 @@ export function RegisterParentDialog({ onSuccess, trigger }: RegisterParentDialo
                             <div className="flex items-center gap-3">
                                 <UserPlus className="w-6 h-6" />
                                 <div>
-                                    <h2 className="text-[20px] font-bold text-white">Daftarkan Orang Tua</h2>
-                                    <p className="text-white/90 text-[13px] mt-0.5">Registrasi akun orang tua baru</p>
+                                    <h2 className="text-[20px] font-bold text-white">Daftarkan Wali</h2>
+                                    <p className="text-white/90 text-[13px] mt-0.5">Registrasi akun wali baru</p>
                                 </div>
                             </div>
                         </div>

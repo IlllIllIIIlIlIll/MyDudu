@@ -86,8 +86,7 @@ export function Dashboard() {
           </p>
         </div>
         {user?.role === 'posyandu' && (
-          <div className="flex items-center gap-3 w-full overflow-x-auto pb-2 sm:pb-0">
-            <ScheduleDialog onSuccess={() => mutate()} />
+          <div className="flex items-center gap-3 w-full overflow-x-auto pb-2 sm:pb-0 justify-end">
             <RegisterParentDialog onSuccess={() => mutate()} />
             <RegisterChildDialog onSuccess={() => mutate()} />
           </div>
@@ -229,7 +228,20 @@ export function Dashboard() {
 
             {/* Agenda Section */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h3 className="text-[18px] font-bold mb-4">Agenda Posyandu Mendatang</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-[18px] font-bold">Agenda Posyandu Mendatang</h3>
+                {user?.role === 'posyandu' && (
+                  <ScheduleDialog
+                    onSuccess={() => mutate()}
+                    trigger={
+                      <button className="bg-[#11998E] hover:bg-[#0e8076] text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm active:scale-95 transition-all cursor-pointer text-[14px]">
+                        <Plus className="w-4 h-4" />
+                        <span className="font-semibold">Tambah Agenda</span>
+                      </button>
+                    }
+                  />
+                )}
+              </div>
               <div className="space-y-3">
                 {overview?.upcomingSchedules?.map((schedule: any) => (
                   <div key={schedule.id} className="border border-gray-200 rounded-lg p-4">
