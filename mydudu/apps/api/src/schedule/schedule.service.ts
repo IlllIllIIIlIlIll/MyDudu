@@ -10,6 +10,19 @@ export class ScheduleService {
     ) { }
 
     async create(data: any, userId?: number) {
+        // Always resolve villageId server-side so the schedule is associated
+        // with the operator's actual village, regardless of what the frontend sends.
+        let resolvedVillageId = data.villageId ? Number(data.villageId) : undefined;
+        if (userId) {
+            const dbUser = await this.prisma.user.findUnique({
+                where: { id: userId },
+                select: { villageId: true },
+            });
+            if (dbUser?.villageId) {
+                resolvedVillageId = dbUser.villageId;
+            }
+        }
+
         const eventDate = new Date(data.eventDate);
 
         // Combine date and time if split
@@ -45,7 +58,7 @@ export class ScheduleService {
                 startTime: startTimeValue,
                 endTime: endTimeValue,
                 posyanduName: data.posyanduName,
-                villageId: data.villageId,
+                villageId: resolvedVillageId,
                 createdBy: userId,
             },
         });
