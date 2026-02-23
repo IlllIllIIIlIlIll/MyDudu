@@ -120,7 +120,7 @@ export function Dashboard() {
         </div>
         <OverviewCard
           title="Data Anak Terdaftar"
-          value={overview?.counts.uniqueChildren ?? 0}
+          value={overview?.counts.totalRegisteredChildren ?? overview?.counts.uniqueChildren ?? 0}
           icon={Users}
           color="#3B82F6"
           subtitle="Total anak terdaftar di sistem"

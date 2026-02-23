@@ -196,7 +196,7 @@ import { RawMeasurementCard } from './components/RawMeasurementCard';
 import { ClinicalQuizPage } from './components/ClinicalQuizPage';
 
 const GrowthCard = ({ titleKey, analysis }: { titleKey: string; analysis: any }) => {
-  const z = analysis.zScore as number;
+  const [localZ, setLocalZ] = useState(analysis.zScore);
 
   const getStatusMeta = (z: number) => {
     if (z <= -3) return { label: "Sangat Kurus / Sangat Pendek", color: "#b91c1c", bg: "#fee2e2", border: "#fca5a5" };
@@ -206,53 +206,44 @@ const GrowthCard = ({ titleKey, analysis }: { titleKey: string; analysis: any })
     return { label: "Normal", color: "#15803d", bg: "#dcfce7", border: "#86efac" };
   };
 
-  const status = getStatusMeta(z);
-  // Friendly measurement names from the titleKey
-  const title = titleKey
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, c => c.toUpperCase());
+  const status = getStatusMeta(localZ);
+  const title = titleKey.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
   return (
     <div
-      className="border rounded-xl p-5 flex flex-col justify-between gap-3 transition-all"
+      className="border rounded-xl p-5 flex flex-col justify-center gap-3 transition-all"
       style={{ backgroundColor: status.bg, borderColor: status.border }}
     >
-      {/* Title & label */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="text-sm font-bold text-slate-700 leading-tight">{title}</div>
+      <div className="flex justify-between items-start">
+        <div className="text-sm font-bold text-slate-700">{title}</div>
         <span
-          className="shrink-0 px-2.5 py-1 rounded-full text-xs font-bold"
+          className="px-2 py-1 rounded-md text-xs font-semibold"
           style={{ color: status.color, backgroundColor: 'rgba(255,255,255,0.6)' }}
         >
           {status.label}
         </span>
       </div>
 
-      {/* Static spectrum bar (read-only) */}
-      <div className="relative h-2 rounded-full overflow-hidden"
-        style={{ background: 'linear-gradient(to right, #b91c1c 0%, #d97706 18%, #15803d 36%, #15803d 64%, #d97706 82%, #b91c1c 100%)' }}
-      >
-        {/* Indicator pin */}
-        <div
-          className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white border-2 border-slate-700 shadow"
-          style={{ left: `${Math.min(100, Math.max(0, ((Math.max(-3, Math.min(3, z)) + 3) / 6) * 100))}%`, transform: 'translate(-50%, -50%)' }}
-        />
-      </div>
-      <div className="flex justify-between text-[10px] font-bold text-slate-400 px-0.5">
+      {/* Interactive slider */}
+      <input
+        type="range"
+        min={-3}
+        max={3}
+        step={0.01}
+        value={localZ}
+        onChange={(e) => setLocalZ(parseFloat(e.target.value))}
+        className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+        style={{
+          background: 'linear-gradient(to right, #b91c1c 0%, #d97706 18%, #15803d 36%, #15803d 64%, #d97706 82%, #b91c1c 100%)'
+        }}
+      />
+      <div className="flex justify-between text-[10px] font-bold text-slate-500 px-0.5">
         <span>-3</span><span>0</span><span>+3</span>
       </div>
 
-      {/* Raw values */}
-      {analysis.measurements && (
-        <div className="flex gap-3 flex-wrap">
-          {Object.entries(analysis.measurements as Record<string, { value: number; unit: string }>).map(([k, v]) => (
-            <div key={k} className="text-xs">
-              <span className="font-bold text-slate-500 uppercase tracking-wide">{k}: </span>
-              <span className="font-semibold text-slate-800">{v.value} {v.unit}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="text-xs text-slate-600">
+        Z-Score: <span className="font-bold">{localZ.toFixed(2)}</span>
+      </div>
     </div>
   );
 };
@@ -694,25 +685,47 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                       { label: "Suhu", value: vitalsData.temp.value, unit: vitalsData.temp.unit },
                       { label: "Detak Jantung", value: vitalsData.heartRate.value, unit: vitalsData.heartRate.unit },
                       { label: "Saturasi O2", value: vitalsData.spo2.value, unit: vitalsData.spo2.unit },
-                    ].map((item, i) => (
-                      <div
-                        key={i}
-                        className="bg-white border border-slate-300 rounded-xl px-6 py-5 flex flex-col justify-center"
-                      >
-                        <div className="text-sm font-semibold text-slate-600">
-                          {item.label}
-                        </div>
+                    ].map((item, i) => {
+                      // #5: Color-coded backgrounds based on measurement importance
+                      const getMeasurementStatus = () => {
+                        if (item.label === 'Suhu') {
+                          if (item.value >= 38.5) return { bg: '#fee2e2', border: '#fca5a5' }; // high fever
+                          if (item.value >= 37.5) return { bg: '#fef3c7', border: '#fcd34d' }; // mild fever
+                          if (item.value > 0 && item.value < 36) return { bg: '#fef3c7', border: '#fcd34d' }; // low temp
+                        }
+                        if (item.label === 'Saturasi O2') {
+                          if (item.value > 0 && item.value < 90) return { bg: '#fee2e2', border: '#fca5a5' };
+                          if (item.value < 95) return { bg: '#fef3c7', border: '#fcd34d' };
+                        }
+                        if (item.label === 'Detak Jantung') {
+                          if (item.value > 0 && (item.value > 140 || item.value < 60)) return { bg: '#fef3c7', border: '#fcd34d' };
+                        }
+                        if (item.value === 0) return { bg: '#f8fafc', border: '#e2e8f0' }; // no data
+                        if (item.emphasize) return { bg: '#f0fdf4', border: '#86efac' }; // primary measurements
+                        return { bg: '#f8fafc', border: '#e2e8f0' }; // neutral
+                      };
+                      const col = getMeasurementStatus();
+                      return (
+                        <div
+                          key={i}
+                          className="border rounded-xl px-6 py-5 flex flex-col justify-center transition-colors"
+                          style={{ backgroundColor: col.bg, borderColor: col.border }}
+                        >
+                          <div className="text-sm font-semibold text-slate-600">
+                            {item.label}
+                          </div>
 
-                        <div className="mt-3 flex items-baseline gap-2">
-                          <span className={`tabular-nums font-bold ${item.emphasize ? "text-4xl" : "text-3xl"}`}>
-                            {item.value}
-                          </span>
-                          <span className="text-lg text-slate-500">
-                            {item.unit}
-                          </span>
+                          <div className="mt-3 flex items-baseline gap-2">
+                            <span className={`tabular-nums font-bold ${item.emphasize ? "text-4xl" : "text-3xl"}`}>
+                              {item.value}
+                            </span>
+                            <span className="text-lg text-slate-500">
+                              {item.unit}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
 
                   </div>
 

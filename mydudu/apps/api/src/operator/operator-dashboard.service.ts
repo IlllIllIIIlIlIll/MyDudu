@@ -15,8 +15,11 @@ export class OperatorDashboardService {
         const deviceWhere = this.scopeService.getDeviceWhere(scope);
         const sessionWhere = this.scopeService.getSessionWhere(scope);
 
-        // Filter to only truly upcoming events (after exact current time, not just today midnight)
-        const startOfDay = new Date();
+        // Use UTC midnight of today so events scheduled for today are included,
+        // but events from previous days are excluded
+        const todayUTC = new Date();
+        todayUTC.setUTCHours(0, 0, 0, 0);
+        const startOfDay = todayUTC;
 
         const startOfMonth = new Date(startOfDay);
         startOfMonth.setDate(1);
@@ -47,8 +50,10 @@ export class OperatorDashboardService {
             ]);
 
         let uniqueChildren = 0;
+        let totalRegisteredChildren = 0;
         if (scope.isAdmin) {
             uniqueChildren = await this.prisma.child.count();
+            totalRegisteredChildren = uniqueChildren;
         } else {
             const distinctChildren = await this.prisma.session.findMany({
                 where: sessionWhere,
@@ -56,6 +61,12 @@ export class OperatorDashboardService {
                 select: { childId: true },
             });
             uniqueChildren = distinctChildren.length;
+            // Count all registered children in scope by going through parents' villageId
+            totalRegisteredChildren = await this.prisma.child.count({
+                where: scope.villageIds.length > 0
+                    ? { parent: { villageId: { in: scope.villageIds } } }
+                    : {},
+            });
         }
 
         const recentSessionsRaw = await this.prisma.session.findMany({
@@ -196,6 +207,7 @@ export class OperatorDashboardService {
         return {
             counts: {
                 uniqueChildren,
+                totalRegisteredChildren,
                 sessionsToday,
                 devicesTotal,
                 devicesActive,

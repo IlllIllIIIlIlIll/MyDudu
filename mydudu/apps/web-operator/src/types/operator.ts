@@ -30,6 +30,7 @@ export interface OperatorSessionSummary {
 export interface OperatorDashboardOverview {
   counts: {
     uniqueChildren: number;
+    totalRegisteredChildren?: number;
     sessionsToday: number;
     devicesTotal: number;
     devicesActive: number;

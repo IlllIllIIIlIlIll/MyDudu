@@ -25,27 +25,22 @@ export function QuizCard({ label, type, image, onClick }: QuizCardProps) {
                     className={`w-full h-full object-cover ${isPlaceholder ? '' : 'brightness-[0.6]'}`}
                 />
             </div>
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-8 z-10">
-                <div
-                    className="flex items-center justify-center rounded-full"
+            {/* Content — large bordered 3D text */}
+            <div className="relative z-10 w-full h-full flex flex-col items-center justify-center p-4 text-center">
+                <h3
+                    className="font-black tracking-tight select-none"
                     style={{
-                        width: '55%',
-                        aspectRatio: '1',
-                        backgroundColor: type === 'yes' ? 'rgba(239,68,68,0.25)' : 'rgba(59,130,246,0.25)',
+                        fontSize: 'clamp(3rem, 10vw, 6rem)',
+                        color: '#ffffff',
+                        lineHeight: 1,
+                        // Heavy outline + drop shadow for 3D effect, visible on any background
+                        WebkitTextStroke: '3px rgba(0,0,0,0.85)',
+                        textShadow: '0 2px 0 rgba(0,0,0,0.9), 0 4px 12px rgba(0,0,0,0.6), 2px 2px 0 rgba(0,0,0,0.7), -2px -2px 0 rgba(0,0,0,0.7)',
+                        paintOrder: 'stroke fill',
                     }}
                 >
-                    <h3
-                        className="font-black tracking-tight select-none"
-                        style={{
-                            fontSize: 'clamp(2.5rem, 7vw, 4.5rem)',
-                            color: '#fff',
-                            lineHeight: 1,
-                            textShadow: '0 2px 8px rgba(0,0,0,0.4)',
-                        }}
-                    >
-                        {label}
-                    </h3>
-                </div>
+                    {label}
+                </h3>
             </div>
         </button>
     );
