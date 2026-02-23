@@ -160,8 +160,8 @@ export function ManualEntryDialog({ onSuccess, trigger }: ManualEntryDialogProps
 
             {open && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
-                        <div className="gradient-primary p-6 text-white relative">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg flex flex-col animate-in zoom-in-95 duration-200">
+                        <div className="gradient-primary p-6 text-white relative rounded-t-xl">
                             <button
                                 onClick={() => setOpen(false)}
                                 className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-lg transition-colors"

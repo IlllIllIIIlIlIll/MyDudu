@@ -27,6 +27,25 @@ export function ScheduleDialog({ onSuccess, trigger }: ScheduleDialogProps) {
     const today = new Date().toISOString().split('T')[0];
     const isDateInvalid = form.eventDate !== '' && form.eventDate < today;
 
+    // Time validation logic
+    const isTimeInvalid = () => {
+        if (!form.eventDate || !form.startTime) return false;
+
+        // 1. If date is today, time cannot be in the past
+        if (form.eventDate === today) {
+            const now = new Date();
+            const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            if (form.startTime < currentTime) return true;
+        }
+
+        // 2. If end time is provided, it must be strictly after start time
+        if (form.endTime && form.startTime >= form.endTime) return true;
+
+        return false;
+    };
+
+    const timeInvalid = isTimeInvalid();
+
     const handleSubmit = async () => {
         if (!form.title || !form.eventDate || !form.posyanduName) {
             alert("Nama Kegiatan, Tanggal, dan Lokasi Posyandu wajib diisi");
@@ -35,6 +54,11 @@ export function ScheduleDialog({ onSuccess, trigger }: ScheduleDialogProps) {
 
         if (isDateInvalid) {
             alert("Tanggal tidak boleh di masa lalu");
+            return;
+        }
+
+        if (timeInvalid) {
+            alert("Waktu tidak valid. Pastikan waktu mulai tidak di masa lalu (jika hari ini), dan waktu selesai harus setelah waktu mulai.");
             return;
         }
 
@@ -79,8 +103,8 @@ export function ScheduleDialog({ onSuccess, trigger }: ScheduleDialogProps) {
 
             {open && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
-                        <div className="gradient-primary p-6 text-white relative">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg flex flex-col animate-in zoom-in-95 duration-200">
+                        <div className="gradient-primary p-6 text-white relative rounded-t-xl">
                             <button
                                 onClick={() => setOpen(false)}
                                 className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-lg transition-colors"
@@ -140,27 +164,28 @@ export function ScheduleDialog({ onSuccess, trigger }: ScheduleDialogProps) {
                                         onChange={(e) => setForm({ ...form, eventDate: e.target.value })}
                                         className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-[15px] ${isDateInvalid ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-[#11998E]'}`}
                                     />
-                                    {isDateInvalid && <span className="text-xs text-red-500">Tanggal tidak valid</span>}
+                                    {isDateInvalid && <span className="text-xs text-red-500 font-semibold mt-1 inline-block">Tanggal tidak valid</span>}
                                 </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[14px] font-semibold text-gray-700">Waktu Mulai</label>
+                                <div className="space-y-1.5 flex flex-col">
+                                    <label className="text-[14px] font-semibold text-gray-700">Mulai</label>
                                     <input
                                         type="time"
                                         value={form.startTime}
                                         onChange={(e) => setForm({ ...form, startTime: e.target.value })}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
+                                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-[15px] ${timeInvalid && (!form.endTime || form.startTime >= form.endTime || (form.eventDate === today && form.startTime < new Date().toTimeString().slice(0, 5))) ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-[#11998E]'}`}
                                     />
                                 </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[14px] font-semibold text-gray-700">Waktu Selesai</label>
+                                <div className="space-y-1.5 flex flex-col">
+                                    <label className="text-[14px] font-semibold text-gray-700">Selesai</label>
                                     <input
                                         type="time"
                                         value={form.endTime}
                                         onChange={(e) => setForm({ ...form, endTime: e.target.value })}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
+                                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-[15px] ${timeInvalid && form.endTime && form.startTime >= form.endTime ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-[#11998E]'}`}
                                     />
                                 </div>
                             </div>
+                            {timeInvalid && <div className="text-xs text-red-500 font-semibold">Waktu tidak valid. Periksa kembali jam mulai dan selesai.</div>}
 
                             <div className="flex gap-3 pt-4 border-t border-gray-100">
                                 <button
