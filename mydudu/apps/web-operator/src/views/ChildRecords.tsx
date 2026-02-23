@@ -11,7 +11,7 @@ import { Button } from '../components/ui/button';
 import { ChildDetailDialog } from '../components/ChildDetailDialog';
 import { useState } from 'react';
 
-export function ChildRecords() {
+export function ChildRecords({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const { user } = useAuth();
   const { data, mutate, isLoading } = useSWR<OperatorChildRecord[]>(
     user?.id ? `/operator/children?userId=${user.id}` : null,
@@ -84,6 +84,10 @@ export function ChildRecords() {
           onSelect={(child) => {
             setSelectedChild(child);
             setDetailOpen(true);
+          }}
+          onConnect={(_child) => {
+            // #2: Navigate to Pemeriksaan page like Alat Dudu does
+            onNavigate?.('pemeriksaan');
           }}
         />
       )}

@@ -1,8 +1,8 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { OperatorChildRecord } from "../types/operator";
 import { GrowthScale } from "./GrowthScale";
-import { X, Calendar, User, Activity } from "lucide-react";
+import { Calendar, User, Activity } from "lucide-react";
 
 interface ChildDetailDialogProps {
     child: OperatorChildRecord | null;
@@ -30,14 +30,33 @@ export function ChildDetailDialog({ child, open, onOpenChange }: ChildDetailDial
         return `${years} tahun ${remMonths} bulan`;
     };
 
+    // #4: Relative time for last session
+    const getRelativeTime = (dateStr: string | null | undefined): string => {
+        if (!dateStr) return '-';
+        const past = new Date(dateStr);
+        if (isNaN(past.getTime())) return '-';
+        const diffMs = Date.now() - past.getTime();
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        if (diffHours < 1) return 'Baru saja';
+        if (diffHours < 24) return `${diffHours} jam lalu`;
+        const diffDays = Math.floor(diffHours / 24);
+        if (diffDays === 1) return '1 hari lalu';
+        return `${diffDays} hari lalu`;
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            {/* #3: Force white background so dialog isn't transparent */}
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-xl">
                         <User className="w-5 h-5 text-[#11998E]" />
-                        Detail Pertumbuhan Anak
+                        Detail Pertumbuhan {child.fullName}
                     </DialogTitle>
+                    {/* #1: Fix aria-describedby warning */}
+                    <DialogDescription className="sr-only">
+                        Informasi pertumbuhan dan riwayat pemeriksaan anak {child.fullName}.
+                    </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-6">
@@ -65,7 +84,13 @@ export function ChildDetailDialog({ child, open, onOpenChange }: ChildDetailDial
                             <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Pemeriksaan Terakhir</p>
                             <div className="flex items-center gap-1.5 text-slate-700 font-medium">
                                 <Calendar className="w-4 h-4 text-slate-400" />
-                                {session?.recordedAt ? new Date(session.recordedAt).toLocaleDateString('id-ID', { dateStyle: 'long' }) : '-'}
+                                {/* #4: show relative time (X jam lalu / X hari lalu) */}
+                                <span>{getRelativeTime(session?.recordedAt)}</span>
+                                {session?.recordedAt && (
+                                    <span className="text-xs text-slate-400 font-normal">
+                                        ({new Date(session.recordedAt).toLocaleDateString('id-ID', { dateStyle: 'short' })})
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </div>

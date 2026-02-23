@@ -125,7 +125,7 @@ function AppContent() {
             case 'dashboard':
                 return <Dashboard />;
             case 'children':
-                return <ChildRecords />;
+                return <ChildRecords onNavigate={handleNavigate} />;
             case 'devices':
                 return <DeviceMonitoring />;
             case 'validation':

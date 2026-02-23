@@ -246,30 +246,33 @@ export function Dashboard() {
                 )}
               </div>
               <div className="space-y-3">
-                {overview?.upcomingSchedules?.map((schedule: any) => (
-                  <div key={schedule.id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-[15px] font-semibold">{schedule.title}</p>
-                        <p className="text-[13px] text-gray-500">
-                          {schedule.posyanduName || schedule.villageName || 'Lokasi tidak diketahui'}
-                          {schedule.districtName ? ` • ${schedule.districtName}` : ''}
-                        </p>
+                {/* #1: Filter frontend too as fallback for stale backend */}
+                {overview?.upcomingSchedules
+                  ?.filter((s: any) => new Date(s.eventDate) >= new Date(Date.now() - 24 * 60 * 60 * 1000))
+                  .map((schedule: any) => (
+                    <div key={schedule.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[15px] font-semibold">{schedule.title}</p>
+                          <p className="text-[13px] text-gray-500">
+                            {schedule.posyanduName || schedule.villageName || 'Lokasi tidak diketahui'}
+                            {schedule.districtName ? ` • ${schedule.districtName}` : ''}
+                          </p>
+                        </div>
+                        <span className="text-[13px] font-semibold text-[#11998E]">
+                          {formatDate(schedule.eventDate)}
+                        </span>
                       </div>
-                      <span className="text-[13px] font-semibold text-[#11998E]">
-                        {formatDate(schedule.eventDate)}
-                      </span>
+                      {schedule.description && (
+                        <p className="text-[13px] text-gray-600 mt-2">{schedule.description}</p>
+                      )}
+                      {(schedule.startTime || schedule.endTime) && (
+                        <p className="text-[12px] text-gray-500 mt-1">
+                          {schedule.startTime ? formatTime(schedule.startTime) : ''} - {schedule.endTime ? formatTime(schedule.endTime) : ''}
+                        </p>
+                      )}
                     </div>
-                    {schedule.description && (
-                      <p className="text-[13px] text-gray-600 mt-2">{schedule.description}</p>
-                    )}
-                    {(schedule.startTime || schedule.endTime) && (
-                      <p className="text-[12px] text-gray-500 mt-1">
-                        {schedule.startTime ? formatTime(schedule.startTime) : ''} - {schedule.endTime ? formatTime(schedule.endTime) : ''}
-                      </p>
-                    )}
-                  </div>
-                ))}
+                  ))}
                 {(!overview?.upcomingSchedules || overview.upcomingSchedules.length === 0) && (
                   <div className="text-center py-6 text-gray-500 text-[14px]">
                     Tidak ada agenda posyandu mendatang.

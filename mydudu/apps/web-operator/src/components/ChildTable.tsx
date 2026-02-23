@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 interface ChildTableProps {
   children: OperatorChildRecord[];
   onSelect: (child: OperatorChildRecord) => void;
+  onConnect?: (child: OperatorChildRecord) => void;
 }
 
 const nutritionLabels: Record<NutritionCategory, string> = {
@@ -15,7 +16,7 @@ const nutritionLabels: Record<NutritionCategory, string> = {
   OBESE: 'Obesitas',
 };
 
-export function ChildTable({ children, onSelect }: ChildTableProps) {
+export function ChildTable({ children, onSelect, onConnect }: ChildTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterVillage, setFilterVillage] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -161,9 +162,9 @@ export function ChildTable({ children, onSelect }: ChildTableProps) {
               return (
                 <tr key={child.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
-                    {/* #10: measurement status — always shows Connect since live status requires queue data */}
+                    {/* #2: Connect button navigates to Pemeriksaan */}
                     <button
-                      onClick={() => onSelect(child)}
+                      onClick={() => onConnect ? onConnect(child) : onSelect(child)}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 text-teal-700 rounded-lg text-[13px] font-semibold hover:bg-teal-100 border border-teal-200 transition-colors"
                       title="Mulai Pengukuran"
                     >
