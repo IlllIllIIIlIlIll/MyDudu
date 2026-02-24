@@ -686,22 +686,46 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                       { label: "Detak Jantung", value: vitalsData.heartRate.value, unit: vitalsData.heartRate.unit },
                       { label: "Saturasi O2", value: vitalsData.spo2.value, unit: vitalsData.spo2.unit },
                     ].map((item, i) => {
-                      // #5: Color-coded backgrounds based on measurement importance
+                      // Color-coded backgrounds with age-appropriate clinical thresholds
                       const getMeasurementStatus = () => {
+                        // ── Temperature ──────────────────────────────────────────
                         if (item.label === 'Suhu') {
-                          if (item.value >= 38.5) return { bg: '#fee2e2', border: '#fca5a5' }; // high fever
-                          if (item.value >= 37.5) return { bg: '#fef3c7', border: '#fcd34d' }; // mild fever
-                          if (item.value > 0 && item.value < 36) return { bg: '#fef3c7', border: '#fcd34d' }; // low temp
+                          if (item.value >= 38.5) return { bg: '#fee2e2', border: '#fca5a5' }; // high fever → red
+                          if (item.value >= 37.5) return { bg: '#fef3c7', border: '#fcd34d' }; // mild fever → amber
+                          if (item.value > 0 && item.value < 36) return { bg: '#fef3c7', border: '#fcd34d' }; // low temp → amber
                         }
+
+                        // ── SpO2 ─────────────────────────────────────────────────
+                        // 95-100%: normal, 90-94%: warning, <90%: bad
                         if (item.label === 'Saturasi O2') {
-                          if (item.value > 0 && item.value < 90) return { bg: '#fee2e2', border: '#fca5a5' };
-                          if (item.value < 95) return { bg: '#fef3c7', border: '#fcd34d' };
+                          if (item.value > 0 && item.value < 90) return { bg: '#fee2e2', border: '#fca5a5' };  // critical
+                          if (item.value >= 90 && item.value < 95) return { bg: '#fef3c7', border: '#fcd34d' }; // warning
+                          // ≥95 falls through to neutral/green below
                         }
-                        if (item.label === 'Detak Jantung') {
-                          if (item.value > 0 && (item.value > 140 || item.value < 60)) return { bg: '#fef3c7', border: '#fcd34d' };
+
+                        // ── Heart Rate (age-appropriate) ──────────────────────────
+                        // Newborn  0-1 month : 70–190 BPM
+                        // Baby     1-12 months: 80–160 BPM
+                        // Child    1-10 years : 70–130 BPM
+                        if (item.label === 'Detak Jantung' && item.value > 0) {
+                          const ageMonths = selectedPatient?.ageMonths ?? 24; // default child if unknown
+                          let hrMin: number, hrMax: number;
+                          if (ageMonths < 1) {
+                            hrMin = 70; hrMax = 190;   // newborn
+                          } else if (ageMonths < 12) {
+                            hrMin = 80; hrMax = 160;   // baby
+                          } else {
+                            hrMin = 70; hrMax = 130;   // child 1-10 yr
+                          }
+                          const tooLow = item.value < hrMin;
+                          const tooHigh = item.value > hrMax;
+                          const nearEdge = item.value < hrMin + 10 || item.value > hrMax - 10;
+                          if (tooLow || tooHigh) return { bg: '#fee2e2', border: '#fca5a5' }; // out of range → red
+                          if (nearEdge) return { bg: '#fef3c7', border: '#fcd34d' }; // borderline → amber
                         }
+
                         if (item.value === 0) return { bg: '#f8fafc', border: '#e2e8f0' }; // no data
-                        if (item.emphasize) return { bg: '#f0fdf4', border: '#86efac' }; // primary measurements
+                        if (item.emphasize) return { bg: '#f0fdf4', border: '#86efac' }; // primary (weight/height) → green
                         return { bg: '#f8fafc', border: '#e2e8f0' }; // neutral
                       };
                       const col = getMeasurementStatus();
