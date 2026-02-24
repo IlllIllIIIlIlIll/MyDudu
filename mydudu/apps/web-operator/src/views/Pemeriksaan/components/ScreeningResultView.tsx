@@ -30,19 +30,23 @@ export function ScreeningResultView({
     const SevIcon = sev.icon;
     const allVitals = [...vitalsLeft, ...vitalsRight];
 
-    // Color-code icon background by vital label & value (same thresholds as ScreeningFlow)
+    // Color-code icon background by vital label & value
+    // Labels from ScreeningFlow: 'WEIGHT','HEIGHT','TEMP','HEARTRATE','SPO2'
     const getVitalIconStyle = (label: string, value: number): string => {
-        if (label === 'Suhu' || label === 'Temp') {
+        const l = label.toUpperCase();
+        // Temperature
+        if (l === 'TEMP' || l === 'SUHU') {
             if (value >= 38.5) return 'bg-red-100 text-red-600';
             if (value >= 37.5 || (value > 0 && value < 36)) return 'bg-amber-100 text-amber-600';
         }
-        if (label.toLowerCase().includes('o2') || label.toLowerCase().includes('saturasi') || label.toLowerCase().includes('spo2')) {
+        // SpO2 — 95-100: normal, 90-94: warning, <90: danger
+        if (l === 'SPO2' || l.includes('O2') || l.includes('SATURASI')) {
             if (value > 0 && value < 90) return 'bg-red-100 text-red-600';
             if (value >= 90 && value < 95) return 'bg-amber-100 text-amber-600';
             if (value >= 95) return 'bg-green-100 text-green-700';
         }
-        if (label.toLowerCase().includes('jantung') || label.toLowerCase().includes('bpm') || label.toLowerCase().includes('heart')) {
-            // Use child 1-10yr range as fallback (70-130)  
+        // Heart Rate — use child 1–10yr range (70-130) as fallback for result view
+        if (l === 'HEARTRATE' || l.includes('JANTUNG') || l.includes('HEART')) {
             if (value > 0 && (value < 70 || value > 130)) return 'bg-red-100 text-red-600';
             if (value > 0 && (value < 80 || value > 120)) return 'bg-amber-100 text-amber-600';
             if (value > 0) return 'bg-green-100 text-green-700';
