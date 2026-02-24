@@ -700,7 +700,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                         if (item.label === 'Saturasi O2') {
                           if (item.value > 0 && item.value < 90) return { bg: '#fee2e2', border: '#fca5a5' };  // critical
                           if (item.value >= 90 && item.value < 95) return { bg: '#fef3c7', border: '#fcd34d' }; // warning
-                          // ≥95 falls through to neutral/green below
+                          if (item.value >= 95) return { bg: '#f0fdf4', border: '#86efac' };                    // ≥95 → green
                         }
 
                         // ── Heart Rate (age-appropriate) ──────────────────────────
@@ -722,6 +722,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                           const nearEdge = item.value < hrMin + 10 || item.value > hrMax - 10;
                           if (tooLow || tooHigh) return { bg: '#fee2e2', border: '#fca5a5' }; // out of range → red
                           if (nearEdge) return { bg: '#fef3c7', border: '#fcd34d' }; // borderline → amber
+                          return { bg: '#f0fdf4', border: '#86efac' }; // within range → green
                         }
 
                         if (item.value === 0) return { bg: '#f8fafc', border: '#e2e8f0' }; // no data
