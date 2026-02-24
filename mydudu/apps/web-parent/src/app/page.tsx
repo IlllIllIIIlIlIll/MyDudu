@@ -104,15 +104,23 @@ export default function Home() {
     else if (temp > 39.0 || temp < 35.5) tempStatus = 'danger';
     else if (temp < 36.5 && temp >= 35.5) tempStatus = 'warning'; // Gap handling: 35.5-36.4 is usually mildly low
 
-    // Heart Rate Logic (Age 1-5: 90-120 normal)
+    // Heart Rate Logic — age-appropriate ranges
+    // Newborn 0–1 month : 70–190 BPM
+    // Baby    1–12 months: 80–160 BPM
+    // Child   1–10 years : 70–130 BPM
     const hr = latestSession?.heartRate ? Number(latestSession.heartRate) : 0;
     let hrStatus: 'normal' | 'warning' | 'danger' = 'normal';
     if (hr > 0) {
-      if (hr >= 90 && hr <= 120) hrStatus = 'normal';
-      else if ((hr >= 121 && hr <= 140)) hrStatus = 'warning';
-      else if ((hr >= 141 && hr <= 160)) hrStatus = 'warning'; // moderate -> warning
-      else if (hr > 160 || hr < 80) hrStatus = 'danger';
-      else hrStatus = 'warning'; // 80-89
+      const birthDate = new Date(child.birthDate);
+      const now = new Date();
+      const ageMonthsHR = (now.getFullYear() - birthDate.getFullYear()) * 12 + (now.getMonth() - birthDate.getMonth());
+      let hrMin: number, hrMax: number;
+      if (ageMonthsHR < 1) { hrMin = 70; hrMax = 190; } // newborn
+      else if (ageMonthsHR < 12) { hrMin = 80; hrMax = 160; } // baby
+      else { hrMin = 70; hrMax = 130; } // child
+      const nearEdge = hr < hrMin + 10 || hr > hrMax - 10;
+      if (hr < hrMin || hr > hrMax) hrStatus = 'danger';
+      else if (nearEdge) hrStatus = 'warning';
     }
 
     // Noise Level Logic (Well < 55)
@@ -127,49 +135,29 @@ export default function Home() {
     else if (noise >= 71 && noise <= 85) noiseStatus = 'warning';
     else if (noise > 85) noiseStatus = 'danger';
 
+    // SpO2 Logic — 95–100%: normal, 90–94%: warning, <90%: danger
+    const spo2 = (latestSession as any)?.spo2 ? Number((latestSession as any).spo2) : 0;
+    let spo2Status: 'normal' | 'warning' | 'danger' = 'normal';
+    if (spo2 > 0) {
+      if (spo2 >= 95) spo2Status = 'normal';
+      else if (spo2 >= 90) spo2Status = 'warning';
+      else spo2Status = 'danger';
+    }
+
     const metrics = {
-      weight: {
-        value: weight,
-        unit: "kg",
-        status: bmiStatus, // Linked to BMI status 
-        trend: "stable" as const
-      },
-      height: {
-        value: heightCm,
-        unit: "cm",
-        status: bmiStatus, // Linked to BMI status
-        trend: "stable" as const
-      },
-      bmi: {
-        value: Number(bmi.toFixed(1)),
-        unit: "kg/m²",
-        status: bmiStatus,
-        trend: "stable" as const
-      },
-      temperature: {
-        value: temp,
-        unit: "°C",
-        status: tempStatus,
-        trend: "stable" as const
-      },
-      heartRate: {
-        value: hr,
-        unit: "bpm",
-        status: hrStatus,
-        trend: "stable" as const
-      },
-      noise: {
-        value: noise,
-        unit: "dB",
-        status: noiseStatus,
-        trend: "stable" as const
-      }
+      weight: { value: weight, unit: 'kg', status: bmiStatus, trend: 'stable' as const },
+      height: { value: heightCm, unit: 'cm', status: bmiStatus, trend: 'stable' as const },
+      bmi: { value: Number(bmi.toFixed(1)), unit: 'kg/m²', status: bmiStatus, trend: 'stable' as const },
+      temperature: { value: temp, unit: '°C', status: tempStatus, trend: 'stable' as const },
+      heartRate: { value: hr, unit: 'bpm', status: hrStatus, trend: 'stable' as const },
+      spo2: { value: spo2, unit: '%', status: spo2Status, trend: 'stable' as const },
+      noise: { value: noise, unit: 'dB', status: noiseStatus, trend: 'stable' as const },
     };
 
     // Determine overall status based on worst metric
-    let overallStatus = "no_pain";
-    const statuses = [bmiStatus, tempStatus, hrStatus, noiseStatus];
-    if (statuses.includes('danger')) overallStatus = 'severe'; // or worst_pain
+    let overallStatus = 'no_pain';
+    const statuses = [bmiStatus, tempStatus, hrStatus, spo2Status, noiseStatus];
+    if (statuses.includes('danger')) overallStatus = 'severe';
     else if (statuses.includes('warning')) overallStatus = 'mild';
 
     return {
@@ -436,6 +424,14 @@ export default function Home() {
                     unit={childData.latestMetrics.heartRate.unit}
                     status={childData.latestMetrics.heartRate.status}
                     trend={childData.latestMetrics.heartRate.trend}
+                  />
+                  <DashboardCard
+                    icon={Maximize2}
+                    label="Saturasi O2"
+                    value={childData.latestMetrics.spo2.value || '-'}
+                    unit={childData.latestMetrics.spo2.value > 0 ? '%' : ''}
+                    status={childData.latestMetrics.spo2.status}
+                    trend={childData.latestMetrics.spo2.trend}
                   />
                   <DashboardCard
                     icon={Maximize2} // Placeholder for Noise (maybe use Volume2 if available, else Maximize2 as placeholder)

@@ -30,6 +30,26 @@ export function ScreeningResultView({
     const SevIcon = sev.icon;
     const allVitals = [...vitalsLeft, ...vitalsRight];
 
+    // Color-code icon background by vital label & value (same thresholds as ScreeningFlow)
+    const getVitalIconStyle = (label: string, value: number): string => {
+        if (label === 'Suhu' || label === 'Temp') {
+            if (value >= 38.5) return 'bg-red-100 text-red-600';
+            if (value >= 37.5 || (value > 0 && value < 36)) return 'bg-amber-100 text-amber-600';
+        }
+        if (label.toLowerCase().includes('o2') || label.toLowerCase().includes('saturasi') || label.toLowerCase().includes('spo2')) {
+            if (value > 0 && value < 90) return 'bg-red-100 text-red-600';
+            if (value >= 90 && value < 95) return 'bg-amber-100 text-amber-600';
+            if (value >= 95) return 'bg-green-100 text-green-700';
+        }
+        if (label.toLowerCase().includes('jantung') || label.toLowerCase().includes('bpm') || label.toLowerCase().includes('heart')) {
+            // Use child 1-10yr range as fallback (70-130)  
+            if (value > 0 && (value < 70 || value > 130)) return 'bg-red-100 text-red-600';
+            if (value > 0 && (value < 80 || value > 120)) return 'bg-amber-100 text-amber-600';
+            if (value > 0) return 'bg-green-100 text-green-700';
+        }
+        return 'bg-slate-100 text-slate-500';
+    };
+
     return (
         <motion.div
             key="result"
@@ -65,7 +85,7 @@ export function ScreeningResultView({
                     <div className="grid grid-cols-2 gap-x-4 gap-y-3 overflow-y-auto">
                         {allVitals.map((v) => (
                             <div key={v.label} className="flex items-center gap-2">
-                                <div className="p-1.5 bg-slate-100 rounded-lg shrink-0">{v.icon}</div>
+                                <div className={`p-1.5 rounded-lg shrink-0 ${getVitalIconStyle(v.label, v.value)}`}>{v.icon}</div>
                                 <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{v.label}</p>
                                     <p className="text-sm font-bold text-slate-800">{v.value}<span className="text-xs font-medium text-slate-500 ml-0.5">{v.unit}</span></p>
