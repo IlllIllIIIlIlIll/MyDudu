@@ -747,35 +747,41 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                           <div
                             key={i}
                             className={cn(
-                              "border rounded-xl flex flex-col justify-center transition-colors shadow-sm",
-                              "flex-1",
+                              "@container border rounded-xl flex flex-col justify-center transition-colors shadow-sm",
+                              "flex-1 min-h-0",
                               isGiant
-                                ? "p-10 min-w-[100%] md:min-w-[45%]"
+                                ? "p-[clamp(1.5rem,5cqmin,3rem)] min-w-[100%] md:min-w-[45%]"
                                 : isLarge
-                                  ? "p-8 min-w-[45%]"
+                                  ? "p-[clamp(1.25rem,4cqmin,2.5rem)] min-w-[45%]"
                                   : isHugeCount
-                                    ? "p-4 min-w-[200px]"
-                                    : "p-6 min-w-[30%] md:min-w-[30%]"
+                                    ? "p-[clamp(0.75rem,2cqmin,1.5rem)] min-w-[200px]"
+                                    : "p-[clamp(1rem,3cqmin,2rem)] min-w-[30%] md:min-w-[30%]"
                             )}
                             style={{ backgroundColor: col.bg, borderColor: col.border }}
                           >
                             <div className={cn(
                               "font-semibold text-slate-600 truncate",
-                              isGiant ? "text-2xl mb-6" : isLarge ? "text-xl mb-4" : "text-sm mb-2"
+                              isGiant ? "text-[clamp(1.25rem,5cqmin,2rem)] mb-[clamp(0.5rem,3cqmin,1.5rem)]"
+                                : isLarge ? "text-[clamp(1rem,4cqmin,1.5rem)] mb-[clamp(0.25rem,2cqmin,1rem)]"
+                                  : "text-[clamp(0.875rem,3cqmin,1.125rem)] mb-[clamp(0.25rem,1.5cqmin,0.75rem)]"
                             )}>
                               {item.label}
                             </div>
 
-                            <div className="flex items-baseline gap-2">
+                            <div className="flex items-baseline gap-[clamp(0.25rem,2cqmin,1rem)]">
                               <span className={cn(
-                                "tabular-nums font-bold tracking-tight",
-                                isGiant ? "text-[6rem] leading-none" : isLarge ? "text-6xl" : "text-5xl"
+                                "tabular-nums font-bold tracking-tight leading-none",
+                                isGiant ? "text-[clamp(4rem,25cqmin,8rem)]"
+                                  : isLarge ? "text-[clamp(3rem,20cqmin,6rem)]"
+                                    : "text-[clamp(2rem,15cqmin,4.5rem)]"
                               )}>
                                 {item.value}
                               </span>
                               <span className={cn(
                                 "text-slate-500 font-medium",
-                                isGiant ? "text-3xl ml-2" : isLarge ? "text-2xl" : "text-lg"
+                                isGiant ? "text-[clamp(1.5rem,10cqmin,2.5rem)]"
+                                  : isLarge ? "text-[clamp(1.25rem,8cqmin,2rem)]"
+                                    : "text-[clamp(1rem,6cqmin,1.5rem)] ml-1"
                               )}>
                                 {item.unit}
                               </span>
@@ -784,7 +790,9 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                             {item.normalRange && (
                               <div className={cn(
                                 "font-medium text-slate-500",
-                                isGiant ? "mt-6 text-base" : isLarge ? "mt-4 text-sm" : "mt-2 text-[11px]"
+                                isGiant ? "mt-[clamp(0.75rem,3cqmin,2rem)] text-[clamp(0.875rem,3cqmin,1.25rem)]"
+                                  : isLarge ? "mt-[clamp(0.5rem,2cqmin,1.5rem)] text-[clamp(0.75rem,2.5cqmin,1rem)]"
+                                    : "mt-[clamp(0.25rem,1.5cqmin,1rem)] text-[clamp(10px,2cqmin,0.875rem)]"
                               )}>
                                 {item.normalRange}
                               </div>
