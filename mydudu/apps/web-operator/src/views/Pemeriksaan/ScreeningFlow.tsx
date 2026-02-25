@@ -676,8 +676,8 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                     </p>
                   </div>
 
-                  {/* ================= ROW 1 — MEASUREMENTS ================= */}
-                  <div className="flex flex-wrap gap-6 [&>*]:flex-1 [&>*]:min-w-[180px]">
+                  {/* ================= DYNAMIC GRID — MEASUREMENTS ================= */}
+                  <div className="flex-1 min-h-0 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-fr">
 
                     {(() => {
                       const weightAnalysis = selectedSession?.growthAnalysis ? Object.values(selectedSession.growthAnalysis).find((a: any) => typeof a.indicator === 'string' && (a.indicator.includes('Weight') || a.indicator.toLowerCase().includes('berat'))) as any : null;
@@ -695,77 +695,85 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                       const ageMonths = selectedPatient?.ageMonths ?? 24;
                       const hrRange = ageMonths < 1 ? '70-190' : ageMonths < 12 ? '80-160' : '70-130';
 
-                      return [
+                      // Determine which vitals actually have data to show dynamically
+                      const allCards = [
                         { label: "Berat Badan", value: vitalsData.weight.value, unit: vitalsData.weight.unit, emphasize: true, normalRange: getNormalValues(weightAnalysis?.lms, 'kg') },
                         { label: "Tinggi Badan", value: vitalsData.height.value, unit: vitalsData.height.unit, emphasize: true, normalRange: getNormalValues(heightAnalysis?.lms, 'cm') },
                         { label: "Suhu", value: vitalsData.temp.value, unit: vitalsData.temp.unit, normalRange: 'Normal: 36.0 - 37.4 °C' },
                         { label: "Detak Jantung", value: vitalsData.heartRate.value, unit: vitalsData.heartRate.unit, normalRange: `Normal: ${hrRange} BPM` },
                         { label: "Saturasi O2", value: vitalsData.spo2.value, unit: vitalsData.spo2.unit, normalRange: 'Normal: ≥ 95 %' },
-                      ].map((item, i) => {
+                      ];
+
+                      return allCards.map((item, i) => {
                         // Color-coded backgrounds with age-appropriate clinical thresholds
                         const getMeasurementStatus = () => {
-                          // ── Temperature ──────────────────────────────────────────
                           if (item.label === 'Suhu') {
-                            if (item.value >= 38.5) return { bg: '#fee2e2', border: '#fca5a5' }; // high fever → red
-                            if (item.value >= 37.5) return { bg: '#fef3c7', border: '#fcd34d' }; // mild fever → amber
-                            if (item.value > 0 && item.value < 36) return { bg: '#fef3c7', border: '#fcd34d' }; // low temp → amber
+                            if (item.value >= 38.5) return { bg: '#fee2e2', border: '#fca5a5' };
+                            if (item.value >= 37.5) return { bg: '#fef3c7', border: '#fcd34d' };
+                            if (item.value > 0 && item.value < 36) return { bg: '#fef3c7', border: '#fcd34d' };
                           }
-
-                          // ── SpO2 ─────────────────────────────────────────────────
-                          // 95-100%: normal, 90-94%: warning, <90%: bad
                           if (item.label === 'Saturasi O2') {
-                            if (item.value > 0 && item.value < 90) return { bg: '#fee2e2', border: '#fca5a5' };  // critical
-                            if (item.value >= 90 && item.value < 95) return { bg: '#fef3c7', border: '#fcd34d' }; // warning
-                            if (item.value >= 95) return { bg: '#f0fdf4', border: '#86efac' };                    // ≥95 → green
+                            if (item.value > 0 && item.value < 90) return { bg: '#fee2e2', border: '#fca5a5' };
+                            if (item.value >= 90 && item.value < 95) return { bg: '#fef3c7', border: '#fcd34d' };
+                            if (item.value >= 95) return { bg: '#f0fdf4', border: '#86efac' };
                           }
-
-                          // ── Heart Rate (age-appropriate) ──────────────────────────
-                          // Newborn  0-1 month : 70–190 BPM
-                          // Baby     1-12 months: 80–160 BPM
-                          // Child    1-10 years : 70–130 BPM
                           if (item.label === 'Detak Jantung' && item.value > 0) {
-                            const ageMonths = selectedPatient?.ageMonths ?? 24; // default child if unknown
                             let hrMin: number, hrMax: number;
-                            if (ageMonths < 1) {
-                              hrMin = 70; hrMax = 190;   // newborn
-                            } else if (ageMonths < 12) {
-                              hrMin = 80; hrMax = 160;   // baby
-                            } else {
-                              hrMin = 70; hrMax = 130;   // child 1-10 yr
-                            }
-                            const tooLow = item.value < hrMin;
-                            const tooHigh = item.value > hrMax;
+                            if (ageMonths < 1) { hrMin = 70; hrMax = 190; }
+                            else if (ageMonths < 12) { hrMin = 80; hrMax = 160; }
+                            else { hrMin = 70; hrMax = 130; }
                             const nearEdge = item.value < hrMin + 10 || item.value > hrMax - 10;
-                            if (tooLow || tooHigh) return { bg: '#fee2e2', border: '#fca5a5' }; // out of range → red
-                            if (nearEdge) return { bg: '#fef3c7', border: '#fcd34d' }; // borderline → amber
-                            return { bg: '#f0fdf4', border: '#86efac' }; // within range → green
+                            if (item.value < hrMin || item.value > hrMax) return { bg: '#fee2e2', border: '#fca5a5' };
+                            if (nearEdge) return { bg: '#fef3c7', border: '#fcd34d' };
+                            return { bg: '#f0fdf4', border: '#86efac' };
                           }
-
-                          if (item.value === 0) return { bg: '#f8fafc', border: '#e2e8f0' }; // no data
-                          if (item.emphasize) return { bg: '#f0fdf4', border: '#86efac' }; // primary (weight/height) → green
-                          return { bg: '#f8fafc', border: '#e2e8f0' }; // neutral
+                          if (item.value === 0) return { bg: '#f8fafc', border: '#e2e8f0' };
+                          if (item.emphasize) return { bg: '#f0fdf4', border: '#86efac' };
+                          return { bg: '#f8fafc', border: '#e2e8f0' };
                         };
+
                         const col = getMeasurementStatus();
+
+                        // Dynamic scaling logic based on card count to ensure they fill perfectly
+                        const isFewCards = allCards.length <= 2;
+
                         return (
                           <div
                             key={i}
-                            className="border rounded-xl px-6 py-5 flex flex-col justify-center transition-colors"
+                            className={cn(
+                              "border rounded-xl flex flex-col justify-center transition-colors shadow-sm",
+                              item.emphasize ? "p-8" : "p-6",
+                              isFewCards ? "col-span-2 md:col-span-3 xl:col-span-4" : ""
+                            )}
                             style={{ backgroundColor: col.bg, borderColor: col.border }}
                           >
-                            <div className="text-sm font-semibold text-slate-600">
+                            <div className={cn(
+                              "font-semibold text-slate-600 truncate",
+                              isFewCards ? "text-xl mb-4" : "text-sm mb-2"
+                            )}>
                               {item.label}
                             </div>
 
-                            <div className="mt-3 flex items-baseline gap-2">
-                              <span className={`tabular-nums font-bold ${item.emphasize ? "text-4xl" : "text-3xl"}`}>
+                            <div className="flex items-baseline gap-2">
+                              <span className={cn(
+                                "tabular-nums font-bold tracking-tight",
+                                isFewCards ? "text-7xl" : item.emphasize ? "text-5xl" : "text-4xl"
+                              )}>
                                 {item.value}
                               </span>
-                              <span className="text-lg text-slate-500">
+                              <span className={cn(
+                                "text-slate-500 font-medium",
+                                isFewCards ? "text-2xl" : "text-lg"
+                              )}>
                                 {item.unit}
                               </span>
                             </div>
+
                             {item.normalRange && (
-                              <div className="mt-1.5 text-[11px] font-semibold text-slate-500">
+                              <div className={cn(
+                                "font-medium text-slate-500",
+                                isFewCards ? "mt-4 text-sm" : "mt-2 text-[11px]"
+                              )}>
                                 {item.normalRange}
                               </div>
                             )}
