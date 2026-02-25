@@ -679,78 +679,100 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                   {/* ================= ROW 1 — MEASUREMENTS ================= */}
                   <div className="flex flex-wrap gap-6 [&>*]:flex-1 [&>*]:min-w-[180px]">
 
-                    {[
-                      { label: "Berat Badan", value: vitalsData.weight.value, unit: vitalsData.weight.unit, emphasize: true },
-                      { label: "Tinggi Badan", value: vitalsData.height.value, unit: vitalsData.height.unit, emphasize: true },
-                      { label: "Suhu", value: vitalsData.temp.value, unit: vitalsData.temp.unit },
-                      { label: "Detak Jantung", value: vitalsData.heartRate.value, unit: vitalsData.heartRate.unit },
-                      { label: "Saturasi O2", value: vitalsData.spo2.value, unit: vitalsData.spo2.unit },
-                    ].map((item, i) => {
-                      // Color-coded backgrounds with age-appropriate clinical thresholds
-                      const getMeasurementStatus = () => {
-                        // ── Temperature ──────────────────────────────────────────
-                        if (item.label === 'Suhu') {
-                          if (item.value >= 38.5) return { bg: '#fee2e2', border: '#fca5a5' }; // high fever → red
-                          if (item.value >= 37.5) return { bg: '#fef3c7', border: '#fcd34d' }; // mild fever → amber
-                          if (item.value > 0 && item.value < 36) return { bg: '#fef3c7', border: '#fcd34d' }; // low temp → amber
-                        }
+                    {(() => {
+                      const weightAnalysis = selectedSession?.growthAnalysis ? Object.values(selectedSession.growthAnalysis).find((a: any) => typeof a.indicator === 'string' && (a.indicator.includes('Weight') || a.indicator.toLowerCase().includes('berat'))) as any : null;
+                      const heightAnalysis = selectedSession?.growthAnalysis ? Object.values(selectedSession.growthAnalysis).find((a: any) => typeof a.indicator === 'string' && (a.indicator.includes('Height') || a.indicator.includes('Length') || a.indicator.toLowerCase().includes('tinggi') || a.indicator.toLowerCase().includes('panjang'))) as any : null;
 
-                        // ── SpO2 ─────────────────────────────────────────────────
-                        // 95-100%: normal, 90-94%: warning, <90%: bad
-                        if (item.label === 'Saturasi O2') {
-                          if (item.value > 0 && item.value < 90) return { bg: '#fee2e2', border: '#fca5a5' };  // critical
-                          if (item.value >= 90 && item.value < 95) return { bg: '#fef3c7', border: '#fcd34d' }; // warning
-                          if (item.value >= 95) return { bg: '#f0fdf4', border: '#86efac' };                    // ≥95 → green
-                        }
-
-                        // ── Heart Rate (age-appropriate) ──────────────────────────
-                        // Newborn  0-1 month : 70–190 BPM
-                        // Baby     1-12 months: 80–160 BPM
-                        // Child    1-10 years : 70–130 BPM
-                        if (item.label === 'Detak Jantung' && item.value > 0) {
-                          const ageMonths = selectedPatient?.ageMonths ?? 24; // default child if unknown
-                          let hrMin: number, hrMax: number;
-                          if (ageMonths < 1) {
-                            hrMin = 70; hrMax = 190;   // newborn
-                          } else if (ageMonths < 12) {
-                            hrMin = 80; hrMax = 160;   // baby
-                          } else {
-                            hrMin = 70; hrMax = 130;   // child 1-10 yr
-                          }
-                          const tooLow = item.value < hrMin;
-                          const tooHigh = item.value > hrMax;
-                          const nearEdge = item.value < hrMin + 10 || item.value > hrMax - 10;
-                          if (tooLow || tooHigh) return { bg: '#fee2e2', border: '#fca5a5' }; // out of range → red
-                          if (nearEdge) return { bg: '#fef3c7', border: '#fcd34d' }; // borderline → amber
-                          return { bg: '#f0fdf4', border: '#86efac' }; // within range → green
-                        }
-
-                        if (item.value === 0) return { bg: '#f8fafc', border: '#e2e8f0' }; // no data
-                        if (item.emphasize) return { bg: '#f0fdf4', border: '#86efac' }; // primary (weight/height) → green
-                        return { bg: '#f8fafc', border: '#e2e8f0' }; // neutral
+                      const getNormalValues = (lms: any, unit: string) => {
+                        if (!lms) return '';
+                        const calc = (z: number) => {
+                          if (lms.l === 0) return lms.m * Math.exp(lms.s * z);
+                          return lms.m * Math.pow(1 + lms.l * lms.s * z, 1 / lms.l);
+                        };
+                        return `Normal: ${calc(-2).toFixed(1)} - ${calc(2).toFixed(1)} ${unit}`;
                       };
-                      const col = getMeasurementStatus();
-                      return (
-                        <div
-                          key={i}
-                          className="border rounded-xl px-6 py-5 flex flex-col justify-center transition-colors"
-                          style={{ backgroundColor: col.bg, borderColor: col.border }}
-                        >
-                          <div className="text-sm font-semibold text-slate-600">
-                            {item.label}
-                          </div>
 
-                          <div className="mt-3 flex items-baseline gap-2">
-                            <span className={`tabular-nums font-bold ${item.emphasize ? "text-4xl" : "text-3xl"}`}>
-                              {item.value}
-                            </span>
-                            <span className="text-lg text-slate-500">
-                              {item.unit}
-                            </span>
+                      const ageMonths = selectedPatient?.ageMonths ?? 24;
+                      const hrRange = ageMonths < 1 ? '70-190' : ageMonths < 12 ? '80-160' : '70-130';
+
+                      return [
+                        { label: "Berat Badan", value: vitalsData.weight.value, unit: vitalsData.weight.unit, emphasize: true, normalRange: getNormalValues(weightAnalysis?.lms, 'kg') },
+                        { label: "Tinggi Badan", value: vitalsData.height.value, unit: vitalsData.height.unit, emphasize: true, normalRange: getNormalValues(heightAnalysis?.lms, 'cm') },
+                        { label: "Suhu", value: vitalsData.temp.value, unit: vitalsData.temp.unit, normalRange: 'Normal: 36.0 - 37.4 °C' },
+                        { label: "Detak Jantung", value: vitalsData.heartRate.value, unit: vitalsData.heartRate.unit, normalRange: `Normal: ${hrRange} BPM` },
+                        { label: "Saturasi O2", value: vitalsData.spo2.value, unit: vitalsData.spo2.unit, normalRange: 'Normal: ≥ 95 %' },
+                      ].map((item, i) => {
+                        // Color-coded backgrounds with age-appropriate clinical thresholds
+                        const getMeasurementStatus = () => {
+                          // ── Temperature ──────────────────────────────────────────
+                          if (item.label === 'Suhu') {
+                            if (item.value >= 38.5) return { bg: '#fee2e2', border: '#fca5a5' }; // high fever → red
+                            if (item.value >= 37.5) return { bg: '#fef3c7', border: '#fcd34d' }; // mild fever → amber
+                            if (item.value > 0 && item.value < 36) return { bg: '#fef3c7', border: '#fcd34d' }; // low temp → amber
+                          }
+
+                          // ── SpO2 ─────────────────────────────────────────────────
+                          // 95-100%: normal, 90-94%: warning, <90%: bad
+                          if (item.label === 'Saturasi O2') {
+                            if (item.value > 0 && item.value < 90) return { bg: '#fee2e2', border: '#fca5a5' };  // critical
+                            if (item.value >= 90 && item.value < 95) return { bg: '#fef3c7', border: '#fcd34d' }; // warning
+                            if (item.value >= 95) return { bg: '#f0fdf4', border: '#86efac' };                    // ≥95 → green
+                          }
+
+                          // ── Heart Rate (age-appropriate) ──────────────────────────
+                          // Newborn  0-1 month : 70–190 BPM
+                          // Baby     1-12 months: 80–160 BPM
+                          // Child    1-10 years : 70–130 BPM
+                          if (item.label === 'Detak Jantung' && item.value > 0) {
+                            const ageMonths = selectedPatient?.ageMonths ?? 24; // default child if unknown
+                            let hrMin: number, hrMax: number;
+                            if (ageMonths < 1) {
+                              hrMin = 70; hrMax = 190;   // newborn
+                            } else if (ageMonths < 12) {
+                              hrMin = 80; hrMax = 160;   // baby
+                            } else {
+                              hrMin = 70; hrMax = 130;   // child 1-10 yr
+                            }
+                            const tooLow = item.value < hrMin;
+                            const tooHigh = item.value > hrMax;
+                            const nearEdge = item.value < hrMin + 10 || item.value > hrMax - 10;
+                            if (tooLow || tooHigh) return { bg: '#fee2e2', border: '#fca5a5' }; // out of range → red
+                            if (nearEdge) return { bg: '#fef3c7', border: '#fcd34d' }; // borderline → amber
+                            return { bg: '#f0fdf4', border: '#86efac' }; // within range → green
+                          }
+
+                          if (item.value === 0) return { bg: '#f8fafc', border: '#e2e8f0' }; // no data
+                          if (item.emphasize) return { bg: '#f0fdf4', border: '#86efac' }; // primary (weight/height) → green
+                          return { bg: '#f8fafc', border: '#e2e8f0' }; // neutral
+                        };
+                        const col = getMeasurementStatus();
+                        return (
+                          <div
+                            key={i}
+                            className="border rounded-xl px-6 py-5 flex flex-col justify-center transition-colors"
+                            style={{ backgroundColor: col.bg, borderColor: col.border }}
+                          >
+                            <div className="text-sm font-semibold text-slate-600">
+                              {item.label}
+                            </div>
+
+                            <div className="mt-3 flex items-baseline gap-2">
+                              <span className={`tabular-nums font-bold ${item.emphasize ? "text-4xl" : "text-3xl"}`}>
+                                {item.value}
+                              </span>
+                              <span className="text-lg text-slate-500">
+                                {item.unit}
+                              </span>
+                            </div>
+                            {item.normalRange && (
+                              <div className="mt-1.5 text-[11px] font-semibold text-slate-500">
+                                {item.normalRange}
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      });
+                    })()}
 
                   </div>
 
@@ -779,6 +801,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                   </div>
 
                   {/* ================= ROW 3 — INTERPRETATION ================= */}
+                  {/* Slider and interpretations are commented out as per design update
                   <div className="grid grid-cols-3 gap-8">
 
                     {selectedSession.growthAnalysis &&
@@ -789,6 +812,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                     }
 
                   </div>
+                  */}
 
                   {/* ================= CTA ================= */}
                   <div>
