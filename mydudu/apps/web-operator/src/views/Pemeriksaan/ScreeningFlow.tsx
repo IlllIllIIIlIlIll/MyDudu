@@ -776,29 +776,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
 
                   </div>
 
-                  {/* ================= ROW 2 — SUMMARY ================= */}
-                  <div className="bg-slate-900 text-white rounded-xl px-8 py-4 flex items-center justify-between">
-
-                    <div className="text-lg font-semibold">
-                      Ringkasan Status
-                    </div>
-
-                    <div className="flex items-center gap-10 text-sm font-medium">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-red-600 rounded-sm" />
-                        Kritikal
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-orange-500 rounded-sm" />
-                        Waspada
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-green-600 rounded-sm" />
-                        Normal
-                      </div>
-                    </div>
-
-                  </div>
+                  {/* ================= ROW 2 was Ringkasan Status (Removed) ================= */}
 
                   {/* ================= ROW 3 — INTERPRETATION ================= */}
                   {/* Slider and interpretations are commented out as per design update
