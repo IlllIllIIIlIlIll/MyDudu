@@ -676,8 +676,8 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                     </p>
                   </div>
 
-                  {/* ================= DYNAMIC GRID — MEASUREMENTS ================= */}
-                  <div className="flex-1 min-h-0 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-fr">
+                  {/* ================= DYNAMIC FLEX MASONRY — MEASUREMENTS ================= */}
+                  <div className="flex-1 min-h-0 flex flex-wrap gap-4 items-stretch content-stretch">
 
                     {(() => {
                       const weightAnalysis = selectedSession?.growthAnalysis ? Object.values(selectedSession.growthAnalysis).find((a: any) => typeof a.indicator === 'string' && (a.indicator.includes('Weight') || a.indicator.toLowerCase().includes('berat'))) as any : null;
@@ -703,6 +703,8 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                         { label: "Detak Jantung", value: vitalsData.heartRate.value, unit: vitalsData.heartRate.unit, normalRange: `Normal: ${hrRange} BPM` },
                         { label: "Saturasi O2", value: vitalsData.spo2.value, unit: vitalsData.spo2.unit, normalRange: 'Normal: ≥ 95 %' },
                       ];
+
+                      const count = allCards.length;
 
                       return allCards.map((item, i) => {
                         // Color-coded backgrounds with age-appropriate clinical thresholds
@@ -735,21 +737,31 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                         const col = getMeasurementStatus();
 
                         // Dynamic scaling logic based on card count to ensure they fill perfectly
-                        const isFewCards = allCards.length <= 2;
+                        const isGiant = count <= 2;
+                        const isLarge = count <= 4;
+                        const isHugeCount = count > 6;
 
+                        // Use flex-grow and min-width to ensure they consume ALL space horizontally & vertically.
+                        // flex-1 forces equal width growth among brothers in a row.
                         return (
                           <div
                             key={i}
                             className={cn(
                               "border rounded-xl flex flex-col justify-center transition-colors shadow-sm",
-                              item.emphasize ? "p-8" : "p-6",
-                              isFewCards ? "col-span-2 md:col-span-3 xl:col-span-4" : ""
+                              "flex-1",
+                              isGiant
+                                ? "p-10 min-w-[100%] md:min-w-[45%]"
+                                : isLarge
+                                  ? "p-8 min-w-[45%]"
+                                  : isHugeCount
+                                    ? "p-4 min-w-[200px]"
+                                    : "p-6 min-w-[30%] md:min-w-[30%]"
                             )}
                             style={{ backgroundColor: col.bg, borderColor: col.border }}
                           >
                             <div className={cn(
                               "font-semibold text-slate-600 truncate",
-                              isFewCards ? "text-xl mb-4" : "text-sm mb-2"
+                              isGiant ? "text-2xl mb-6" : isLarge ? "text-xl mb-4" : "text-sm mb-2"
                             )}>
                               {item.label}
                             </div>
@@ -757,13 +769,13 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                             <div className="flex items-baseline gap-2">
                               <span className={cn(
                                 "tabular-nums font-bold tracking-tight",
-                                isFewCards ? "text-7xl" : item.emphasize ? "text-5xl" : "text-4xl"
+                                isGiant ? "text-[6rem] leading-none" : isLarge ? "text-6xl" : "text-5xl"
                               )}>
                                 {item.value}
                               </span>
                               <span className={cn(
                                 "text-slate-500 font-medium",
-                                isFewCards ? "text-2xl" : "text-lg"
+                                isGiant ? "text-3xl ml-2" : isLarge ? "text-2xl" : "text-lg"
                               )}>
                                 {item.unit}
                               </span>
@@ -772,7 +784,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                             {item.normalRange && (
                               <div className={cn(
                                 "font-medium text-slate-500",
-                                isFewCards ? "mt-4 text-sm" : "mt-2 text-[11px]"
+                                isGiant ? "mt-6 text-base" : isLarge ? "mt-4 text-sm" : "mt-2 text-[11px]"
                               )}>
                                 {item.normalRange}
                               </div>
