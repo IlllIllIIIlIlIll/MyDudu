@@ -34,7 +34,7 @@ export function ClinicalQuizPage({
     >
       {/* Question */}
       <div className="text-center mb-4 shrink-0 px-6">
-        <div className={`mb-2 ${styles.quizTitleText}`}>
+        <div className="mb-2 font-bold text-slate-900 leading-tight text-[clamp(1.5rem,4vw,2.5rem)] max-w-4xl mx-auto">
           {currentQuestion.question}
         </div>
         {/* {currentQuestion.layman && (
