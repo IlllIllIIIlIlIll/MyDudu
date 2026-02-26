@@ -741,40 +741,48 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                         const isLarge = count <= 4;
                         const isHugeCount = count > 6;
 
-                        // Use flex-grow and min-width to ensure they consume ALL space horizontally
+                        // By using @container, `cqmin` equals the smaller of the card's width and height.
+                        // We use `min(cqmin, maximum_size)` to cap the size on large screens, 
+                        // but provide NO minimum size so it can squash infinitely without breaking layouts.
                         return (
                           <div
                             key={i}
                             className={cn(
-                              "border rounded-xl flex flex-col justify-center transition-colors shadow-sm",
-                              "flex-1",
+                              "@container border rounded-xl flex flex-col justify-center transition-colors shadow-sm",
+                              "flex-1 min-h-0", // min-h-0 is absolutely necessary for flex height squashing
                               isGiant
-                                ? "p-10 min-w-[100%] md:min-w-[45%] min-h-[300px]"
+                                ? "p-[min(5cqmin,2.5rem)] min-w-[250px]"
                                 : isLarge
-                                  ? "p-8 min-w-[45%] min-h-[220px]"
+                                  ? "p-[min(4cqmin,2rem)] min-w-[200px]"
                                   : isHugeCount
-                                    ? "p-4 min-w-[200px] min-h-[140px]"
-                                    : "p-6 min-w-[30%] md:min-w-[30%] min-h-[180px]"
+                                    ? "p-[min(3cqmin,1rem)] min-w-[150px]"
+                                    : "p-[min(4cqmin,1.5rem)] min-w-[180px]"
                             )}
                             style={{ backgroundColor: col.bg, borderColor: col.border }}
                           >
                             <div className={cn(
                               "font-semibold text-slate-600 truncate",
-                              isGiant ? "text-2xl mb-6" : isLarge ? "text-xl mb-4" : "text-sm mb-2"
+                              isGiant ? "text-[min(5cqmin,1.5rem)] mb-[min(3cqmin,1.5rem)]"
+                                : isLarge ? "text-[min(4cqmin,1.25rem)] mb-[min(2cqmin,1rem)]"
+                                  : "text-[min(3.5cqmin,0.875rem)] mb-[min(2cqmin,0.5rem)]"
                             )}>
                               {item.label}
                             </div>
 
-                            <div className="flex items-baseline gap-2">
+                            <div className="flex items-baseline gap-[min(2cqmin,1rem)] min-h-0">
                               <span className={cn(
-                                "tabular-nums font-bold tracking-tight",
-                                isGiant ? "text-[6rem] leading-none" : isLarge ? "text-6xl" : "text-5xl"
+                                "tabular-nums font-bold tracking-tight leading-none",
+                                isGiant ? "text-[min(35cqmin,6rem)]"
+                                  : isLarge ? "text-[min(30cqmin,4.5rem)]"
+                                    : "text-[min(28cqmin,3.5rem)]"
                               )}>
                                 {item.value}
                               </span>
                               <span className={cn(
                                 "text-slate-500 font-medium",
-                                isGiant ? "text-3xl ml-2" : isLarge ? "text-2xl" : "text-lg"
+                                isGiant ? "text-[min(12cqmin,1.875rem)]"
+                                  : isLarge ? "text-[min(10cqmin,1.5rem)]"
+                                    : "text-[min(8cqmin,1.125rem)] ml-[1cqmin]"
                               )}>
                                 {item.unit}
                               </span>
@@ -782,8 +790,10 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
 
                             {item.normalRange && (
                               <div className={cn(
-                                "font-medium text-slate-500",
-                                isGiant ? "mt-6 text-base" : isLarge ? "mt-4 text-sm" : "mt-2 text-[11px]"
+                                "font-medium text-slate-500 truncate",
+                                isGiant ? "mt-[min(3cqmin,1.5rem)] text-[min(4cqmin,1rem)]"
+                                  : isLarge ? "mt-[min(2cqmin,1rem)] text-[min(3cqmin,0.875rem)]"
+                                    : "mt-[min(1.5cqmin,0.5rem)] text-[min(2.5cqmin,0.75rem)]"
                               )}>
                                 {item.normalRange}
                               </div>
@@ -812,7 +822,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                   */}
 
                   {/* ================= CTA ================= */}
-                  <div className="shrink-0 mt-4">
+                  <div className="shrink mt-[min(2vh,1rem)] h-[min(10vh,4rem)] @container flex flex-col justify-end">
                     <button
                       onClick={() => {
                         setClinicalSessionId(null);
@@ -820,9 +830,9 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                         setClinicalOutcome(null);
                         setPhase('QUIZ');
                       }}
-                      className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-lg font-semibold transition-all"
+                      className="w-full flex-1 min-h-0 py-[min(2cqh,1rem)] flex justify-center items-center bg-slate-900 hover:bg-slate-800 text-white rounded-[max(0.75rem,2cqh)] transition-all"
                     >
-                      Analisis Gejala Lanjutan
+                      <span className="font-semibold text-[min(35cqh,1.125rem)]">Analisis Gejala Lanjutan</span>
                     </button>
                   </div>
 
