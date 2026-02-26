@@ -122,7 +122,7 @@ export class UsersService {
         } catch (e: any) {
             if (e.code === 'P2002') {
                 // Unique constraint violation
-                throw new ConflictException('Orang tua dengan nama dan nomor telepon ini sudah terdaftar.');
+                throw new ConflictException('Wali anak dengan nama dan nomor telepon ini sudah terdaftar.');
             }
             throw e;
         }

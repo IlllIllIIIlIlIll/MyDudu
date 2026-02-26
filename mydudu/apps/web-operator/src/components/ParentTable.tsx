@@ -44,7 +44,7 @@ export function ParentTable({ parents }: ParentTableProps) {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="Cari nama orang tua atau no. HP..."
+                                placeholder="Cari nama wali anak atau no. HP..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
@@ -91,7 +91,7 @@ export function ParentTable({ parents }: ParentTableProps) {
                         {filteredParents.length === 0 && (
                             <tr>
                                 <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
-                                    Tidak ada data orang tua yang ditemukan
+                                    Tidak ada data wali anak yang ditemukan
                                 </td>
                             </tr>
                         )}

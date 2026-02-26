@@ -193,7 +193,7 @@ export function RegisterParentDialog({ onSuccess, trigger }: RegisterParentDialo
                                         disabled={isSubmitting}
                                         className="flex-1 gradient-primary text-white px-6 py-3 rounded-lg font-semibold text-[15px] hover:opacity-90 transition-opacity disabled:opacity-50"
                                     >
-                                        {isSubmitting ? "Mendaftar..." : "Daftarkan Ibu"}
+                                        {isSubmitting ? "Mendaftar..." : "Daftarkan Wali anak"}
                                     </button>
                                 </div>
                             </div>

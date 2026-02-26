@@ -124,7 +124,7 @@ export function ChildRecords({ onNavigate }: { onNavigate?: (page: string) => vo
 
       {isLoadingParents ? (
         <div className="bg-white rounded-lg border border-gray-100 p-6 text-gray-500">
-          Memuat data orang tua...
+          Memuat data wali anak...
         </div>
       ) : (
         <ParentTable parents={parents} />

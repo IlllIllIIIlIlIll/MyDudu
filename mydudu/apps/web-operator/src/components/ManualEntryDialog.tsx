@@ -116,7 +116,7 @@ export function ManualEntryDialog({ onSuccess, trigger }: ManualEntryDialogProps
 
     const handleManualSubmit = async () => {
         const newErrors: Record<string, string> = {};
-        if (!manualForm.parentId) newErrors.motherName = 'Pilih Ibu terlebih dahulu';
+        if (!manualForm.parentId) newErrors.motherName = 'Pilih Wali anak terlebih dahulu';
         if (!manualForm.childId) newErrors.childName = 'Pilih Anak terlebih dahulu';
         if (!manualForm.deviceId) newErrors.deviceId = 'Pilih Alat terlebih dahulu';
 
@@ -200,7 +200,7 @@ export function ManualEntryDialog({ onSuccess, trigger }: ManualEntryDialogProps
                         <div className="p-6 space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5 relative">
-                                    <label className="text-[14px] font-semibold text-gray-700">Nama Ibu</label>
+                                    <label className="text-[14px] font-semibold text-gray-700">Nama Wali anak</label>
                                     <input
                                         type="text"
                                         placeholder="Cari nama ibu..."
@@ -256,7 +256,7 @@ export function ManualEntryDialog({ onSuccess, trigger }: ManualEntryDialogProps
                                                     </button>
                                                 ))}
                                             {parents.filter((p) => p.fullName.toLowerCase().includes((manualForm.motherName || '').toLowerCase())).length === 0 && (
-                                                <div className="px-4 py-2 text-sm text-gray-500 italic">Orang tua tidak ditemukan</div>
+                                                <div className="px-4 py-2 text-sm text-gray-500 italic">Wali anak tidak ditemukan</div>
                                             )}
                                         </div>
                                     )}
@@ -265,7 +265,7 @@ export function ManualEntryDialog({ onSuccess, trigger }: ManualEntryDialogProps
                                     <label className="text-[14px] font-semibold text-gray-700">Nama Anak</label>
                                     <input
                                         type="text"
-                                        placeholder={manualForm.parentId ? 'Pilih anak dari orang tua terpilih' : 'Pilih nama ibu dulu'}
+                                        placeholder={manualForm.parentId ? 'Pilih anak dari wali anak terpilih' : 'Pilih nama wali anak dulu'}
                                         value={manualForm.childName}
                                         disabled={!manualForm.parentId}
                                         onFocus={() => {

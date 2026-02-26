@@ -72,7 +72,7 @@ export function RegisterChildDialog({ onSuccess, trigger }: RegisterChildDialogP
         if (!form.fullName) newErrors.fullName = 'Wajib diisi';
         if (!form.birthDate) newErrors.birthDate = 'Wajib diisi';
         if (!form.gender) newErrors.gender = 'Wajib diisi';
-        if (!form.parentId) newErrors.parentName = 'Wajib pilih orang tua';
+        if (!form.parentId) newErrors.parentName = 'Wajib pilih wali anak';
 
         if (isDateInvalid) {
             newErrors.birthDate = 'Tanggal tidak valid';
@@ -238,7 +238,7 @@ export function RegisterChildDialog({ onSuccess, trigger }: RegisterChildDialogP
                                             ))
                                         ) : (
                                             <div className="px-4 py-2 text-sm text-gray-500 italic">
-                                                Orang tua tidak ditemukan
+                                                Wali anak tidak ditemukan
                                             </div>
                                         )}
                                     </div>

@@ -35,7 +35,7 @@ async function main() {
     where: { email: 'orangtua.pemeriksaan.dummy@mydudu.local' },
     update: { role: UserRole.PARENT, status: UserStatus.ACTIVE, villageId: village.id },
     create: {
-      fullName: 'Ibu Sesi Dummy',
+      fullName: 'Wali anak Sesi Dummy',
       email: 'orangtua.pemeriksaan.dummy@mydudu.local',
       phoneNumber: '089900000002',
       role: UserRole.PARENT,
