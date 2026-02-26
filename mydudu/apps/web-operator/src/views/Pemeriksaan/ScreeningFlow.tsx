@@ -667,13 +667,21 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                 <div className="flex-1 min-h-0 flex flex-col gap-4 md:gap-8">
 
                   {/* ================= HEADER ================= */}
-                  <div className="shrink-0">
-                    <h1 className="text-3xl font-bold text-slate-900">
-                      Data Biometrik Pasien
-                    </h1>
-                    <p className="text-slate-600 mt-1">
-                      Hasil pengukuran perangkat terintegrasi
-                    </p>
+                  <div className="shrink-0 flex items-center justify-between">
+                    <div>
+                      <h1 className="text-3xl font-bold text-slate-900">
+                        Data Biometrik Pasien
+                      </h1>
+                      <p className="text-slate-600 mt-1">
+                        Hasil pengukuran perangkat Dudu
+                      </p>
+                    </div>
+                    {/* The logo has its height set flexibly to match the text vertically */}
+                    <img
+                      src="/logo_mydudu.png"
+                      alt="MyDudu"
+                      className="h-16 w-auto object-contain"
+                    />
                   </div>
 
                   {/* ================= DYNAMIC FLEX MASONRY — MEASUREMENTS ================= */}
@@ -713,6 +721,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                             if (item.value >= 38.5) return { bg: '#fee2e2', border: '#fca5a5' };
                             if (item.value >= 37.5) return { bg: '#fef3c7', border: '#fcd34d' };
                             if (item.value > 0 && item.value < 36) return { bg: '#fef3c7', border: '#fcd34d' };
+                            if (item.value > 0) return { bg: '#f0fdf4', border: '#86efac' }; // Normal
                           }
                           if (item.label === 'Saturasi O2') {
                             if (item.value > 0 && item.value < 90) return { bg: '#fee2e2', border: '#fca5a5' };

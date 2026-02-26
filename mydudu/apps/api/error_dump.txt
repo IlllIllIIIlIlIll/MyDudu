@@ -1,0 +1,19 @@
+PrismaClientUnknownRequestError: 
+Invalid `this.prisma.session.create()` invocation in
+C:\Users\FAVIAN\Documents\GitHub\MyDudu\mydudu\apps\api\src\device\device.service.ts:202:51
+
+  199     data.temperature !== undefined &&
+  200     data.temperature !== null;
+  201 
+→ 202 const session = await this.prisma.session.create(
+Error occurred during query execution:
+ConnectorError(ConnectorError { user_facing_error: None, kind: QueryError(PostgresError { code: "23514", message: "new row for relation \"sessions\" violates check constraint \"chk_temperature_valid\"", severity: "ERROR", detail: Some("Failing row contains (44, manual-1772085886208, 1, 11, 3, MEASURED, 2026-02-26 06:04:46.208, 20.00, 69.00, 10.00, 50.00, 80.00, PENDING, null, null, t, 2026-02-26 06:04:46.208, null, null, null, 1, 2026-02-26 06:04:46.209, null, null, null)."), column: None, hint: None }), transient: false })
+    at $n.handleRequestError (C:\Users\FAVIAN\Documents\GitHub\MyDudu\mydudu\apps\api\node_modules\@prisma\client\runtime\library.js:121:7505)
+    at $n.handleAndLogRequestError (C:\Users\FAVIAN\Documents\GitHub\MyDudu\mydudu\apps\api\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\FAVIAN\Documents\GitHub\MyDudu\mydudu\apps\api\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\FAVIAN\Documents\GitHub\MyDudu\mydudu\apps\api\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async <anonymous> (C:\Users\FAVIAN\Documents\GitHub\MyDudu\mydudu\apps\api\src\prisma\audit.middleware.ts:50:24)
+    at async DeviceService.processManualEntry (C:\Users\FAVIAN\Documents\GitHub\MyDudu\mydudu\apps\api\src\device\device.service.ts:202:25)
+    at async DeviceController.submitManualTelemetry (C:\Users\FAVIAN\Documents\GitHub\MyDudu\mydudu\apps\api\src\device\device.controller.ts:53:20)
+    at async C:\Users\FAVIAN\Documents\GitHub\MyDudu\mydudu\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\FAVIAN\Documents\GitHub\MyDudu\mydudu\node_modules\@nestjs\core\router\router-proxy.js:9:17

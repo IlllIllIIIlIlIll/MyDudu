@@ -42,6 +42,7 @@ export function ManualEntryDialog({ onSuccess, trigger }: ManualEntryDialogProps
         heartRate: '',
         noiseLevel: '',
     });
+    const [errors, setErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [devices, setDevices] = useState<DeviceOption[]>([]);
     const [parents, setParents] = useState<ParentOption[]>([]);
@@ -67,6 +68,7 @@ export function ManualEntryDialog({ onSuccess, trigger }: ManualEntryDialogProps
         setChildren([]);
         setShowParentDropdown(false);
         setShowChildDropdown(false);
+        setErrors({});
     };
 
     const loadParents = async () => {
@@ -113,11 +115,30 @@ export function ManualEntryDialog({ onSuccess, trigger }: ManualEntryDialogProps
     };
 
     const handleManualSubmit = async () => {
-        if (!manualForm.parentId || !manualForm.childId || !manualForm.deviceId) {
-            alert('Nama Ibu, Nama Anak, dan Alat Dudu wajib diisi');
+        const newErrors: Record<string, string> = {};
+        if (!manualForm.parentId) newErrors.motherName = 'Pilih Ibu terlebih dahulu';
+        if (!manualForm.childId) newErrors.childName = 'Pilih Anak terlebih dahulu';
+        if (!manualForm.deviceId) newErrors.deviceId = 'Pilih Alat terlebih dahulu';
+
+        if (manualForm.weight && (parseFloat(manualForm.weight) < 1 || parseFloat(manualForm.weight) > 150)) {
+            newErrors.weight = 'Berat tidak valid';
+        }
+        if (manualForm.height && (parseFloat(manualForm.height) < 20 || parseFloat(manualForm.height) > 200)) {
+            newErrors.height = 'Tinggi tidak valid';
+        }
+        if (manualForm.temperature && (parseFloat(manualForm.temperature) < 30 || parseFloat(manualForm.temperature) > 45)) {
+            newErrors.temperature = 'Suhu tidak valid';
+        }
+        if (manualForm.heartRate && (parseFloat(manualForm.heartRate) < 30 || parseFloat(manualForm.heartRate) > 250)) {
+            newErrors.heartRate = 'Detak jantung tidak valid';
+        }
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
 
+        setErrors({});
         setIsSubmitting(true);
         try {
             await fetchWithAuth('/devices/manual-telemetry', {
@@ -136,12 +157,11 @@ export function ManualEntryDialog({ onSuccess, trigger }: ManualEntryDialogProps
                 }),
             });
 
-            alert('Data berhasil dikirim!');
-            resetForm();
             setOpen(false);
+            resetForm();
             onSuccess?.();
         } catch (e: any) {
-            alert(`Gagal mengirim data: ${e.message}`);
+            setErrors({ submit: e.message || 'Gagal mengirim data' });
         } finally {
             setIsSubmitting(false);
         }
@@ -202,9 +222,11 @@ export function ManualEntryDialog({ onSuccess, trigger }: ManualEntryDialogProps
                                             }));
                                             setChildren([]);
                                             setShowParentDropdown(true);
+                                            setErrors((prev) => ({ ...prev, motherName: '' }));
                                         }}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
+                                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px] ${errors.motherName ? 'border-red-500' : 'border-gray-300'}`}
                                     />
+                                    {errors.motherName && <p className="text-red-500 text-xs mt-1 font-medium">{errors.motherName}</p>}
                                     {showParentDropdown && (
                                         <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto mt-1">
                                             {parents
@@ -255,9 +277,11 @@ export function ManualEntryDialog({ onSuccess, trigger }: ManualEntryDialogProps
                                             const value = e.target.value;
                                             setManualForm((prev) => ({ ...prev, childName: value, childId: '' }));
                                             setShowChildDropdown(true);
+                                            setErrors((prev) => ({ ...prev, childName: '' }));
                                         }}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px] disabled:bg-gray-100 disabled:text-gray-400"
+                                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px] disabled:bg-gray-100 disabled:text-gray-400 ${errors.childName ? 'border-red-500' : 'border-gray-300'}`}
                                     />
+                                    {errors.childName && <p className="text-red-500 text-xs mt-1 font-medium">{errors.childName}</p>}
                                     {showChildDropdown && manualForm.parentId && (
                                         <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto mt-1">
                                             {children
@@ -295,8 +319,11 @@ export function ManualEntryDialog({ onSuccess, trigger }: ManualEntryDialogProps
                                 <select
                                     value={manualForm.deviceId}
                                     onFocus={loadOperatorDevices}
-                                    onChange={(e) => setManualForm((prev) => ({ ...prev, deviceId: e.target.value }))}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px] bg-white"
+                                    onChange={(e) => {
+                                        setManualForm((prev) => ({ ...prev, deviceId: e.target.value }));
+                                        setErrors((prev) => ({ ...prev, deviceId: '' }));
+                                    }}
+                                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px] bg-white ${errors.deviceId ? 'border-red-500' : 'border-gray-300'}`}
                                 >
                                     <option value="">Pilih alat</option>
                                     {devices.map((device) => (
@@ -305,6 +332,7 @@ export function ManualEntryDialog({ onSuccess, trigger }: ManualEntryDialogProps
                                         </option>
                                     ))}
                                 </select>
+                                {errors.deviceId && <p className="text-red-500 text-xs mt-1 font-medium">{errors.deviceId}</p>}
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -315,9 +343,13 @@ export function ManualEntryDialog({ onSuccess, trigger }: ManualEntryDialogProps
                                         step="0.1"
                                         placeholder="0.0"
                                         value={manualForm.weight}
-                                        onChange={(e) => setManualForm({ ...manualForm, weight: e.target.value })}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
+                                        onChange={(e) => {
+                                            setManualForm({ ...manualForm, weight: e.target.value });
+                                            setErrors(prev => ({ ...prev, weight: '' }));
+                                        }}
+                                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px] ${errors.weight ? 'border-red-500' : 'border-gray-300'}`}
                                     />
+                                    {errors.weight && <p className="text-red-500 text-xs mt-1 font-medium">{errors.weight}</p>}
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-[14px] font-semibold text-gray-700">Tinggi (cm)</label>
@@ -326,9 +358,13 @@ export function ManualEntryDialog({ onSuccess, trigger }: ManualEntryDialogProps
                                         step="0.1"
                                         placeholder="0.0"
                                         value={manualForm.height}
-                                        onChange={(e) => setManualForm({ ...manualForm, height: e.target.value })}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
+                                        onChange={(e) => {
+                                            setManualForm({ ...manualForm, height: e.target.value });
+                                            setErrors(prev => ({ ...prev, height: '' }));
+                                        }}
+                                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px] ${errors.height ? 'border-red-500' : 'border-gray-300'}`}
                                     />
+                                    {errors.height && <p className="text-red-500 text-xs mt-1 font-medium">{errors.height}</p>}
                                 </div>
                             </div>
 
@@ -340,9 +376,13 @@ export function ManualEntryDialog({ onSuccess, trigger }: ManualEntryDialogProps
                                         step="0.1"
                                         placeholder="36.5"
                                         value={manualForm.temperature}
-                                        onChange={(e) => setManualForm({ ...manualForm, temperature: e.target.value })}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
+                                        onChange={(e) => {
+                                            setManualForm({ ...manualForm, temperature: e.target.value });
+                                            setErrors(prev => ({ ...prev, temperature: '' }));
+                                        }}
+                                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px] ${errors.temperature ? 'border-red-500' : 'border-gray-300'}`}
                                     />
+                                    {errors.temperature && <p className="text-red-500 text-xs mt-1 font-medium">{errors.temperature}</p>}
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-[14px] font-semibold text-gray-700">Detak (bpm)</label>
@@ -351,9 +391,13 @@ export function ManualEntryDialog({ onSuccess, trigger }: ManualEntryDialogProps
                                         step="1"
                                         placeholder="90"
                                         value={manualForm.heartRate}
-                                        onChange={(e) => setManualForm({ ...manualForm, heartRate: e.target.value })}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
+                                        onChange={(e) => {
+                                            setManualForm({ ...manualForm, heartRate: e.target.value });
+                                            setErrors(prev => ({ ...prev, heartRate: '' }));
+                                        }}
+                                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px] ${errors.heartRate ? 'border-red-500' : 'border-gray-300'}`}
                                     />
+                                    {errors.heartRate && <p className="text-red-500 text-xs mt-1 font-medium">{errors.heartRate}</p>}
                                 </div>
                             </div>
 
@@ -372,20 +416,27 @@ export function ManualEntryDialog({ onSuccess, trigger }: ManualEntryDialogProps
                                 <div />
                             </div>
 
-                            <div className="flex gap-3 pt-2">
-                                <button
-                                    onClick={() => setOpen(false)}
-                                    className="flex-1 px-6 py-3 border border-gray-300 rounded-lg font-semibold text-[15px] hover:bg-gray-50 transition-colors"
-                                >
-                                    Batal
-                                </button>
-                                <button
-                                    onClick={handleManualSubmit}
-                                    disabled={isSubmitting}
-                                    className="flex-1 gradient-primary text-white px-6 py-3 rounded-lg font-semibold text-[15px] hover:opacity-90 transition-opacity disabled:opacity-50"
-                                >
-                                    {isSubmitting ? 'Mengirim...' : 'Kirim Data'}
-                                </button>
+                            <div className="flex flex-col gap-3 pt-2">
+                                {errors.submit && (
+                                    <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-[13px] rounded-lg">
+                                        {errors.submit}
+                                    </div>
+                                )}
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setOpen(false)}
+                                        className="flex-1 px-6 py-3 border border-gray-300 rounded-lg font-semibold text-[15px] hover:bg-gray-50 transition-colors"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        onClick={handleManualSubmit}
+                                        disabled={isSubmitting}
+                                        className="flex-1 gradient-primary text-white px-6 py-3 rounded-lg font-semibold text-[15px] hover:opacity-90 transition-opacity disabled:opacity-50"
+                                    >
+                                        {isSubmitting ? 'Mengirim...' : 'Kirim Data'}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

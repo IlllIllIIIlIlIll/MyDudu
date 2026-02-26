@@ -23,6 +23,7 @@ export function ScheduleDialog({ onSuccess, trigger }: ScheduleDialogProps) {
         villageId: user?.villageId || '',
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const today = new Date().toISOString().split('T')[0];
     const isDateInvalid = form.eventDate !== '' && form.eventDate < today;
@@ -47,21 +48,25 @@ export function ScheduleDialog({ onSuccess, trigger }: ScheduleDialogProps) {
     const timeInvalid = isTimeInvalid();
 
     const handleSubmit = async () => {
-        if (!form.title || !form.eventDate || !form.posyanduName) {
-            alert("Nama Kegiatan, Tanggal, dan Lokasi Posyandu wajib diisi");
-            return;
-        }
+        const newErrors: Record<string, string> = {};
+        if (!form.title) newErrors.title = 'Wajib diisi';
+        if (!form.eventDate) newErrors.eventDate = 'Wajib diisi';
+        if (!form.posyanduName) newErrors.posyanduName = 'Wajib diisi';
 
         if (isDateInvalid) {
-            alert("Tanggal tidak boleh di masa lalu");
-            return;
+            newErrors.eventDate = 'Tanggal tidak boleh di masa lalu';
         }
 
         if (timeInvalid) {
-            alert("Waktu tidak valid. Pastikan waktu mulai tidak di masa lalu (jika hari ini), dan waktu selesai harus setelah waktu mulai.");
+            newErrors.time = 'Waktu tidak valid';
+        }
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
 
+        setErrors({});
         setIsSubmitting(true);
         try {
             await fetchWithAuth('/schedules', {
@@ -71,7 +76,6 @@ export function ScheduleDialog({ onSuccess, trigger }: ScheduleDialogProps) {
                     villageId: user?.villageId ? Number(user.villageId) : undefined,
                 })
             });
-            alert("Agenda berhasil ditambahkan!");
             setForm({
                 title: '',
                 description: '',
@@ -84,7 +88,7 @@ export function ScheduleDialog({ onSuccess, trigger }: ScheduleDialogProps) {
             setOpen(false);
             if (onSuccess) onSuccess();
         } catch (e: any) {
-            alert("Gagal menambahkan agenda: " + e.message);
+            setErrors({ submit: "Gagal menambahkan agenda: " + e.message });
         } finally {
             setIsSubmitting(false);
         }
@@ -127,9 +131,13 @@ export function ScheduleDialog({ onSuccess, trigger }: ScheduleDialogProps) {
                                     type="text"
                                     placeholder="Contoh: Posyandu Rutin (Imunisasi)"
                                     value={form.title}
-                                    onChange={(e) => setForm({ ...form, title: e.target.value })}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
+                                    onChange={(e) => {
+                                        setForm({ ...form, title: e.target.value });
+                                        setErrors(prev => ({ ...prev, title: '' }));
+                                    }}
+                                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px] ${errors.title ? 'border-red-500' : 'border-gray-300'}`}
                                 />
+                                {errors.title && <p className="text-red-500 text-xs mt-1 font-medium">{errors.title}</p>}
                             </div>
 
                             <div className="space-y-1.5">
@@ -149,9 +157,13 @@ export function ScheduleDialog({ onSuccess, trigger }: ScheduleDialogProps) {
                                     type="text"
                                     placeholder="Contoh: Posyandu Melati 1"
                                     value={form.posyanduName}
-                                    onChange={(e) => setForm({ ...form, posyanduName: e.target.value })}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
+                                    onChange={(e) => {
+                                        setForm({ ...form, posyanduName: e.target.value });
+                                        setErrors(prev => ({ ...prev, posyanduName: '' }));
+                                    }}
+                                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px] ${errors.posyanduName ? 'border-red-500' : 'border-gray-300'}`}
                                 />
+                                {errors.posyanduName && <p className="text-red-500 text-xs mt-1 font-medium">{errors.posyanduName}</p>}
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -180,27 +192,37 @@ export function ScheduleDialog({ onSuccess, trigger }: ScheduleDialogProps) {
                                     <input
                                         type="time"
                                         value={form.endTime}
-                                        onChange={(e) => setForm({ ...form, endTime: e.target.value })}
+                                        onChange={(e) => {
+                                            setForm({ ...form, endTime: e.target.value });
+                                            setErrors(prev => ({ ...prev, time: '' }));
+                                        }}
                                         className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-[15px] ${timeInvalid && form.endTime && form.startTime >= form.endTime ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-[#11998E]'}`}
                                     />
                                 </div>
                             </div>
-                            {timeInvalid && <div className="text-xs text-red-500 font-semibold">Waktu tidak valid. Periksa kembali jam mulai dan selesai.</div>}
+                            {(timeInvalid || errors.time) && <div className="text-xs text-red-500 font-semibold">{errors.time || 'Waktu tidak valid. Periksa kembali jam mulai dan selesai.'}</div>}
 
-                            <div className="flex gap-3 pt-4 border-t border-gray-100">
-                                <button
-                                    onClick={() => setOpen(false)}
-                                    className="flex-1 px-6 py-3 border border-gray-300 rounded-lg font-semibold text-[15px] hover:bg-gray-50 transition-colors"
-                                >
-                                    Batal
-                                </button>
-                                <button
-                                    onClick={handleSubmit}
-                                    disabled={isSubmitting}
-                                    className="flex-1 gradient-primary text-white px-6 py-3 rounded-lg font-semibold text-[15px] hover:opacity-90 transition-opacity disabled:opacity-50"
-                                >
-                                    {isSubmitting ? "Menyimpan..." : "Simpan Agenda"}
-                                </button>
+                            <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
+                                {errors.submit && (
+                                    <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-[13px] rounded-lg">
+                                        {errors.submit}
+                                    </div>
+                                )}
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setOpen(false)}
+                                        className="flex-1 px-6 py-3 border border-gray-300 rounded-lg font-semibold text-[15px] hover:bg-gray-50 transition-colors"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        onClick={handleSubmit}
+                                        disabled={isSubmitting}
+                                        className="flex-1 gradient-primary text-white px-6 py-3 rounded-lg font-semibold text-[15px] hover:opacity-90 transition-opacity disabled:opacity-50"
+                                    >
+                                        {isSubmitting ? "Menyimpan..." : "Simpan Agenda"}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -23,6 +23,7 @@ export function RegisterChildDialog({ onSuccess, trigger }: RegisterChildDialogP
     const [parents, setParents] = useState<any[]>([]);
     const [filteredParents, setFilteredParents] = useState<any[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
     const [isLoadingParents, setIsLoadingParents] = useState(false);
     const [showParentDropdown, setShowParentDropdown] = useState(false);
 
@@ -67,27 +68,33 @@ export function RegisterChildDialog({ onSuccess, trigger }: RegisterChildDialogP
     const isDateInvalid = form.birthDate > today;
 
     const handleSubmit = async () => {
-        if (!form.fullName || !form.birthDate || !form.gender || !form.parentId) {
-            alert("Nama, Tanggal Lahir, Jenis Kelamin, dan Orang Tua wajib diisi");
-            return;
-        }
+        const newErrors: Record<string, string> = {};
+        if (!form.fullName) newErrors.fullName = 'Wajib diisi';
+        if (!form.birthDate) newErrors.birthDate = 'Wajib diisi';
+        if (!form.gender) newErrors.gender = 'Wajib diisi';
+        if (!form.parentId) newErrors.parentName = 'Wajib pilih orang tua';
 
         if (isDateInvalid) {
+            newErrors.birthDate = 'Tanggal tidak valid';
+        }
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
 
+        setErrors({});
         setIsSubmitting(true);
         try {
             await fetchWithAuth('/children', {
                 method: 'POST',
                 body: JSON.stringify(form)
             });
-            alert("Anak berhasil didaftarkan!");
             setForm({ fullName: '', birthDate: '', gender: 'MALE', bloodType: 'UNKNOWN', parentId: '', parentName: '' });
             setOpen(false);
             if (onSuccess) onSuccess();
         } catch (e: any) {
-            alert("Gagal mendaftarkan: " + e.message);
+            setErrors({ submit: "Gagal mendaftarkan: " + e.message });
         } finally {
             setIsSubmitting(false);
         }
@@ -130,9 +137,13 @@ export function RegisterChildDialog({ onSuccess, trigger }: RegisterChildDialogP
                                     type="text"
                                     placeholder="Nama anak..."
                                     value={form.fullName}
-                                    onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
+                                    onChange={(e) => {
+                                        setForm({ ...form, fullName: e.target.value });
+                                        setErrors(prev => ({ ...prev, fullName: '' }));
+                                    }}
+                                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px] ${errors.fullName ? 'border-red-500' : 'border-gray-300'}`}
                                 />
+                                {errors.fullName && <p className="text-red-500 text-xs mt-1 font-medium">{errors.fullName}</p>}
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
@@ -141,10 +152,13 @@ export function RegisterChildDialog({ onSuccess, trigger }: RegisterChildDialogP
                                         type="date"
                                         max={today}
                                         value={form.birthDate}
-                                        onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
-                                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-[15px] ${isDateInvalid ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-[#11998E]'}`}
+                                        onChange={(e) => {
+                                            setForm({ ...form, birthDate: e.target.value });
+                                            setErrors(prev => ({ ...prev, birthDate: '' }));
+                                        }}
+                                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-[15px] ${(isDateInvalid || errors.birthDate) ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-[#11998E]'}`}
                                     />
-                                    {isDateInvalid && <span className="text-xs text-red-500">Tanggal tidak valid</span>}
+                                    {(isDateInvalid || errors.birthDate) && <span className="text-xs text-red-500 font-medium">{errors.birthDate || 'Tanggal tidak valid'}</span>}
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-[14px] font-semibold text-gray-700">Jenis Kelamin</label>
@@ -178,11 +192,14 @@ export function RegisterChildDialog({ onSuccess, trigger }: RegisterChildDialogP
                                     type="text"
                                     placeholder="Cari nama atau no. telepon..."
                                     value={form.parentName}
-                                    onChange={(e) => handleSearchParents(e.target.value)}
+                                    onChange={(e) => {
+                                        handleSearchParents(e.target.value);
+                                        setErrors(prev => ({ ...prev, parentName: '' }));
+                                    }}
                                     onFocus={() => setShowParentDropdown(true)}
-                                    // onBlur={() => setTimeout(() => setShowParentDropdown(false), 200)} // Delayed close to allow click
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
+                                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px] ${errors.parentName ? 'border-red-500' : 'border-gray-300'}`}
                                 />
+                                {errors.parentName && <p className="text-red-500 text-xs mt-1 font-medium">{errors.parentName}</p>}
 
 
                                 {showParentDropdown && (
@@ -228,20 +245,27 @@ export function RegisterChildDialog({ onSuccess, trigger }: RegisterChildDialogP
                                 )}
                             </div>
 
-                            <div className="flex gap-3 pt-2">
-                                <button
-                                    onClick={() => setOpen(false)}
-                                    className="flex-1 px-6 py-3 border border-gray-300 rounded-lg font-semibold text-[15px] hover:bg-gray-50 transition-colors"
-                                >
-                                    Batal
-                                </button>
-                                <button
-                                    onClick={handleSubmit}
-                                    disabled={isSubmitting}
-                                    className="flex-1 gradient-primary text-white px-6 py-3 rounded-lg font-semibold text-[15px] hover:opacity-90 transition-opacity disabled:opacity-50"
-                                >
-                                    {isSubmitting ? "Menyimpan..." : "Simpan"}
-                                </button>
+                            <div className="flex flex-col gap-3 pt-2">
+                                {errors.submit && (
+                                    <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-[13px] rounded-lg">
+                                        {errors.submit}
+                                    </div>
+                                )}
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setOpen(false)}
+                                        className="flex-1 px-6 py-3 border border-gray-300 rounded-lg font-semibold text-[15px] hover:bg-gray-50 transition-colors"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        onClick={handleSubmit}
+                                        disabled={isSubmitting}
+                                        className="flex-1 gradient-primary text-white px-6 py-3 rounded-lg font-semibold text-[15px] hover:opacity-90 transition-opacity disabled:opacity-50"
+                                    >
+                                        {isSubmitting ? "Menyimpan..." : "Simpan"}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

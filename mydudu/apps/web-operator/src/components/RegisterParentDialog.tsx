@@ -19,6 +19,7 @@ export function RegisterParentDialog({ onSuccess, trigger }: RegisterParentDialo
         villageName: '',
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
     const [villages, setVillages] = useState<any[]>([]);
     const [showVillageDropdown, setShowVillageDropdown] = useState(false);
 
@@ -37,11 +38,17 @@ export function RegisterParentDialog({ onSuccess, trigger }: RegisterParentDialo
     };
 
     const handleSubmit = async () => {
-        if (!form.fullName || !form.phoneNumber || !form.villageId) {
-            alert("Nama, No. Telepon, dan Desa wajib diisi");
+        const newErrors: Record<string, string> = {};
+        if (!form.fullName) newErrors.fullName = 'Wajib diisi';
+        if (!form.phoneNumber) newErrors.phoneNumber = 'Wajib diisi';
+        if (!form.villageId) newErrors.villageName = 'Wajib pilih desa';
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
 
+        setErrors({});
         setIsSubmitting(true);
         try {
             await fetchWithAuth('/users/parent', {
@@ -52,12 +59,11 @@ export function RegisterParentDialog({ onSuccess, trigger }: RegisterParentDialo
                     villageId: Number(form.villageId),
                 })
             });
-            alert("Wali berhasil didaftarkan!");
             setForm({ fullName: '', phoneNumber: '', villageId: '', villageName: '' });
             setOpen(false);
             if (onSuccess) onSuccess();
         } catch (e: any) {
-            alert("Gagal mendaftarkan: " + e.message);
+            setErrors({ submit: "Gagal mendaftarkan: " + e.message });
         } finally {
             setIsSubmitting(false);
         }
@@ -100,9 +106,13 @@ export function RegisterParentDialog({ onSuccess, trigger }: RegisterParentDialo
                                     type="text"
                                     placeholder="Nama lengkap..."
                                     value={form.fullName}
-                                    onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
+                                    onChange={(e) => {
+                                        setForm({ ...form, fullName: e.target.value });
+                                        setErrors(prev => ({ ...prev, fullName: '' }));
+                                    }}
+                                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px] ${errors.fullName ? 'border-red-500' : 'border-gray-300'}`}
                                 />
+                                {errors.fullName && <p className="text-red-500 text-xs mt-1 font-medium">{errors.fullName}</p>}
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[14px] font-semibold text-gray-700">No. Telepon (Wajib)</label>
@@ -110,9 +120,13 @@ export function RegisterParentDialog({ onSuccess, trigger }: RegisterParentDialo
                                     type="tel"
                                     placeholder="08..."
                                     value={form.phoneNumber}
-                                    onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
+                                    onChange={(e) => {
+                                        setForm({ ...form, phoneNumber: e.target.value });
+                                        setErrors(prev => ({ ...prev, phoneNumber: '' }));
+                                    }}
+                                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px] ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'}`}
                                 />
+                                {errors.phoneNumber && <p className="text-red-500 text-xs mt-1 font-medium">{errors.phoneNumber}</p>}
                             </div>
                             <div className="space-y-1.5 relative">
                                 <label className="text-[14px] font-semibold text-gray-700">Desa/Kelurahan</label>
@@ -123,13 +137,15 @@ export function RegisterParentDialog({ onSuccess, trigger }: RegisterParentDialo
                                     onChange={(e) => {
                                         const val = e.target.value;
                                         setForm(prev => ({ ...prev, villageName: val, villageId: '' }));
+                                        setErrors(prev => ({ ...prev, villageName: '' }));
                                         searchVillages(val);
                                     }}
                                     onFocus={() => {
                                         if (villages.length > 0) setShowVillageDropdown(true);
                                     }}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
+                                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px] ${errors.villageName ? 'border-red-500' : 'border-gray-300'}`}
                                 />
+                                {errors.villageName && <p className="text-red-500 text-xs mt-1 font-medium">{errors.villageName}</p>}
 
 
                                 {/* Autocomplete Dropdown */}
@@ -159,20 +175,27 @@ export function RegisterParentDialog({ onSuccess, trigger }: RegisterParentDialo
                                 )}
                             </div>
 
-                            <div className="flex gap-3 pt-2">
-                                <button
-                                    onClick={() => setOpen(false)}
-                                    className="flex-1 px-6 py-3 border border-gray-300 rounded-lg font-semibold text-[15px] hover:bg-gray-50 transition-colors"
-                                >
-                                    Batal
-                                </button>
-                                <button
-                                    onClick={handleSubmit}
-                                    disabled={isSubmitting}
-                                    className="flex-1 gradient-primary text-white px-6 py-3 rounded-lg font-semibold text-[15px] hover:opacity-90 transition-opacity disabled:opacity-50"
-                                >
-                                    {isSubmitting ? "Menyimpan..." : "Simpan"}
-                                </button>
+                            <div className="flex flex-col gap-3 pt-4 mt-2">
+                                {errors.submit && (
+                                    <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-[13px] rounded-lg">
+                                        {errors.submit}
+                                    </div>
+                                )}
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setOpen(false)}
+                                        className="flex-1 px-6 py-3 border border-gray-300 rounded-lg font-semibold text-[15px] hover:bg-gray-50 transition-colors"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        onClick={handleSubmit}
+                                        disabled={isSubmitting}
+                                        className="flex-1 gradient-primary text-white px-6 py-3 rounded-lg font-semibold text-[15px] hover:opacity-90 transition-opacity disabled:opacity-50"
+                                    >
+                                        {isSubmitting ? "Mendaftar..." : "Daftarkan Ibu"}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
