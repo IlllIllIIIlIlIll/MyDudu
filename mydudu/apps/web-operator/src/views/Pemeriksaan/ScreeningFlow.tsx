@@ -741,47 +741,40 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                         const isLarge = count <= 4;
                         const isHugeCount = count > 6;
 
-                        // Use flex-grow and min-width to ensure they consume ALL space horizontally & vertically.
-                        // flex-1 forces equal width growth among brothers in a row.
+                        // Use flex-grow and min-width to ensure they consume ALL space horizontally
                         return (
                           <div
                             key={i}
                             className={cn(
-                              "@container border rounded-xl flex flex-col justify-center transition-colors shadow-sm",
-                              "flex-1 min-h-0",
+                              "border rounded-xl flex flex-col justify-center transition-colors shadow-sm",
+                              "flex-1",
                               isGiant
-                                ? "p-[clamp(1.5rem,5cqmin,3rem)] min-w-[100%] md:min-w-[45%]"
+                                ? "p-10 min-w-[100%] md:min-w-[45%] min-h-[300px]"
                                 : isLarge
-                                  ? "p-[clamp(1.25rem,4cqmin,2.5rem)] min-w-[45%]"
+                                  ? "p-8 min-w-[45%] min-h-[220px]"
                                   : isHugeCount
-                                    ? "p-[clamp(0.75rem,2cqmin,1.5rem)] min-w-[200px]"
-                                    : "p-[clamp(1rem,3cqmin,2rem)] min-w-[30%] md:min-w-[30%]"
+                                    ? "p-4 min-w-[200px] min-h-[140px]"
+                                    : "p-6 min-w-[30%] md:min-w-[30%] min-h-[180px]"
                             )}
                             style={{ backgroundColor: col.bg, borderColor: col.border }}
                           >
                             <div className={cn(
                               "font-semibold text-slate-600 truncate",
-                              isGiant ? "text-[clamp(1.25rem,5cqmin,2rem)] mb-[clamp(0.5rem,3cqmin,1.5rem)]"
-                                : isLarge ? "text-[clamp(1rem,4cqmin,1.5rem)] mb-[clamp(0.25rem,2cqmin,1rem)]"
-                                  : "text-[clamp(0.875rem,3cqmin,1.125rem)] mb-[clamp(0.25rem,1.5cqmin,0.75rem)]"
+                              isGiant ? "text-2xl mb-6" : isLarge ? "text-xl mb-4" : "text-sm mb-2"
                             )}>
                               {item.label}
                             </div>
 
-                            <div className="flex items-baseline gap-[clamp(0.25rem,2cqmin,1rem)]">
+                            <div className="flex items-baseline gap-2">
                               <span className={cn(
-                                "tabular-nums font-bold tracking-tight leading-none",
-                                isGiant ? "text-[clamp(4rem,25cqmin,8rem)]"
-                                  : isLarge ? "text-[clamp(3rem,20cqmin,6rem)]"
-                                    : "text-[clamp(2rem,15cqmin,4.5rem)]"
+                                "tabular-nums font-bold tracking-tight",
+                                isGiant ? "text-[6rem] leading-none" : isLarge ? "text-6xl" : "text-5xl"
                               )}>
                                 {item.value}
                               </span>
                               <span className={cn(
                                 "text-slate-500 font-medium",
-                                isGiant ? "text-[clamp(1.5rem,10cqmin,2.5rem)]"
-                                  : isLarge ? "text-[clamp(1.25rem,8cqmin,2rem)]"
-                                    : "text-[clamp(1rem,6cqmin,1.5rem)] ml-1"
+                                isGiant ? "text-3xl ml-2" : isLarge ? "text-2xl" : "text-lg"
                               )}>
                                 {item.unit}
                               </span>
@@ -790,9 +783,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                             {item.normalRange && (
                               <div className={cn(
                                 "font-medium text-slate-500",
-                                isGiant ? "mt-[clamp(0.75rem,3cqmin,2rem)] text-[clamp(0.875rem,3cqmin,1.25rem)]"
-                                  : isLarge ? "mt-[clamp(0.5rem,2cqmin,1.5rem)] text-[clamp(0.75rem,2.5cqmin,1rem)]"
-                                    : "mt-[clamp(0.25rem,1.5cqmin,1rem)] text-[clamp(10px,2cqmin,0.875rem)]"
+                                isGiant ? "mt-6 text-base" : isLarge ? "mt-4 text-sm" : "mt-2 text-[11px]"
                               )}>
                                 {item.normalRange}
                               </div>
@@ -821,7 +812,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                   */}
 
                   {/* ================= CTA ================= */}
-                  <div className="shrink-0 mt-auto pt-2 md:pt-0">
+                  <div className="shrink-0 mt-4">
                     <button
                       onClick={() => {
                         setClinicalSessionId(null);
@@ -829,9 +820,9 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                         setClinicalOutcome(null);
                         setPhase('QUIZ');
                       }}
-                      className="w-full @container flex justify-center items-center py-[clamp(0.75rem,3cqmin,1rem)] bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition-all min-h-[3rem]"
+                      className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-lg font-semibold transition-all"
                     >
-                      <span className="font-semibold text-[clamp(0.875rem,4cqmin,1.125rem)]">Analisis Gejala Lanjutan</span>
+                      Analisis Gejala Lanjutan
                     </button>
                   </div>
 
