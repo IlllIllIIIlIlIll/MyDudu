@@ -27,7 +27,7 @@ export function QuizCard({ label, type, image, onClick }: QuizCardProps) {
             </div>
 
             {/* Blurry transparent overlay over the image for better text contrast */}
-            <div className="absolute inset-0 bg-white/30 backdrop-blur-sm z-[5]"></div>
+            <div className="absolute inset-0 bg-white/20 backdrop-blur-[3px] z-[5]"></div>
             {/* Content — large bordered 3D text */}
             <div className="relative z-10 w-full h-full flex flex-col items-center justify-center p-4 text-center">
                 <h3
