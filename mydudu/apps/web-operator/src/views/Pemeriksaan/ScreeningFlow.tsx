@@ -761,28 +761,28 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                             style={{ backgroundColor: col.bg, borderColor: col.border }}
                           >
                             <div className={cn(
-                              "font-semibold text-slate-600 truncate",
-                              isGiant ? "text-[clamp(1rem,4cqi,2rem)] mb-[clamp(0.5rem,3cqh,1.5rem)]"
-                                : isLarge ? "text-[clamp(0.875rem,3cqi,1.5rem)] mb-[clamp(0.5rem,2cqh,1.25rem)]"
-                                  : "text-[clamp(0.75rem,2.5cqi,1.125rem)] mb-[clamp(0.25rem,1.5cqh,0.75rem)]"
+                              "font-semibold text-slate-600 leading-tight line-clamp-2",
+                              isGiant ? "text-[clamp(1.125rem,6cqmin,2.5rem)] mb-[clamp(0.5rem,3cqh,1.5rem)]"
+                                : isLarge ? "text-[clamp(1rem,5cqmin,2rem)] mb-[clamp(0.5rem,2cqh,1.25rem)]"
+                                  : "text-[clamp(0.875rem,4cqmin,1.5rem)] mb-[clamp(0.25rem,1.5cqh,0.75rem)]"
                             )}>
                               {item.label}
                             </div>
 
-                            <div className="flex items-baseline gap-[clamp(0.25rem,2cqi,1rem)] min-h-0">
+                            <div className="flex items-baseline gap-[clamp(0.25rem,2cqmin,1rem)] min-h-0">
                               <span className={cn(
                                 "tabular-nums font-bold tracking-tight leading-none",
-                                isGiant ? "text-[clamp(3.5rem,25cqi,8rem)]"
-                                  : isLarge ? "text-[clamp(2.5rem,18cqi,6rem)]"
-                                    : "text-[clamp(2rem,15cqi,4.5rem)]"
+                                isGiant ? "text-[clamp(3.5rem,25cqmin,8rem)]"
+                                  : isLarge ? "text-[clamp(2.5rem,18cqmin,6rem)]"
+                                    : "text-[clamp(2rem,15cqmin,4.5rem)]"
                               )}>
                                 {item.value}
                               </span>
                               <span className={cn(
                                 "text-slate-500 font-medium",
-                                isGiant ? "text-[clamp(1.25rem,8cqi,2.5rem)]"
-                                  : isLarge ? "text-[clamp(1rem,6cqi,2rem)]"
-                                    : "text-[clamp(0.875rem,5cqi,1.5rem)]"
+                                isGiant ? "text-[clamp(1.25rem,8cqmin,2.5rem)]"
+                                  : isLarge ? "text-[clamp(1rem,6cqmin,2rem)]"
+                                    : "text-[clamp(0.875rem,5cqmin,1.5rem)]"
                               )}>
                                 {item.unit}
                               </span>
@@ -790,10 +790,10 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
 
                             {item.normalRange && (
                               <div className={cn(
-                                "font-medium text-slate-500 truncate",
-                                isGiant ? "mt-[clamp(0.75rem,4cqh,2rem)] text-[clamp(0.875rem,3cqi,1.25rem)]"
-                                  : isLarge ? "mt-[clamp(0.5rem,3cqh,1.5rem)] text-[clamp(0.75rem,2.5cqi,1rem)]"
-                                    : "mt-[clamp(0.25rem,2cqh,1rem)] text-[clamp(10px,2cqi,0.875rem)]"
+                                "font-medium text-slate-500 leading-snug break-words",
+                                isGiant ? "mt-[clamp(0.75rem,4cqh,2rem)] text-[clamp(0.875rem,4cqmin,1.5rem)]"
+                                  : isLarge ? "mt-[clamp(0.5rem,3cqh,1.5rem)] text-[clamp(0.75rem,3cqmin,1.25rem)]"
+                                    : "mt-[clamp(0.25rem,2cqh,1rem)] text-[clamp(0.65rem,2.5cqmin,1rem)]"
                               )}>
                                 {item.normalRange}
                               </div>
