@@ -739,6 +739,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                         // Dynamic scaling logic based on card count to ensure they fill perfectly
                         const isGiant = count <= 2;
                         const isLarge = count <= 4;
+                        const isFiveCount = count === 5;
                         const isHugeCount = count > 6;
 
                         // By using @container and robust `clamp()` sizing, we ensure text scales smoothly with width (cqi)
@@ -754,9 +755,13 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                                 ? "p-[clamp(1.25rem,5cqi,3rem)] min-w-[250px]"
                                 : isLarge
                                   ? "p-[clamp(1rem,4cqi,2.5rem)] min-w-[200px]"
-                                  : isHugeCount
-                                    ? "p-[clamp(0.5rem,3cqi,1.5rem)] min-w-[150px]"
-                                    : "p-[clamp(0.75rem,4cqi,2rem)] min-w-[150px] md:min-w-[30%]"
+                                  : isFiveCount
+                                    ? i < 2
+                                      ? "p-[clamp(1rem,4cqi,2.5rem)] min-w-[45%]"
+                                      : "p-[clamp(0.75rem,3cqi,2rem)] min-w-[30%]"
+                                    : isHugeCount
+                                      ? "p-[clamp(0.5rem,3cqi,1.5rem)] min-w-[150px]"
+                                      : "p-[clamp(0.75rem,4cqi,2rem)] min-w-[150px] md:min-w-[30%]"
                             )}
                             style={{ backgroundColor: col.bg, borderColor: col.border }}
                           >
