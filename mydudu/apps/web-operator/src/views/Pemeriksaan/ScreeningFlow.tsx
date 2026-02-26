@@ -662,12 +662,12 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
 
             {/* --- PHASE 2: VITALS (AUTO) --- */}
             {phase === 'VITALS' && selectedPatient && selectedSession && (
-              <div className="h-full w-full flex-1 flex flex-col px-4 md:px-8 lg:px-12 py-4 md:py-8 overflow-y-auto overflow-x-hidden">
+              <div className="h-full w-full flex-1 flex flex-col px-4 md:px-8 lg:px-12 py-4 md:py-8 overflow-y-auto overflow-x-hidden min-h-0">
 
-                <div className="h-full grid grid-rows-[auto_auto_1fr_auto] gap-8">
+                <div className="flex-1 min-h-0 flex flex-col gap-4 md:gap-8">
 
                   {/* ================= HEADER ================= */}
-                  <div>
+                  <div className="shrink-0">
                     <h1 className="text-3xl font-bold text-slate-900">
                       Data Biometrik Pasien
                     </h1>
@@ -821,7 +821,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                   */}
 
                   {/* ================= CTA ================= */}
-                  <div>
+                  <div className="shrink-0 mt-auto pt-2 md:pt-0">
                     <button
                       onClick={() => {
                         setClinicalSessionId(null);
@@ -829,9 +829,9 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                         setClinicalOutcome(null);
                         setPhase('QUIZ');
                       }}
-                      className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-lg font-semibold transition-all"
+                      className="w-full @container flex justify-center items-center py-[clamp(0.75rem,3cqmin,1rem)] bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition-all min-h-[3rem]"
                     >
-                      Analisis Gejala Lanjutan
+                      <span className="font-semibold text-[clamp(0.875rem,4cqmin,1.125rem)]">Analisis Gejala Lanjutan</span>
                     </button>
                   </div>
 
