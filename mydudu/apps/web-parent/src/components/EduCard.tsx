@@ -39,7 +39,7 @@ export function EduCard({ title, description, image, category, onClick }: EduCar
       <div className="p-4">
         <h3 className="mb-2 line-clamp-2">{title}</h3>
         <p className="text-sm text-gray-600 line-clamp-2 mb-3">{description}</p>
-        <button className="flex items-center gap-1 text-sm font-medium text-gradient">
+        <button className="flex items-center gap-1 text-sm font-medium text-[#129c8d]">
           Baca Selengkapnya
           <ChevronRight className="w-4 h-4" />
         </button>

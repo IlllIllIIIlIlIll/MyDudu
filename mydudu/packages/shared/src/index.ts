@@ -21,14 +21,17 @@ export const VITALS_THRESHOLDS = {
     TEMPERATURE: {
         MIN_SAFE: 36.5,
         MAX_SAFE: 37.5,
+        MILD_FEVER_MIN: 37.6,
         MILD_FEVER_MAX: 38.0,
+        MODERATE_FEVER_MIN: 38.1,
         MODERATE_FEVER_MAX: 39.0,
         HYPOTHERMIA: 35.5
     },
     HEART_RATE: {
         NEWBORN: { MIN: 70, MAX: 190 }, // < 1 month
         BABY: { MIN: 80, MAX: 160 },    // < 12 months
-        CHILD: { MIN: 70, MAX: 130 }    // >= 12 months
+        CHILD: { MIN: 70, MAX: 130 },   // >= 12 months
+        EDGE_WARNING_BPM: 10
     },
     SPO2: {
         NORMAL_MIN: 95,
@@ -37,6 +40,7 @@ export const VITALS_THRESHOLDS = {
     },
     NOISE: {
         SAFE_MAX: 54,
+        MODERATE_MAX: 70,
         WARNING_MAX: 85
     },
     BMI_FALLBACK: {
@@ -44,5 +48,8 @@ export const VITALS_THRESHOLDS = {
         WARNING_MIN: 13.5,
         WARNING_MAX: 18,
         DANGER_MAX: 20
+    },
+    DEFAULT_FALLBACKS: {
+        NO_DATA: 0
     }
 } as const;

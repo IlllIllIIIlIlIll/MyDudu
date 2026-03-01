@@ -7,8 +7,7 @@ import {
   Thermometer,
   Activity,
   Maximize2,
-  User,
-  LogOut
+  User
 } from 'lucide-react';
 import { LoginPage } from '../components/LoginPage';
 import { ChildSelector } from '../components/ChildSelector';
@@ -20,6 +19,7 @@ import { TrendChart } from '../components/TrendChart';
 import { EduCard } from '../components/EduCard';
 import { ConsultationRecord } from '../components/ConsultationRecord';
 import { TabNavigation } from '../components/TabNavigation';
+import { MoreMenu } from '../components/MoreMenu';
 import { ConsultationButton } from '../components/ConsultationButton';
 import { DashboardSkeleton, ChartSkeleton } from '../components/LoadingSkeleton';
 import {
@@ -32,7 +32,7 @@ import {
 } from '../utils/mockData';
 import { VITALS_THRESHOLDS, AGE_THRESHOLDS } from '@mydudu/shared';
 
-type TabType = 'home' | 'history';
+type TabType = 'home' | 'history' | 'more';
 
 export default function Home() {
   /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -106,7 +106,7 @@ export default function Home() {
       if (isStunted || isWasted) bmiStatus = 'danger';
       else if (isObese) bmiStatus = 'warning';
       else bmiStatus = 'normal';
-    } else if (bmi > 0) {
+    } else if (bmi > VITALS_THRESHOLDS.DEFAULT_FALLBACKS.NO_DATA) {
       // Fallback rough calculation if no backend data is generated yet
       if (bmi < VITALS_THRESHOLDS.BMI_FALLBACK.WARNING_MIN || bmi > VITALS_THRESHOLDS.BMI_FALLBACK.WARNING_MAX) bmiStatus = 'warning';
       if (bmi < VITALS_THRESHOLDS.BMI_FALLBACK.DANGER_MIN || bmi > VITALS_THRESHOLDS.BMI_FALLBACK.DANGER_MAX) bmiStatus = 'danger';
@@ -115,22 +115,15 @@ export default function Home() {
     // Temperature Logic
     const temp = latestSession?.temperature ? Number(latestSession.temperature) : 0;
     let tempStatus: 'normal' | 'warning' | 'danger' = 'normal';
-    // Well: 36.5 – 37.5
-    // Mild risk: 37.6 – 38.0
-    // Moderate risk: 38.1 – 39.0
-    // Bad: > 39.0 OR < 35.5
-    if (temp >= 37.6 && temp <= 38.0) tempStatus = 'warning';
-    else if (temp >= 38.1 && temp <= VITALS_THRESHOLDS.TEMPERATURE.MODERATE_FEVER_MAX) tempStatus = 'warning'; // Mapping moderate to warning for card visual
+    if (temp >= VITALS_THRESHOLDS.TEMPERATURE.MILD_FEVER_MIN && temp <= VITALS_THRESHOLDS.TEMPERATURE.MILD_FEVER_MAX) tempStatus = 'warning';
+    else if (temp >= VITALS_THRESHOLDS.TEMPERATURE.MODERATE_FEVER_MIN && temp <= VITALS_THRESHOLDS.TEMPERATURE.MODERATE_FEVER_MAX) tempStatus = 'warning'; // Mapping moderate to warning for card visual
     else if (temp > VITALS_THRESHOLDS.TEMPERATURE.MODERATE_FEVER_MAX || temp < VITALS_THRESHOLDS.TEMPERATURE.HYPOTHERMIA) tempStatus = 'danger';
     else if (temp < VITALS_THRESHOLDS.TEMPERATURE.MIN_SAFE && temp >= VITALS_THRESHOLDS.TEMPERATURE.HYPOTHERMIA) tempStatus = 'warning'; // Gap handling: 35.5-36.4 is usually mildly low
 
     // Heart Rate Logic — age-appropriate ranges
-    // Newborn 0–1 month : 70–190 BPM
-    // Baby    1–12 months: 80–160 BPM
-    // Child   1–10 years : 70–130 BPM
-    const hr = latestSession?.heartRate ? Number(latestSession.heartRate) : 0;
+    const hr = latestSession?.heartRate ? Number(latestSession.heartRate) : VITALS_THRESHOLDS.DEFAULT_FALLBACKS.NO_DATA;
     let hrStatus: 'normal' | 'warning' | 'danger' = 'normal';
-    if (hr > 0) {
+    if (hr > VITALS_THRESHOLDS.DEFAULT_FALLBACKS.NO_DATA) {
       const birthDate = new Date(child.birthDate);
       const now = new Date();
       const ageMonthsHR = (now.getFullYear() - birthDate.getFullYear()) * 12 + (now.getMonth() - birthDate.getMonth());
@@ -138,7 +131,7 @@ export default function Home() {
       if (ageMonthsHR < AGE_THRESHOLDS.NEWBORN_MAX_MONTHS) { hrMin = VITALS_THRESHOLDS.HEART_RATE.NEWBORN.MIN; hrMax = VITALS_THRESHOLDS.HEART_RATE.NEWBORN.MAX; } // newborn
       else if (ageMonthsHR < AGE_THRESHOLDS.BABY_MAX_MONTHS) { hrMin = VITALS_THRESHOLDS.HEART_RATE.BABY.MIN; hrMax = VITALS_THRESHOLDS.HEART_RATE.BABY.MAX; } // baby
       else { hrMin = VITALS_THRESHOLDS.HEART_RATE.CHILD.MIN; hrMax = VITALS_THRESHOLDS.HEART_RATE.CHILD.MAX; } // child
-      const nearEdge = hr < hrMin + 10 || hr > hrMax - 10;
+      const nearEdge = hr < hrMin + VITALS_THRESHOLDS.HEART_RATE.EDGE_WARNING_BPM || hr > hrMax - VITALS_THRESHOLDS.HEART_RATE.EDGE_WARNING_BPM;
       if (hr < hrMin || hr > hrMax) hrStatus = 'danger';
       else if (nearEdge) hrStatus = 'warning';
     }
@@ -151,14 +144,14 @@ export default function Home() {
     const noise = (latestSession as any)?.noiseLevel ? Number((latestSession as any).noiseLevel) : 45; // Mock fallback
     let noiseStatus: 'normal' | 'warning' | 'danger' = 'normal';
     if (noise <= VITALS_THRESHOLDS.NOISE.SAFE_MAX) noiseStatus = 'normal';
-    else if (noise > VITALS_THRESHOLDS.NOISE.SAFE_MAX && noise <= 70) noiseStatus = 'warning';
-    else if (noise > 70 && noise <= VITALS_THRESHOLDS.NOISE.WARNING_MAX) noiseStatus = 'warning';
+    else if (noise > VITALS_THRESHOLDS.NOISE.SAFE_MAX && noise <= VITALS_THRESHOLDS.NOISE.MODERATE_MAX) noiseStatus = 'warning';
+    else if (noise > VITALS_THRESHOLDS.NOISE.MODERATE_MAX && noise <= VITALS_THRESHOLDS.NOISE.WARNING_MAX) noiseStatus = 'warning';
     else if (noise > VITALS_THRESHOLDS.NOISE.WARNING_MAX) noiseStatus = 'danger';
 
     // SpO2 Logic — 95–100%: normal, 90–94%: warning, <90%: danger
     const spo2 = (latestSession as any)?.spo2 ? Number((latestSession as any).spo2) : 98; // Mock fallback
     let spo2Status: 'normal' | 'warning' | 'danger' = 'normal';
-    if (spo2 > 0) {
+    if (spo2 > VITALS_THRESHOLDS.DEFAULT_FALLBACKS.NO_DATA) {
       if (spo2 >= VITALS_THRESHOLDS.SPO2.NORMAL_MIN) spo2Status = 'normal';
       else if (spo2 >= VITALS_THRESHOLDS.SPO2.WARNING_MIN) spo2Status = 'warning';
       else spo2Status = 'danger';
@@ -359,35 +352,30 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
-      <div className="gradient-primary text-white px-4 pt-6 pb-8 rounded-b-3xl shadow-lg sticky top-0 z-40">
-        <div className="max-w-md mx-auto">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-white mb-1">{userData?.fullName}</h1>
-              <p className="text-sm text-white/90">MyDudu</p>
+      {activeTab !== 'more' && (
+        <div className="gradient-primary text-white px-4 pt-6 pb-8 rounded-b-3xl shadow-lg sticky top-0 z-40">
+          <div className="max-w-md mx-auto">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h1 className="text-white mb-1">{userData?.fullName}</h1>
+                <p className="text-sm text-white/90">MyDudu</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <NotificationBell
+                  count={unreadCount}
+                  onClick={() => setIsNotificationOpen(true)}
+                />
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <NotificationBell
-                count={unreadCount}
-                onClick={() => setIsNotificationOpen(true)}
-              />
-              <button
-                onClick={handleLogout}
-                className="p-2 hover:bg-white/10 rounded-xl transition-colors"
-                title="Keluar"
-              >
-                <LogOut className="w-6 h-6 text-white" />
-              </button>
-            </div>
-          </div>
 
-          <ChildSelector
-            children={availableChildren}
-            selectedChildId={selectedChildId}
-            onSelect={setSelectedChildId}
-          />
+            <ChildSelector
+              children={availableChildren}
+              selectedChildId={selectedChildId}
+              onSelect={setSelectedChildId}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main Content */}
       <div className="max-w-md mx-auto px-4 mt-6">
@@ -396,29 +384,33 @@ export default function Home() {
           <div className="space-y-6">
             {/* Overall Status */}
             <div>
-              <h2 className="mb-4">Status Kesehatan Anak</h2>
-              {isLoading ? (
-                <div className="bg-gray-100 rounded-2xl h-48 animate-pulse" />
-              ) : childData ? (
-                <StatusCard
-                  status={childData.overallStatus}
-                  causes={childData.statusCauses}
-                  symptoms={childData.statusSymptoms}
-                />
-              ) : (
-                <div className="p-4 bg-gray-100 rounded-xl text-center text-gray-500">
-                  Pilih anak untuk melihat status kesehatan
-                </div>
-              )}
+              <h2 className="mb-4 px-2">Status Kesehatan Anak</h2>
+              <div className="px-2">
+                {isLoading ? (
+                  <div className="bg-gray-100 rounded-2xl h-48 animate-pulse" />
+                ) : childData ? (
+                  <StatusCard
+                    status={childData.overallStatus}
+                    causes={childData.statusCauses}
+                    symptoms={childData.statusSymptoms}
+                  />
+                ) : (
+                  <div className="p-4 bg-gray-100 rounded-xl text-center text-gray-500">
+                    Pilih anak untuk melihat status kesehatan
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Latest Metrics */}
             <div>
-              <h2 className="mb-4">Hasil Pemeriksaan Terakhir</h2>
+              <h2 className="mb-4 px-2">Hasil Pemeriksaan Terakhir</h2>
               {isLoading ? (
-                <DashboardSkeleton />
+                <div className="px-2">
+                  <DashboardSkeleton />
+                </div>
               ) : childData ? (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3 px-2">
                   <DashboardCard
                     icon={Scale}
                     label="Berat Badan"
@@ -481,22 +473,23 @@ export default function Home() {
 
             {/* Posyandu Schedule */}
             {childData && (
-              <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl p-5">
-                <h3 className="mb-2 font-semibold">Jadwal Posyandu Berikutnya</h3>
-                <p className="text-xl font-bold text-slate-800">{childData.nextPosyanduDate}</p>
-                {userData?.parentProfile?.village?.schedules?.[0] && (
-                  <p className="text-sm text-slate-600 mt-1">{userData.parentProfile.village.schedules[0].title}</p>
-                )}
+              <div className="px-2">
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl p-5">
+                  <h3 className="mb-2 font-semibold">Jadwal Posyandu Berikutnya</h3>
+                  <p className="text-xl font-bold text-slate-800">{childData.nextPosyanduDate}</p>
+                  {userData?.parentProfile?.village?.schedules?.[0] && (
+                    <p className="text-sm text-slate-600 mt-1">{userData.parentProfile.village.schedules[0].title}</p>
+                  )}
+                </div>
               </div>
             )}
 
             {/* Consultation Button */}
             {/* <ConsultationButton onClick={handleConsultation} /> */}
 
-            {/* Education Section */}
             <div className="pt-6 border-t-2 border-gray-200">
-              <h2 className="mb-4">Edukasi Kesehatan</h2>
-              <div className="grid gap-4">
+              <h2 className="mb-4 px-2">Edukasi Kesehatan</h2>
+              <div className="grid gap-4 px-2">
                 {educationArticles.map((article) => (
                   <EduCard
                     key={article.id}
@@ -517,14 +510,14 @@ export default function Home() {
           <div className="space-y-6">
             {/* Growth Charts */}
             <div>
-              <h2 className="mb-4">Grafik Pertumbuhan</h2>
+              <h2 className="mb-4 px-2">Grafik Pertumbuhan</h2>
               {!growthHistory ? (
-                <div className="space-y-4">
+                <div className="space-y-4 px-2">
                   <ChartSkeleton />
                   <ChartSkeleton />
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-4 px-2">
                   <TrendChart
                     title="Berat Badan"
                     data={growthHistory.weight}
@@ -543,37 +536,19 @@ export default function Home() {
                     color="#F59E0B"
                     yAxisLabel="°C"
                   />
-                  {/* <TrendChart
-                    title="Kadar Oksigen"
-                    data={growthHistory.oxygen}
-                    color="#3B82F6"
-                    yAxisLabel="%"
-                  />
-                  <TrendChart
-                    title="Lingkar Lengan"
-                    data={growthHistory.armCircumference}
-                    color="#8B5CF6"
-                    yAxisLabel="cm"
-                  />
-                  <TrendChart
-                    title="Lingkar Kepala"
-                    data={growthHistory.headCircumference}
-                    color="#EC4899"
-                    yAxisLabel="cm"
-                  /> */}
                 </div>
               )}
             </div>
 
             {/* Consultation History */}
             <div className="pt-6 border-t-2 border-gray-200">
-              <h2 className="mb-4">Riwayat Pemeriksaan</h2>
+              <h2 className="mb-4 px-2">Riwayat Pemeriksaan</h2>
               {consultationHistory.length === 0 ? (
-                <div className="text-center py-8">
+                <div className="text-center py-8 px-2">
                   <p className="text-gray-500">Belum ada riwayat pemeriksaan</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-4 px-2">
                   {consultationHistory.map((consultation) => (
                     <ConsultationRecord
                       key={consultation.id}
@@ -591,6 +566,10 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      {activeTab === 'more' && (
+        <MoreMenu onLogout={handleLogout} />
+      )}
 
       {/* Bottom Navigation */}
       <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
