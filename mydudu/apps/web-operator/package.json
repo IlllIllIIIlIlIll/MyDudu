@@ -11,6 +11,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^7.3.8",
+    "@mydudu/shared": "^1.0.0",
     "@mydudu/types": "^1.0.0",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",

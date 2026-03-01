@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhoGrowthIndicator, WhoGender, NutritionCategory } from '@prisma/client';
+import { Z_SCORE_THRESHOLDS, AGE_THRESHOLDS } from '@mydudu/shared';
 const chroma = require('chroma-js');
 
 export interface GrowthAnalysisResult {
@@ -165,10 +166,10 @@ export class GrowthService {
         switch (indicator) {
             case WhoGrowthIndicator.LENGTH_HEIGHT_FOR_AGE:
                 // Height-for-Age (Stunting)
-                if (zScore < -3) {
+                if (zScore <= Z_SCORE_THRESHOLDS.SEVERE_UNDER) {
                     status = NutritionCategory.STUNTED; // Map to closest DB enum
                     clinicalStatus = 'SEVERE_STUNTED';
-                } else if (zScore < -2) {
+                } else if (zScore <= Z_SCORE_THRESHOLDS.UNDER) {
                     status = NutritionCategory.STUNTED;
                     clinicalStatus = 'STUNTED';
                 } else {
@@ -180,16 +181,16 @@ export class GrowthService {
             case WhoGrowthIndicator.WEIGHT_FOR_LENGTH:
             case WhoGrowthIndicator.WEIGHT_FOR_HEIGHT:
                 // Weight-for-Length/Height (Wasting/Overweight)
-                if (zScore < -3) {
+                if (zScore <= Z_SCORE_THRESHOLDS.SEVERE_UNDER) {
                     status = NutritionCategory.WASTED;
                     clinicalStatus = 'SEVERE_WASTED';
-                } else if (zScore < -2) {
+                } else if (zScore <= Z_SCORE_THRESHOLDS.UNDER) {
                     status = NutritionCategory.WASTED;
                     clinicalStatus = 'WASTED';
-                } else if (zScore > 3) {
+                } else if (zScore >= Z_SCORE_THRESHOLDS.SEVERE_OVER) {
                     status = NutritionCategory.OBESE;
                     clinicalStatus = 'OBESE';
-                } else if (zScore > 2) {
+                } else if (zScore >= Z_SCORE_THRESHOLDS.OVER) {
                     status = NutritionCategory.OBESE; // Map Overweight to Obese for DB safety
                     clinicalStatus = 'OVERWEIGHT';
                 } else {
@@ -200,16 +201,16 @@ export class GrowthService {
 
             case WhoGrowthIndicator.BMI_FOR_AGE:
                 // BMI-for-Age
-                if (zScore < -3) {
+                if (zScore <= Z_SCORE_THRESHOLDS.SEVERE_UNDER) {
                     status = NutritionCategory.WASTED;
                     clinicalStatus = 'SEVERE_WASTED';
-                } else if (zScore < -2) {
+                } else if (zScore <= Z_SCORE_THRESHOLDS.UNDER) {
                     status = NutritionCategory.WASTED;
                     clinicalStatus = 'WASTED';
-                } else if (zScore > 3) {
+                } else if (zScore >= Z_SCORE_THRESHOLDS.SEVERE_OVER) {
                     status = NutritionCategory.OBESE;
                     clinicalStatus = 'OBESE';
-                } else if (zScore > 2) {
+                } else if (zScore >= Z_SCORE_THRESHOLDS.OVER) {
                     status = NutritionCategory.OBESE;
                     clinicalStatus = 'OVERWEIGHT';
                 } else {
@@ -220,10 +221,10 @@ export class GrowthService {
 
             case WhoGrowthIndicator.WEIGHT_FOR_AGE:
                 // Weight-for-Age (Underweight)
-                if (zScore < -3) {
+                if (zScore <= Z_SCORE_THRESHOLDS.SEVERE_UNDER) {
                     status = NutritionCategory.WASTED; // Proxy
                     clinicalStatus = 'SEVERE_UNDERWEIGHT';
-                } else if (zScore < -2) {
+                } else if (zScore <= Z_SCORE_THRESHOLDS.UNDER) {
                     status = NutritionCategory.WASTED; // Proxy
                     clinicalStatus = 'UNDERWEIGHT';
                 } else {
@@ -300,8 +301,8 @@ export class GrowthService {
         // 3. Weight-for-Length/Height
         if (weight !== undefined && height !== undefined) {
             let indicator: WhoGrowthIndicator;
-            // WHO Standard: < 2 years (730 days) use Length, >= 2 years use Height
-            if (ageDays < 730) {
+            // WHO Standard: <= MAX_DAYS (729 days) use Length, >= 2 years use Height
+            if (ageDays <= AGE_THRESHOLDS.USE_LENGTH_MAX_DAYS) {
                 indicator = WhoGrowthIndicator.WEIGHT_FOR_LENGTH;
             } else {
                 indicator = WhoGrowthIndicator.WEIGHT_FOR_HEIGHT;

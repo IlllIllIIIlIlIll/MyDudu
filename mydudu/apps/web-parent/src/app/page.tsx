@@ -30,6 +30,7 @@ import {
   fetchEducationArticles,
   fetchNotifications
 } from '../utils/mockData';
+import { VITALS_THRESHOLDS, AGE_THRESHOLDS } from '@mydudu/shared';
 
 type TabType = 'home' | 'history';
 
@@ -107,8 +108,8 @@ export default function Home() {
       else bmiStatus = 'normal';
     } else if (bmi > 0) {
       // Fallback rough calculation if no backend data is generated yet
-      if (bmi < 13.5 || bmi > 18) bmiStatus = 'warning';
-      if (bmi < 12 || bmi > 20) bmiStatus = 'danger';
+      if (bmi < VITALS_THRESHOLDS.BMI_FALLBACK.WARNING_MIN || bmi > VITALS_THRESHOLDS.BMI_FALLBACK.WARNING_MAX) bmiStatus = 'warning';
+      if (bmi < VITALS_THRESHOLDS.BMI_FALLBACK.DANGER_MIN || bmi > VITALS_THRESHOLDS.BMI_FALLBACK.DANGER_MAX) bmiStatus = 'danger';
     }
 
     // Temperature Logic
@@ -119,9 +120,9 @@ export default function Home() {
     // Moderate risk: 38.1 – 39.0
     // Bad: > 39.0 OR < 35.5
     if (temp >= 37.6 && temp <= 38.0) tempStatus = 'warning';
-    else if (temp >= 38.1 && temp <= 39.0) tempStatus = 'warning'; // Mapping moderate to warning for card visual
-    else if (temp > 39.0 || temp < 35.5) tempStatus = 'danger';
-    else if (temp < 36.5 && temp >= 35.5) tempStatus = 'warning'; // Gap handling: 35.5-36.4 is usually mildly low
+    else if (temp >= 38.1 && temp <= VITALS_THRESHOLDS.TEMPERATURE.MODERATE_FEVER_MAX) tempStatus = 'warning'; // Mapping moderate to warning for card visual
+    else if (temp > VITALS_THRESHOLDS.TEMPERATURE.MODERATE_FEVER_MAX || temp < VITALS_THRESHOLDS.TEMPERATURE.HYPOTHERMIA) tempStatus = 'danger';
+    else if (temp < VITALS_THRESHOLDS.TEMPERATURE.MIN_SAFE && temp >= VITALS_THRESHOLDS.TEMPERATURE.HYPOTHERMIA) tempStatus = 'warning'; // Gap handling: 35.5-36.4 is usually mildly low
 
     // Heart Rate Logic — age-appropriate ranges
     // Newborn 0–1 month : 70–190 BPM
@@ -134,9 +135,9 @@ export default function Home() {
       const now = new Date();
       const ageMonthsHR = (now.getFullYear() - birthDate.getFullYear()) * 12 + (now.getMonth() - birthDate.getMonth());
       let hrMin: number, hrMax: number;
-      if (ageMonthsHR < 1) { hrMin = 70; hrMax = 190; } // newborn
-      else if (ageMonthsHR < 12) { hrMin = 80; hrMax = 160; } // baby
-      else { hrMin = 70; hrMax = 130; } // child
+      if (ageMonthsHR < AGE_THRESHOLDS.NEWBORN_MAX_MONTHS) { hrMin = VITALS_THRESHOLDS.HEART_RATE.NEWBORN.MIN; hrMax = VITALS_THRESHOLDS.HEART_RATE.NEWBORN.MAX; } // newborn
+      else if (ageMonthsHR < AGE_THRESHOLDS.BABY_MAX_MONTHS) { hrMin = VITALS_THRESHOLDS.HEART_RATE.BABY.MIN; hrMax = VITALS_THRESHOLDS.HEART_RATE.BABY.MAX; } // baby
+      else { hrMin = VITALS_THRESHOLDS.HEART_RATE.CHILD.MIN; hrMax = VITALS_THRESHOLDS.HEART_RATE.CHILD.MAX; } // child
       const nearEdge = hr < hrMin + 10 || hr > hrMax - 10;
       if (hr < hrMin || hr > hrMax) hrStatus = 'danger';
       else if (nearEdge) hrStatus = 'warning';
@@ -149,17 +150,17 @@ export default function Home() {
     // Wait, I recall schema check earlier. Let's assume passed in session or 0.
     const noise = (latestSession as any)?.noiseLevel ? Number((latestSession as any).noiseLevel) : 45; // Mock fallback
     let noiseStatus: 'normal' | 'warning' | 'danger' = 'normal';
-    if (noise < 55) noiseStatus = 'normal';
-    else if (noise >= 55 && noise <= 70) noiseStatus = 'warning';
-    else if (noise >= 71 && noise <= 85) noiseStatus = 'warning';
-    else if (noise > 85) noiseStatus = 'danger';
+    if (noise <= VITALS_THRESHOLDS.NOISE.SAFE_MAX) noiseStatus = 'normal';
+    else if (noise > VITALS_THRESHOLDS.NOISE.SAFE_MAX && noise <= 70) noiseStatus = 'warning';
+    else if (noise > 70 && noise <= VITALS_THRESHOLDS.NOISE.WARNING_MAX) noiseStatus = 'warning';
+    else if (noise > VITALS_THRESHOLDS.NOISE.WARNING_MAX) noiseStatus = 'danger';
 
     // SpO2 Logic — 95–100%: normal, 90–94%: warning, <90%: danger
     const spo2 = (latestSession as any)?.spo2 ? Number((latestSession as any).spo2) : 98; // Mock fallback
     let spo2Status: 'normal' | 'warning' | 'danger' = 'normal';
     if (spo2 > 0) {
-      if (spo2 >= 95) spo2Status = 'normal';
-      else if (spo2 >= 90) spo2Status = 'warning';
+      if (spo2 >= VITALS_THRESHOLDS.SPO2.NORMAL_MIN) spo2Status = 'normal';
+      else if (spo2 >= VITALS_THRESHOLDS.SPO2.WARNING_MIN) spo2Status = 'warning';
       else spo2Status = 'danger';
     }
 
