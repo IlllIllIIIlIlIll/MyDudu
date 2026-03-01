@@ -2,13 +2,13 @@
 
 import React, { useState } from 'react';
 import {
-    Calculator, FileText, LogOut, ArrowLeft
+    Calculator, FileText, LogOut, ArrowLeft, User, Save, Camera
 } from 'lucide-react';
 import { VITALS_THRESHOLDS, AGE_THRESHOLDS } from '@mydudu/shared';
 // @ts-ignore
 import legalContent from '../data/legalContent.json';
 
-type Screen = 'menu' | 'calculator' | 'privacy';
+type Screen = 'menu' | 'calculator' | 'privacy' | 'profile';
 
 interface CalculatorResult {
     status: 'Normal' | 'Waspada' | 'Bahaya';
@@ -20,6 +20,9 @@ interface MoreMenuProps {
     onLogout: () => void;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     childData?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    userData?: any;
+    selectedChildId?: string;
     birthDate?: string;
 }
 
@@ -190,7 +193,7 @@ const NumberInputWithControls = ({ label, value, unit, onChange, min = 0 }: any)
     );
 };
 
-export function MoreMenu({ onLogout, childData, birthDate }: MoreMenuProps) {
+export function MoreMenu({ onLogout, childData, userData, selectedChildId, birthDate }: MoreMenuProps) {
     const [currentScreen, setCurrentScreen] = useState<Screen>('menu');
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [privacyTab, setPrivacyTab] = useState<'vitals' | 'privacy' | 'terms'>('vitals');
@@ -206,6 +209,60 @@ export function MoreMenu({ onLogout, childData, birthDate }: MoreMenuProps) {
     const [temp, setTemp] = useState(childData?.latestMetrics?.temperature?.value && childData.latestMetrics.temperature.value !== '-' ? childData.latestMetrics.temperature.value.toString() : '');
     const [hr, setHr] = useState(childData?.latestMetrics?.heartRate?.value && childData.latestMetrics.heartRate.value !== '-' ? childData.latestMetrics.heartRate.value.toString() : '');
     const [spo2, setSpo2] = useState(childData?.latestMetrics?.spo2?.value && childData.latestMetrics.spo2.value !== '-' ? childData.latestMetrics.spo2.value.toString() : '');
+
+    // Profile Customization Data
+    const [profileTab, setProfileTab] = useState<'parent' | 'child'>('parent');
+
+    const [parentFullName, setParentFullName] = useState(userData?.fullName || '');
+    const [parentEmail, setParentEmail] = useState(userData?.email || '');
+    const [parentPhone, setParentPhone] = useState(userData?.phoneNumber || '');
+    const [parentPicPreview, setParentPicPreview] = useState<string | null>(userData?.profilePicture || null);
+
+    const selectedChildDb = userData?.parentProfile?.children?.find((c: any) => c.id.toString() === selectedChildId);
+    const [childFullName, setChildFullName] = useState(selectedChildDb?.fullName || '');
+    const [childGender, setChildGender] = useState(selectedChildDb?.gender || 'M');
+    const [childBloodType, setChildBloodType] = useState(selectedChildDb?.bloodType || 'UNKNOWN');
+    const [childPicPreview, setChildPicPreview] = useState<string | null>(selectedChildDb?.profilePicture || null);
+    const [childBirthDate, setChildBirthDate] = useState(
+        selectedChildDb?.birthDate ? new Date(selectedChildDb.birthDate).toISOString().split('T')[0] : ''
+    );
+
+    const handleProfilePicChange = (e: React.ChangeEvent<HTMLInputElement>, isParent: boolean) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (file.size > 2 * 1024 * 1024) {
+            alert('Ukuran gambar tidak boleh melebihi 2MB.');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            if (ev.target?.result) {
+                if (isParent) setParentPicPreview(ev.target.result as string);
+                else setChildPicPreview(ev.target.result as string);
+            }
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleSaveProfile = () => {
+        // This will be connected to the backend API later.
+        console.log({
+            parent: {
+                fullName: parentFullName,
+                email: parentEmail,
+                phoneNumber: parentPhone,
+                profilePicture: parentPicPreview ? '...base64_data...' : null
+            },
+            child: {
+                fullName: childFullName,
+                birthDate: childBirthDate,
+                gender: childGender,
+                bloodType: childBloodType,
+                profilePicture: childPicPreview ? '...base64_data...' : null
+            }
+        });
+        alert('Perubahan profil berhasil disimpan!');
+    };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const MenuRow = ({ icon: Icon, title, subtitle, onClick, isDanger = false }: any) => (
@@ -264,6 +321,7 @@ export function MoreMenu({ onLogout, childData, birthDate }: MoreMenuProps) {
     const renderMenuScreen = () => (
         <div style={{ width: '100%' }}>
             <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '120px' }}>
+                <MenuRow icon={User} title="Profil & Pengaturan" subtitle="Kelola profil Anda dan anak" onClick={() => setCurrentScreen('profile')} />
                 <MenuRow icon={Calculator} title="Kalkulator & Evaluasi" subtitle="Hitung dan evaluasi manual" onClick={() => setCurrentScreen('calculator')} />
                 <MenuRow icon={FileText} title="Informasi Hukum & Medis" subtitle="Standar WHO, Kebijakan Privasi" onClick={() => setCurrentScreen('privacy')} />
 
@@ -774,6 +832,131 @@ export function MoreMenu({ onLogout, childData, birthDate }: MoreMenuProps) {
         </div>
     );
 
+    const renderProfileScreen = () => (
+        <div style={{ width: '100%', minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+            <div style={{
+                padding: '14px 16px', display: 'flex', alignItems: 'center', position: 'sticky', top: 0,
+                backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(8px)', zIndex: 20, borderBottom: '1px solid #e5e7eb'
+            }}>
+                <button onClick={() => setCurrentScreen('menu')} style={{
+                    padding: '8px', margin: '-8px 0 -8px -8px', color: '#6b7280', backgroundColor: 'transparent',
+                    border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                    <ArrowLeft style={{ width: '20px', height: '20px' }} />
+                </button>
+                <h1 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', margin: '0 0 0 8px' }}>Profil & Pengaturan</h1>
+            </div>
+
+            <div style={{ padding: '16px', paddingBottom: '120px' }}>
+                <div style={{ display: 'inline-flex', height: '36px', width: '100%', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', backgroundColor: '#e5e7eb', padding: '4px', marginBottom: '16px', gap: '4px' }}>
+                    {['parent', 'child'].map((tab) => (
+                        <button key={tab} onClick={() => setProfileTab(tab as any)} style={{
+                            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px', padding: '6px 12px',
+                            fontSize: '13px', fontWeight: '500', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                            backgroundColor: profileTab === tab ? '#ffffff' : 'transparent', color: profileTab === tab ? '#111827' : '#6b7280',
+                            boxShadow: profileTab === tab ? '0 1px 3px rgba(0,0,0,0.05)' : 'none'
+                        }}>
+                            {tab === 'parent' ? 'Orang Tua' : 'Anak'}
+                        </button>
+                    ))}
+                </div>
+
+                <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '16px', border: '1px solid #e5e7eb', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
+                    {profileTab === 'parent' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                <div style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '40px', backgroundColor: '#f3f4f6', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+                                    {parentPicPreview ? (
+                                        <img src={parentPicPreview} alt="Profil" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
+                                            <User style={{ width: '40px', height: '40px' }} />
+                                        </div>
+                                    )}
+                                </div>
+                                <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#4f46e5', fontSize: '13px', fontWeight: '500' }}>
+                                    <Camera style={{ width: '16px', height: '16px' }} /> Ubah Foto
+                                    <input type="file" accept="image/jpeg,image/png,image/jpg" style={{ display: 'none' }} onChange={(e) => handleProfilePicChange(e, true)} />
+                                </label>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={{ fontSize: '12px', fontWeight: '600', color: '#374151' }}>Nama Lengkap</label>
+                                <input type="text" maxLength={100} value={parentFullName} onChange={(e) => setParentFullName(e.target.value)} placeholder="Contoh: Budi Santoso" style={{ width: '100%', boxSizing: 'border-box', height: '40px', padding: '0 12px', borderRadius: '8px', border: '1px solid #d1d5db', backgroundColor: '#f9fafb', fontSize: '14px', outline: 'none' }} />
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={{ fontSize: '12px', fontWeight: '600', color: '#374151' }}>Nomor Telepon</label>
+                                <input type="text" maxLength={15} value={parentPhone} onChange={(e) => setParentPhone(e.target.value.replace(/\D/g, ''))} placeholder="Contoh: 0812345678" style={{ width: '100%', boxSizing: 'border-box', height: '40px', padding: '0 12px', borderRadius: '8px', border: '1px solid #d1d5db', backgroundColor: '#f9fafb', fontSize: '14px', outline: 'none' }} />
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={{ fontSize: '12px', fontWeight: '600', color: '#374151' }}>Email (Opsional)</label>
+                                <input type="email" maxLength={100} value={parentEmail} onChange={(e) => setParentEmail(e.target.value)} placeholder="email@contoh.com" style={{ width: '100%', boxSizing: 'border-box', height: '40px', padding: '0 12px', borderRadius: '8px', border: '1px solid #d1d5db', backgroundColor: '#f9fafb', fontSize: '14px', outline: 'none' }} />
+                            </div>
+                        </div>
+                    )}
+
+                    {profileTab === 'child' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                <div style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '40px', backgroundColor: '#f3f4f6', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+                                    {childPicPreview ? (
+                                        <img src={childPicPreview} alt="Profil Anak" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
+                                            <User style={{ width: '40px', height: '40px' }} />
+                                        </div>
+                                    )}
+                                </div>
+                                <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#4f46e5', fontSize: '13px', fontWeight: '500' }}>
+                                    <Camera style={{ width: '16px', height: '16px' }} /> Ubah Foto Anak
+                                    <input type="file" accept="image/jpeg,image/png,image/jpg" style={{ display: 'none' }} onChange={(e) => handleProfilePicChange(e, false)} />
+                                </label>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={{ fontSize: '12px', fontWeight: '600', color: '#374151' }}>Nama Lengkap Anak</label>
+                                <input type="text" maxLength={100} value={childFullName} onChange={(e) => setChildFullName(e.target.value)} placeholder="Contoh: Putri Santoso" style={{ width: '100%', boxSizing: 'border-box', height: '40px', padding: '0 12px', borderRadius: '8px', border: '1px solid #d1d5db', backgroundColor: '#f9fafb', fontSize: '14px', outline: 'none' }} />
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={{ fontSize: '12px', fontWeight: '600', color: '#374151' }}>Tanggal Lahir</label>
+                                <input type="date" value={childBirthDate} onChange={(e) => setChildBirthDate(e.target.value)} max={new Date().toISOString().split('T')[0]} style={{ width: '100%', boxSizing: 'border-box', height: '40px', padding: '0 12px', borderRadius: '8px', border: '1px solid #d1d5db', backgroundColor: '#ffffff', color: '#111827', fontSize: '14px', outline: 'none' }} />
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                                    <label style={{ fontSize: '12px', fontWeight: '600', color: '#374151' }}>Jenis Kelamin</label>
+                                    <select value={childGender} onChange={(e) => setChildGender(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', height: '40px', padding: '0 12px', borderRadius: '8px', border: '1px solid #d1d5db', backgroundColor: '#ffffff', fontSize: '14px', outline: 'none' }}>
+                                        <option value="M">Laki-Laki</option>
+                                        <option value="F">Perempuan</option>
+                                    </select>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                                    <label style={{ fontSize: '12px', fontWeight: '600', color: '#374151' }}>Gologan Darah</label>
+                                    <select value={childBloodType} onChange={(e) => setChildBloodType(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', height: '40px', padding: '0 12px', borderRadius: '8px', border: '1px solid #d1d5db', backgroundColor: '#ffffff', fontSize: '14px', outline: 'none' }}>
+                                        <option value="UNKNOWN">Tidak Tahu</option>
+                                        <option value="A">A</option>
+                                        <option value="B">B</option>
+                                        <option value="AB">AB</option>
+                                        <option value="O">O</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #f3f4f6' }}>
+                        <button onClick={handleSaveProfile} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', backgroundColor: '#4f46e5', color: '#ffffff', fontWeight: '600', fontSize: '14px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}>
+                            <Save style={{ width: '18px', height: '18px' }} /> Simpan Perubahan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
     return (
         <div style={{ width: '100%', backgroundColor: '#ffffff' }}>
             <style>{`
@@ -797,6 +980,7 @@ export function MoreMenu({ onLogout, childData, birthDate }: MoreMenuProps) {
             {currentScreen === 'menu' && renderMenuScreen()}
             {currentScreen === 'calculator' && renderCalculatorScreen()}
             {currentScreen === 'privacy' && renderPrivacyScreen()}
+            {currentScreen === 'profile' && renderProfileScreen()}
             {showLogoutModal && renderLogoutModal()}
         </div>
     );

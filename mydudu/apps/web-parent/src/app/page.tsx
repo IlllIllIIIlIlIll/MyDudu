@@ -585,6 +585,8 @@ export default function Home() {
         <MoreMenu
           onLogout={handleLogout}
           childData={childData}
+          userData={userData}
+          selectedChildId={selectedChildId}
           birthDate={userData?.parentProfile?.children.find((c: any) => c.id.toString() === selectedChildId)?.birthDate}
         />
       )}

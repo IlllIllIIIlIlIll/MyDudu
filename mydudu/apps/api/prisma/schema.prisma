@@ -193,10 +193,11 @@ model Child {
   parentId  Int       @map("parent_id")
   fullName  String    @map("full_name") @db.VarChar(100)
   birthDate DateTime  @map("birth_date") @db.Date
-  gender    String?   @db.Char(1) // 'M' or 'F'
-  bloodType String?   @map("blood_type") @db.VarChar(10) // A, B, AB, O, UNKNOWN
-  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
-  deletedAt DateTime? @map("deleted_at") @db.Timestamp(6) // Soft Delete
+  gender         String?   @db.Char(1) // 'M' or 'F'
+  bloodType      String?   @map("blood_type") @db.VarChar(10) // A, B, AB, O, UNKNOWN
+  profilePicture String?   @map("profile_picture") @db.Text
+  createdAt      DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamp(6) // Soft Delete
 
   parent   Parent    @relation(fields: [parentId], references: [id], onDelete: Restrict) // PROTECTED
   sessions Session[]
