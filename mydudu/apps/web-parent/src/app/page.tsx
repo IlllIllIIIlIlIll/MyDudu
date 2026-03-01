@@ -22,6 +22,7 @@ import { TabNavigation } from '../components/TabNavigation';
 import { MoreMenu } from '../components/MoreMenu';
 import { ConsultationButton } from '../components/ConsultationButton';
 import { DashboardSkeleton, ChartSkeleton } from '../components/LoadingSkeleton';
+import { RefinedHeader } from '../components/RefinedHeader';
 import {
   mockChildren,
   mockChildData,
@@ -121,7 +122,8 @@ export default function Home() {
     else if (temp < VITALS_THRESHOLDS.TEMPERATURE.MIN_SAFE && temp >= VITALS_THRESHOLDS.TEMPERATURE.HYPOTHERMIA) tempStatus = 'warning'; // Gap handling: 35.5-36.4 is usually mildly low
 
     // Heart Rate Logic — age-appropriate ranges
-    const hr = latestSession?.heartRate ? Number(latestSession.heartRate) : VITALS_THRESHOLDS.DEFAULT_FALLBACKS.NO_DATA;
+    const rawHr = latestSession?.heartRate;
+    const hr = rawHr ? Number(rawHr) : VITALS_THRESHOLDS.DEFAULT_FALLBACKS.NO_DATA;
     let hrStatus: 'normal' | 'warning' | 'danger' = 'normal';
     if (hr > VITALS_THRESHOLDS.DEFAULT_FALLBACKS.NO_DATA) {
       const birthDate = new Date(child.birthDate);
@@ -136,20 +138,20 @@ export default function Home() {
       else if (nearEdge) hrStatus = 'warning';
     }
 
-    // Noise Level Logic (Well < 55)
-    // For noise, we assume we might need to fetch it from somewhere, but currently it's not in the seeded session. 
-    // We will assume it's available in the session object or default to 0.
-    // In schema, Session has noiseLevel? No, I need to check schema. 
-    // Wait, I recall schema check earlier. Let's assume passed in session or 0.
-    const noise = (latestSession as any)?.noiseLevel ? Number((latestSession as any).noiseLevel) : 45; // Mock fallback
+    // Noise Level Logic
+    const rawNoise = (latestSession as any)?.noiseLevel;
+    const noise = rawNoise !== undefined && rawNoise !== null ? Number(rawNoise) : VITALS_THRESHOLDS.DEFAULT_FALLBACKS.NO_DATA;
     let noiseStatus: 'normal' | 'warning' | 'danger' = 'normal';
-    if (noise <= VITALS_THRESHOLDS.NOISE.SAFE_MAX) noiseStatus = 'normal';
-    else if (noise > VITALS_THRESHOLDS.NOISE.SAFE_MAX && noise <= VITALS_THRESHOLDS.NOISE.MODERATE_MAX) noiseStatus = 'warning';
-    else if (noise > VITALS_THRESHOLDS.NOISE.MODERATE_MAX && noise <= VITALS_THRESHOLDS.NOISE.WARNING_MAX) noiseStatus = 'warning';
-    else if (noise > VITALS_THRESHOLDS.NOISE.WARNING_MAX) noiseStatus = 'danger';
+    if (noise > VITALS_THRESHOLDS.DEFAULT_FALLBACKS.NO_DATA) {
+      if (noise <= VITALS_THRESHOLDS.NOISE.SAFE_MAX) noiseStatus = 'normal';
+      else if (noise > VITALS_THRESHOLDS.NOISE.SAFE_MAX && noise <= VITALS_THRESHOLDS.NOISE.MODERATE_MAX) noiseStatus = 'warning';
+      else if (noise > VITALS_THRESHOLDS.NOISE.MODERATE_MAX && noise <= VITALS_THRESHOLDS.NOISE.WARNING_MAX) noiseStatus = 'warning';
+      else if (noise > VITALS_THRESHOLDS.NOISE.WARNING_MAX) noiseStatus = 'danger';
+    }
 
     // SpO2 Logic — 95–100%: normal, 90–94%: warning, <90%: danger
-    const spo2 = (latestSession as any)?.spo2 ? Number((latestSession as any).spo2) : 98; // Mock fallback
+    const rawSpo2 = (latestSession as any)?.spo2;
+    const spo2 = rawSpo2 !== undefined && rawSpo2 !== null ? Number(rawSpo2) : VITALS_THRESHOLDS.DEFAULT_FALLBACKS.NO_DATA;
     let spo2Status: 'normal' | 'warning' | 'danger' = 'normal';
     if (spo2 > VITALS_THRESHOLDS.DEFAULT_FALLBACKS.NO_DATA) {
       if (spo2 >= VITALS_THRESHOLDS.SPO2.NORMAL_MIN) spo2Status = 'normal';
@@ -158,13 +160,41 @@ export default function Home() {
     }
 
     const metrics = {
-      weight: { value: weight, unit: 'kg', status: bmiStatus, trend: 'stable' as const },
-      height: { value: heightCm, unit: 'cm', status: bmiStatus, trend: 'stable' as const },
-      bmi: { value: dbZScore !== null ? Number(dbZScore.toFixed(2)) : Number(bmi.toFixed(1)), unit: zScoreLabel || 'kg/m²', status: bmiStatus, trend: 'stable' as const },
-      temperature: { value: temp, unit: '°C', status: tempStatus, trend: 'stable' as const },
-      heartRate: { value: hr, unit: 'bpm', status: hrStatus, trend: 'stable' as const },
-      spo2: { value: spo2, unit: '%', status: spo2Status, trend: 'stable' as const },
-      noise: { value: noise, unit: 'dB', status: noiseStatus, trend: 'stable' as const },
+      weight: {
+        value: weight > 0 ? weight : '-',
+        unit: weight > 0 ? 'kg' : '',
+        status: bmiStatus, trend: 'stable' as const
+      },
+      height: {
+        value: heightCm > 0 ? heightCm : '-',
+        unit: heightCm > 0 ? 'cm' : '',
+        status: bmiStatus, trend: 'stable' as const
+      },
+      bmi: {
+        value: (bmi > 0 || dbZScore !== null) ? (dbZScore !== null ? Number(dbZScore.toFixed(2)) : Number(bmi.toFixed(1))) : '-',
+        unit: (bmi > 0 || dbZScore !== null) ? (zScoreLabel || 'kg/m²') : '',
+        status: bmiStatus, trend: 'stable' as const
+      },
+      temperature: {
+        value: temp > 0 ? temp : '-',
+        unit: temp > 0 ? '°C' : '',
+        status: tempStatus, trend: 'stable' as const
+      },
+      heartRate: {
+        value: hr > 0 ? hr : '-',
+        unit: hr > 0 ? 'bpm' : '',
+        status: hrStatus, trend: 'stable' as const
+      },
+      spo2: {
+        value: spo2 > 0 ? spo2 : '-',
+        unit: spo2 > 0 ? '%' : '',
+        status: spo2Status, trend: 'stable' as const
+      },
+      noise: {
+        value: noise > 0 ? noise : '-',
+        unit: noise > 0 ? 'dB' : '',
+        status: noiseStatus, trend: 'stable' as const
+      },
     };
 
     // Determine overall status based on worst metric
@@ -352,30 +382,14 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
-      {activeTab !== 'more' && (
-        <div className="gradient-primary text-white px-4 pt-6 pb-8 rounded-b-3xl shadow-lg sticky top-0 z-40">
-          <div className="max-w-md mx-auto">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h1 className="text-white mb-1">{userData?.fullName}</h1>
-                <p className="text-sm text-white/90">MyDudu</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <NotificationBell
-                  count={unreadCount}
-                  onClick={() => setIsNotificationOpen(true)}
-                />
-              </div>
-            </div>
-
-            <ChildSelector
-              children={availableChildren}
-              selectedChildId={selectedChildId}
-              onSelect={setSelectedChildId}
-            />
-          </div>
-        </div>
-      )}
+      <RefinedHeader
+        userName={userData?.fullName || ''}
+        children={availableChildren.map((c: any) => ({ id: c.id, name: c.name, age: parseInt(c.age) || undefined }))}
+        selectedChildId={selectedChildId}
+        onSelectChild={setSelectedChildId}
+        unreadCount={unreadCount}
+        onNotificationClick={() => setIsNotificationOpen(true)}
+      />
 
       {/* Main Content */}
       <div className="max-w-md mx-auto px-4 mt-6">
@@ -568,7 +582,11 @@ export default function Home() {
       </div>
 
       {activeTab === 'more' && (
-        <MoreMenu onLogout={handleLogout} />
+        <MoreMenu
+          onLogout={handleLogout}
+          childData={childData}
+          birthDate={userData?.parentProfile?.children.find((c: any) => c.id.toString() === selectedChildId)?.birthDate}
+        />
       )}
 
       {/* Bottom Navigation */}
