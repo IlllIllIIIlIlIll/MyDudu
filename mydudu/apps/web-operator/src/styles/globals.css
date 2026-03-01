@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: 'Nunito Sans', system-ui, -apple-system, sans-serif;
-  
+  --font-sans: var(--font-nunito-sans), system-ui, -apple-system, sans-serif;
+
   /* Custom colors */
   --color-primary-start: #11998E;
   --color-primary-end: #38EF7D;
@@ -14,8 +14,6 @@
 }
 
 @layer base {
-  @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap');
-  
   body {
     font-family: var(--font-sans);
     background-color: var(--color-bg-light);
