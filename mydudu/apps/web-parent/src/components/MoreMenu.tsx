@@ -261,7 +261,6 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
                 profilePicture: childPicPreview ? '...base64_data...' : null
             }
         });
-        alert('Perubahan profil berhasil disimpan!');
     };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -765,41 +764,53 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
             position: 'fixed',
             inset: 0,
             backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            backdropFilter: 'blur(2px)',
             display: 'flex',
-            alignItems: 'flex-end',
+            alignItems: 'center',
+            justifyContent: 'center',
             zIndex: 50,
-            animation: 'fadeIn 0.2s'
+            animation: 'fadeIn 0.2s',
+            padding: '24px'
         }}>
             <div style={{
                 width: '100%',
+                maxWidth: '320px',
                 backgroundColor: '#ffffff',
-                borderRadius: '16px 16px 0 0',
-                padding: '20px 16px',
-                animation: 'slideUp 0.3s',
-                boxShadow: '0 -4px 12px rgba(0,0,0,0.1)'
+                borderRadius: '16px',
+                padding: '24px',
+                animation: 'scaleIn 0.2s',
+                boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)'
             }}>
-                <h2 style={{
-                    fontSize: '16px',
-                    fontWeight: '700',
-                    color: '#111827',
-                    marginBottom: '8px',
-                    margin: '0 0 8px 0'
-                }}>Yakin ingin keluar?</h2>
-                <p style={{
-                    fontSize: '13px',
-                    color: '#6b7280',
-                    marginBottom: '20px',
-                    margin: '0 0 20px 0'
-                }}>Anda akan keluar dari akun dan perlu login kembali.</p>
-
-                <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
+                <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                    <div style={{ 
+                        width: '48px', height: '48px', borderRadius: '24px', backgroundColor: '#fee2e2', 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto'
+                    }}>
+                        <LogOut style={{ width: '24px', height: '24px', color: '#ef4444' }} />
+                    </div>
+                    <h2 style={{
+                        fontSize: '18px',
+                        fontWeight: '700',
+                        color: '#111827',
+                        marginBottom: '8px',
+                        margin: '0 0 8px 0'
+                    }}>Keluar dari Akun?</h2>
+                    <p style={{
+                        fontSize: '14px',
+                        color: '#6b7280',
+                        margin: '0',
+                        lineHeight: '1.5'
+                    }}>Anda perlu masuk kembali untuk mengakses data anak Anda.</p>
+                </div>
+                
+                <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
                     <button
                         onClick={() => setShowLogoutModal(false)}
                         style={{
-                            width: '100%',
+                            flex: 1,
                             padding: '12px',
                             backgroundColor: '#f3f4f6',
-                            color: '#111827',
+                            color: '#374151',
                             fontWeight: '600',
                             fontSize: '14px',
                             borderRadius: '10px',
@@ -813,7 +824,7 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
                     <button
                         onClick={onLogout}
                         style={{
-                            width: '100%',
+                            flex: 1,
                             padding: '12px',
                             backgroundColor: '#ef4444',
                             color: '#ffffff',
@@ -964,9 +975,9 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
                     from { opacity: 0; }
                     to { opacity: 1; }
                 }
-                @keyframes slideUp {
-                    from { transform: translateY(100%); }
-                    to { transform: translateY(0); }
+                @keyframes scaleIn {
+                    from { transform: scale(0.95); opacity: 0; }
+                    to { transform: scale(1); opacity: 1; }
                 }
                 input[type="number"]::-webkit-outer-spin-button,
                 input[type="number"]::-webkit-inner-spin-button {
