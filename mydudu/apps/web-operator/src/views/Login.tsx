@@ -69,7 +69,7 @@ export function Login({ onLogin }: LoginProps) {
         {/* Footer */}
         <div className="mt-8 pt-6 border-t border-gray-200 text-center">
           <p className="text-[13px] text-gray-500">
-            Butuh bantuan? Hubungi IT Admin
+            Butuh bantuan? Hubungi <a href="https://wa.me/6281289529832" target="_blank" rel="noopener noreferrer" className="text-[#11998E] hover:underline font-medium">IT Admin</a>
           </p>
           <p className="text-[12px] text-gray-400 mt-2">
             © Innovillage 2025 by Telkom

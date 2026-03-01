@@ -38,6 +38,7 @@ export function ScreeningResultView({
         if (l === 'TEMP' || l === 'SUHU') {
             if (value >= 38.5) return 'bg-red-100 text-red-600';
             if (value >= 37.5 || (value > 0 && value < 36)) return 'bg-amber-100 text-amber-600';
+            if (value > 0) return 'bg-green-100 text-green-700';
         }
         // SpO2 — 95-100: normal, 90-94: warning, <90: danger
         if (l === 'SPO2' || l.includes('O2') || l.includes('SATURASI')) {

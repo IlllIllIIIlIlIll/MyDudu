@@ -198,13 +198,13 @@ export function DeviceRegistry() {
   // Flatten posyandus for search
   const allPosyandus = districts.flatMap(d => d.villages.flatMap(v => v.posyandus));
   const filteredPosyandus = allPosyandus.filter(p =>
-    p.name.toLowerCase().includes(posyanduSearch.toLowerCase())
+    p?.name?.toLowerCase().includes(posyanduSearch.toLowerCase())
   );
 
   // Flatten villages for search
   const allVillages = districts.flatMap(d => d.villages);
   const filteredVillages = allVillages.filter(v =>
-    v.name.toLowerCase().includes(villageSearch.toLowerCase())
+    v?.name?.toLowerCase().includes(villageSearch.toLowerCase())
   );
 
   return (

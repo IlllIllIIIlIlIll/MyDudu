@@ -569,7 +569,15 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
           lockToken: selectedSession.lockToken,
         }),
       });
-      await loadQueue(false);
+      setSelectedSession(null);
+      setPhase('VITALS');
+      setCurrentNodeId('');
+      setQuizHistory([]);
+      setVitalsStatus('IDLE');
+      setClinicalSessionId(null);
+      setClinicalNodes({});
+      setClinicalOutcome(null);
+      await loadQueue(true);
     } catch (error: any) {
       setApiError(error?.message || 'Gagal menyelesaikan sesi');
     } finally {
@@ -598,7 +606,15 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
           })),
         }),
       });
-      await loadQueue(false);
+      setSelectedSession(null);
+      setPhase('VITALS');
+      setCurrentNodeId('');
+      setQuizHistory([]);
+      setVitalsStatus('IDLE');
+      setClinicalSessionId(null);
+      setClinicalNodes({});
+      setClinicalOutcome(null);
+      await loadQueue(true);
     } catch (error: any) {
       setApiError(error?.message || 'Gagal menyimpan diagnosis');
     } finally {

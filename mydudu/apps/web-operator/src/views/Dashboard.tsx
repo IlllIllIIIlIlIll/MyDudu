@@ -17,6 +17,7 @@ import { RegisterParentDialog } from '../components/RegisterParentDialog';
 import { RegisterChildDialog } from '../components/RegisterChildDialog';
 import { ScheduleDialog } from '../components/ScheduleDialog';
 import { Plus } from 'lucide-react';
+import { TangerangMap } from '../components/TangerangMap';
 
 const sessionStatusConfig: Record<string, { label: string; bg: string; text: string }> = {
   IN_PROGRESS: { label: 'Sedang Diukur', bg: 'bg-blue-100', text: 'text-blue-700' },
@@ -225,7 +226,7 @@ export function Dashboard() {
             {user?.role === 'puskesmas' && overview?.posyanduSummary && overview.posyanduSummary.length > 0 && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <h3 className="text-[18px] font-bold mb-4">Persebaran Penyakit Anak</h3>
-
+                <TangerangMap />
               </div>
             )}
 

@@ -1,29 +1,7 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
 
 @layer base {
-  @font-face {
-    font-family: 'Poppins';
-    font-style: normal;
-    font-weight: 400;
-    font-display: swap;
-    src: url(https://fonts.gstatic.com/s/poppins/v20/pxiEyp8kv8JHgFVrFJA.woff2) format('woff2');
-  }
-  
-  @font-face {
-    font-family: 'Poppins';
-    font-style: normal;
-    font-weight: 600;
-    font-display: swap;
-    src: url(https://fonts.gstatic.com/s/poppins/v20/pxiByp8kv8JHgFVrLEj6V1s.woff2) format('woff2');
-  }
-  
-  @font-face {
-    font-family: 'Poppins';
-    font-style: normal;
-    font-weight: 700;
-    font-display: swap;
-    src: url(https://fonts.gstatic.com/s/poppins/v20/pxiByp8kv8JHgFVrLCz7V1s.woff2) format('woff2');
-  }
 
   body {
     font-family: 'Poppins', system-ui, -apple-system, sans-serif;
@@ -66,7 +44,7 @@
   .gradient-primary {
     background: linear-gradient(135deg, #11998E 0%, #38EF7D 100%);
   }
-  
+
   .text-gradient {
     background: linear-gradient(135deg, #11998E 0%, #38EF7D 100%);
     -webkit-background-clip: text;

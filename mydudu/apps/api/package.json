@@ -26,6 +26,7 @@
         "seed": "ts-node prisma/backup.ts && node prisma/seed.js"
     },
     "dependencies": {
+        "@google/genai": "^1.43.0",
         "@nestjs/cli": "^11.0.16",
         "@nestjs/common": "^11.1.14",
         "@nestjs/config": "^4.0.3",

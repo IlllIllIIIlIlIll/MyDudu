@@ -5,7 +5,7 @@ import { UpdateChildDto } from './dto/update-child.dto';
 
 @Controller('children')
 export class ChildrenController {
-  constructor(private readonly childrenService: ChildrenService) {}
+  constructor(private readonly childrenService: ChildrenService) { }
 
   @Post()
   create(@Body() createChildDto: CreateChildDto) {
@@ -20,6 +20,11 @@ export class ChildrenController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.childrenService.findOne(+id);
+  }
+
+  @Get(':id/education')
+  getEducation(@Param('id') id: string) {
+    return this.childrenService.getEducationForChild(+id);
   }
 
   @Patch(':id')

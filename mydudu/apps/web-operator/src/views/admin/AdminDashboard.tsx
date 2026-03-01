@@ -112,7 +112,7 @@ export function AdminDashboard() {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <OverviewCard
           title="Total Users"
           value={stats?.users?.total || 0}
@@ -140,6 +140,20 @@ export function AdminDashboard() {
           icon={AlertTriangle}
           color="#FF9800"
           subtitle="Needs attention"
+        />
+        <OverviewCard
+          title="Tokens Remaining (Daily)"
+          value={stats?.aiUsage?.remainingTokens?.toLocaleString() || '1,000,000'}
+          icon={Database}
+          color="#8B5CF6"
+          subtitle={`Max Limit: ${stats?.aiUsage?.dailyQuotaLimit?.toLocaleString() || '1,000,000'}`}
+        />
+        <OverviewCard
+          title="Tokens Spent (1H)"
+          value={stats?.aiUsage?.tokensSpentLastHour?.toLocaleString() || '-'}
+          icon={Activity}
+          color="#EC4899"
+          subtitle={`Lifetime Spend: ${stats?.aiUsage?.totalTokensSpent?.toLocaleString() || 0}`}
         />
       </div>
 

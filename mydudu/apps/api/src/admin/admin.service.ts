@@ -20,6 +20,8 @@ export class AdminService {
             recentIncidents,
             recentLogs,
             unreadNotifications,
+            tokenStatsTotal,
+            tokenStatsHour
         ] = await Promise.all([
             this.prisma.user.count(),
             this.prisma.user.count({ where: { status: 'PENDING' } }),
@@ -55,6 +57,17 @@ export class AdminService {
             this.prisma.notification.count({
                 where: { status: 'SENT' },
             }),
+            this.prisma.aITokenLog.aggregate({
+                _sum: { totalTokens: true }
+            }),
+            this.prisma.aITokenLog.aggregate({
+                _sum: { totalTokens: true },
+                where: {
+                    createdAt: {
+                        gte: new Date(Date.now() - 60 * 60 * 1000) // Last 1 hour
+                    }
+                }
+            }),
         ]);
 
         return {
@@ -82,6 +95,12 @@ export class AdminService {
             notifications: {
                 unread: unreadNotifications,
             },
+            aiUsage: {
+                totalTokensSpent: tokenStatsTotal._sum.totalTokens || 0,
+                tokensSpentLastHour: tokenStatsHour._sum.totalTokens || 0,
+                dailyQuotaLimit: 1000000, // Gemini Free Tier 1M TPM assumed as safety limit
+                remainingTokens: 1000000 - (tokenStatsTotal._sum.totalTokens || 0)
+            }
         };
     }
 }

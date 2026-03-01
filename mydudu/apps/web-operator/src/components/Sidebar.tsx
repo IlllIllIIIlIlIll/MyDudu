@@ -34,8 +34,9 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
 
   let menuItems = isAdmin ? adminMenuItems : [...operatorMenuItems];
 
-  // Add User Management for Puskesmas
+  // Add User Management and remove Pemeriksaan for Puskesmas
   if (role === 'puskesmas') {
+    menuItems = menuItems.filter(item => item.id !== 'pemeriksaan');
     menuItems.push({ id: 'users', label: 'User Management', icon: Users });
   }
 

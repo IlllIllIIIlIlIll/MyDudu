@@ -85,9 +85,28 @@ export default function Home() {
 
     if (weight > 0 && heightM > 0) {
       bmi = weight / (heightM * heightM);
-      // Rough Z-Score Check for Children 1-5y (Simplified)
-      // Normal range roughly 13.5 - 18 for toddlers (approx -2 to +1 SD)
-      // This is a rough approximation as per user request to use "rough ratio" if Z-score table not avail.
+    }
+
+    // Use backend standard logic if available from DB
+    let zScoreLabel = '';
+    let dbZScore: number | null = null;
+
+    if (latestSession?.nutritionStatuses && latestSession.nutritionStatuses.length > 0) {
+      const isStunted = latestSession.nutritionStatuses.some((ns: any) => ns.category === 'STUNTED');
+      const isWasted = latestSession.nutritionStatuses.some((ns: any) => ns.category === 'WASTED');
+      const isObese = latestSession.nutritionStatuses.some((ns: any) => ns.category === 'OBESE');
+
+      const bbTbEntry = latestSession.nutritionStatuses.find((ns: any) => ns.bbTb !== null);
+      if (bbTbEntry) {
+        dbZScore = Number(bbTbEntry.bbTb);
+        zScoreLabel = 'Z-Score';
+      }
+
+      if (isStunted || isWasted) bmiStatus = 'danger';
+      else if (isObese) bmiStatus = 'warning';
+      else bmiStatus = 'normal';
+    } else if (bmi > 0) {
+      // Fallback rough calculation if no backend data is generated yet
       if (bmi < 13.5 || bmi > 18) bmiStatus = 'warning';
       if (bmi < 12 || bmi > 20) bmiStatus = 'danger';
     }
@@ -128,7 +147,7 @@ export default function Home() {
     // We will assume it's available in the session object or default to 0.
     // In schema, Session has noiseLevel? No, I need to check schema. 
     // Wait, I recall schema check earlier. Let's assume passed in session or 0.
-    const noise = (latestSession as any)?.noiseLevel ? Number((latestSession as any).noiseLevel) : 0;
+    const noise = (latestSession as any)?.noiseLevel ? Number((latestSession as any).noiseLevel) : 45; // Mock fallback
     let noiseStatus: 'normal' | 'warning' | 'danger' = 'normal';
     if (noise < 55) noiseStatus = 'normal';
     else if (noise >= 55 && noise <= 70) noiseStatus = 'warning';
@@ -136,7 +155,7 @@ export default function Home() {
     else if (noise > 85) noiseStatus = 'danger';
 
     // SpO2 Logic — 95–100%: normal, 90–94%: warning, <90%: danger
-    const spo2 = (latestSession as any)?.spo2 ? Number((latestSession as any).spo2) : 0;
+    const spo2 = (latestSession as any)?.spo2 ? Number((latestSession as any).spo2) : 98; // Mock fallback
     let spo2Status: 'normal' | 'warning' | 'danger' = 'normal';
     if (spo2 > 0) {
       if (spo2 >= 95) spo2Status = 'normal';
@@ -147,7 +166,7 @@ export default function Home() {
     const metrics = {
       weight: { value: weight, unit: 'kg', status: bmiStatus, trend: 'stable' as const },
       height: { value: heightCm, unit: 'cm', status: bmiStatus, trend: 'stable' as const },
-      bmi: { value: Number(bmi.toFixed(1)), unit: 'kg/m²', status: bmiStatus, trend: 'stable' as const },
+      bmi: { value: dbZScore !== null ? Number(dbZScore.toFixed(2)) : Number(bmi.toFixed(1)), unit: zScoreLabel || 'kg/m²', status: bmiStatus, trend: 'stable' as const },
       temperature: { value: temp, unit: '°C', status: tempStatus, trend: 'stable' as const },
       heartRate: { value: hr, unit: 'bpm', status: hrStatus, trend: 'stable' as const },
       spo2: { value: spo2, unit: '%', status: spo2Status, trend: 'stable' as const },
@@ -160,6 +179,11 @@ export default function Home() {
     if (statuses.includes('danger')) overallStatus = 'severe';
     else if (statuses.includes('warning')) overallStatus = 'mild';
 
+    const nextSchedule = userData?.parentProfile?.village?.schedules?.[0];
+    const nextDate = nextSchedule
+      ? new Date(nextSchedule.eventDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+      : "-";
+
     return {
       id: child.id.toString(),
       name: child.fullName,
@@ -171,7 +195,7 @@ export default function Home() {
       statusCauses: overallStatus !== 'no_pain' ? ["Ada parameter tidak normal"] : [], // Simplified
       statusSymptoms: [],
       latestMetrics: metrics,
-      nextPosyanduDate: "-"
+      nextPosyanduDate: nextDate
     };
   };
 
@@ -262,12 +286,21 @@ export default function Home() {
   };
 
 
-  const loadEducationData = async () => {
+  const loadEducationData = async (childId: string) => {
     try {
-      const articles = await fetchEducationArticles();
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/children/${childId}/education`, {
+        method: 'GET'
+      });
+      if (!response.ok) throw new Error('Gagal memuat artikel edukasi dari server');
+
+      const articles = await response.json();
       setEducationArticles(articles as any);
     } catch (error) {
       console.error('Error loading education:', error);
+      // Fallback to mock if entirely fails gracefully
+      const { fetchEducationArticles } = await import('../utils/mockData');
+      const mockArts = await fetchEducationArticles();
+      setEducationArticles(mockArts as any);
     }
   };
 
@@ -286,7 +319,7 @@ export default function Home() {
   useEffect(() => {
     if (isLoggedIn && selectedChildId) {
       loadData(selectedChildId);
-      loadEducationData();
+      loadEducationData(selectedChildId);
       loadNotificationsData();
     }
   }, [selectedChildId, isLoggedIn]);
@@ -297,10 +330,10 @@ export default function Home() {
     alert('Fitur konsultasi akan menghubungkan Anda dengan tenaga kesehatan terdekat melalui WhatsApp.');
   };
 
-  const handleArticleClick = (articleId: string) => {
-    // TODO: Navigate to article detail page
-    console.log('Opening article:', articleId);
-    alert('Halaman artikel akan dibuka. Fitur detail artikel dalam pengembangan.');
+  const handleArticleClick = (url: string) => {
+    if (url && url.startsWith('http')) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
   };
 
   const handleNotificationClick = (notificationId: string) => {
@@ -448,8 +481,11 @@ export default function Home() {
             {/* Posyandu Schedule */}
             {childData && (
               <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl p-5">
-                <h3 className="mb-2">Jadwal Posyandu Berikutnya</h3>
-
+                <h3 className="mb-2 font-semibold">Jadwal Posyandu Berikutnya</h3>
+                <p className="text-xl font-bold text-slate-800">{childData.nextPosyanduDate}</p>
+                {userData?.parentProfile?.village?.schedules?.[0] && (
+                  <p className="text-sm text-slate-600 mt-1">{userData.parentProfile.village.schedules[0].title}</p>
+                )}
               </div>
             )}
 
@@ -465,9 +501,9 @@ export default function Home() {
                     key={article.id}
                     title={article.title}
                     description={article.description}
-                    category={article.category}
+                    category={article.category || 'Artikel'}
                     image={article.image}
-                    onClick={() => handleArticleClick(article.id)}
+                    onClick={() => handleArticleClick(article.link || '')}
                   />
                 ))}
               </div>

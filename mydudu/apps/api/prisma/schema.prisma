@@ -387,8 +387,29 @@ model Notification {
 }
 
 // ============================================================
-// EDUCATION CONTENT (CMS)
+// EDUCATION CONTENT (CMS & AI CACHE)
 // ============================================================
+
+model EducationCache {
+  id          Int      @id @default(autoincrement())
+  hashKey     String   @unique @map("hash_key") @db.VarChar(50) // e.g., "12mo_STUNTED"
+  articleData Json     @map("article_data")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  @@map("education_cache")
+}
+
+model AITokenLog {
+  id               Int      @id @default(autoincrement())
+  operation        String   @db.VarChar(100) // e.g., 'generate_article'
+  promptTokens     Int      @map("prompt_tokens")
+  completionTokens Int      @map("completion_tokens")
+  totalTokens      Int      @map("total_tokens")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+
+  @@index([createdAt], map: "idx_token_logs_created_at")
+  @@map("ai_token_logs")
+}
 
 model EducationArticle {
   id        Int       @id @default(autoincrement())

@@ -220,28 +220,32 @@ export const mockEducationArticles = [
     title: "Cara Cegah Stunting pada Anak",
     description: "Pelajari tanda-tanda stunting dan cara mencegahnya sejak dini dengan nutrisi yang tepat.",
     category: "Stunting",
-    image: "https://images.unsplash.com/photo-1588710929895-6ee7a0a4d155?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoZWFsdGh5JTIwYmFieSUyMG51dHJpdGlvbnxlbnwxfHx8fDE3Njg3ODc1NzJ8MA&ixlib=rb-4.1.0&q=80&w=1080"
+    image: "https://images.unsplash.com/photo-1588710929895-6ee7a0a4d155?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoZWFsdGh5JTIwYmFieSUyMG51dHJpdGlvbnxlbnwxfHx8fDE3Njg3ODc1NzJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+    link: ""
   },
   {
     id: "edu-002",
     title: "Makanan Bergizi untuk Balita",
     description: "Daftar makanan sehat dan bergizi yang baik untuk tumbuh kembang anak usia 1-5 tahun.",
     category: "Nutrisi",
-    image: "https://images.unsplash.com/photo-1651718243509-742f5bd5836c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoZWFsdGh5JTIwdmVnZXRhYmxlcyUyMGZvb2R8ZW58MXx8fHwxNzY4Nzg3NTczfDA&ixlib=rb-4.1.0&q=80&w=1080"
+    image: "https://images.unsplash.com/photo-1651718243509-742f5bd5836c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoZWFsdGh5JTIwdmVnZXRhYmxlcyUyMGZvb2R8ZW58MXx8fHwxNzY4Nzg3NTczfDA&ixlib=rb-4.1.0&q=80&w=1080",
+    link: ""
   },
   {
     id: "edu-003",
     title: "Pentingnya Cuci Tangan untuk Anak",
     description: "Cara mengajarkan anak cuci tangan yang benar untuk mencegah penyakit.",
     category: "Sanitasi",
-    image: "https://images.unsplash.com/photo-1580377968103-84cadc052dc7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaGlsZCUyMHdhc2hpbmclMjBoYW5kc3xlbnwxfHx8fDE3Njg3ODc1NzN8MA&ixlib=rb-4.1.0&q=80&w=1080"
+    image: "https://images.unsplash.com/photo-1580377968103-84cadc052dc7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaGlsZCUyMHdhc2hpbmclMjBoYW5kc3xlbnwxfHx8fDE3Njg3ODc1NzN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+    link: ""
   },
   {
     id: "edu-004",
     title: "Jadwal Imunisasi Anak",
     description: "Panduan lengkap jadwal imunisasi wajib untuk bayi dan balita.",
     category: "Kesehatan",
-    image: "https://images.unsplash.com/photo-1758691462164-100b5e356169?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb3RoZXIlMjBjaGlsZCUyMGhlYWx0aGNhcmV8ZW58MXx8fHwxNzY4Nzg3NTczfDA&ixlib=rb-4.1.0&q=80&w=1080"
+    image: "https://images.unsplash.com/photo-1758691462164-100b5e356169?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb3RoZXIlMjBjaGlsZCUyMGhlYWx0aGNhcmV8ZW58MXx8fHwxNzY4Nzg3NTczfDA&ixlib=rb-4.1.0&q=80&w=1080",
+    link: ""
   }
 ];
 

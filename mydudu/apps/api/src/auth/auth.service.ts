@@ -80,8 +80,18 @@ export class AuthService {
                                                 village: true
                                             }
                                         },
-                                        validationRecords: true
+                                        validationRecords: true,
+                                        nutritionStatuses: true
                                     }
+                                }
+                            }
+                        },
+                        village: {
+                            include: {
+                                schedules: {
+                                    where: { eventDate: { gte: new Date() } },
+                                    orderBy: { eventDate: 'asc' },
+                                    take: 1
                                 }
                             }
                         }

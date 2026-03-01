@@ -65,9 +65,9 @@ export class NutritionService {
         // Or maybe just follow the finding order.
 
         let primaryCategory: NutritionCategory = NutritionCategory.NORMAL;
-        let bbU = 0;
-        let tbU = 0;
-        let bbTb = 0;
+        let bbU: number | null = null;
+        let tbU: number | null = null;
+        let bbTb: number | null = null;
 
         // Extract Z-scores
         if (growthResults[WhoGrowthIndicator.WEIGHT_FOR_AGE]) {
@@ -120,16 +120,16 @@ export class NutritionService {
             data: {
                 sessionId: session.id,
                 category: primaryCategory,
-                bbU: new Decimal(bbU),
-                tbU: new Decimal(tbU),
-                bbTb: new Decimal(bbTb)
+                bbU: bbU !== null ? new Decimal(bbU) : null,
+                tbU: tbU !== null ? new Decimal(tbU) : null,
+                bbTb: bbTb !== null ? new Decimal(bbTb) : null
             }
         });
 
         // System Alert
         if (primaryCategory !== NutritionCategory.NORMAL) {
             await this.notificationService.notifyDoctor(
-                `Ditemukan kasus ${primaryCategory} pada anak ${session.child.fullName} (Sesi #${session.id}). Z-Scores: BB/U=${bbU.toFixed(2)}, TB/U=${tbU.toFixed(2)}, BB/TB=${bbTb.toFixed(2)}`
+                `Ditemukan kasus ${primaryCategory} pada anak ${session.child.fullName} (Sesi #${session.id}). Z-Scores: BB/U=${bbU !== null ? bbU.toFixed(2) : '-'}, TB/U=${tbU !== null ? tbU.toFixed(2) : '-'}, BB/TB=${bbTb !== null ? bbTb.toFixed(2) : '-'}`
             );
         }
     }
