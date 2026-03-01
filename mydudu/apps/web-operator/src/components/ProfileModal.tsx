@@ -17,7 +17,7 @@ interface ProfileModalProps {
 export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const { user } = useAuth();
   const [displayName, setDisplayName] = useState(user?.fullName || '');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [nik, setNik] = useState('');
   const [dbUser, setDbUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -42,7 +42,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           const data = await res.json();
           setDbUser(data);
           if (data?.fullName) setDisplayName(data.fullName);
-          if (data?.phoneNumber) setPhoneNumber(data.phoneNumber);
+          if (data?.nik) setNik(data.nik);
         } catch (err) {
           console.error("Failed to fetch user details", err);
         }
@@ -140,7 +140,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ fullName: displayName, phoneNumber: phoneNumber })
+        body: JSON.stringify({ fullName: displayName }) // NIK is not updateable from profile modal
       });
 
       if (res.ok) {
@@ -239,16 +239,16 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
             <div>
               <label className="block text-[14px] font-semibold text-gray-700 mb-2">
-                Nomor Telepon
+                NIK (Nomor Induk Kependudukan)
               </label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  placeholder="08xxxxxxxxxx"
-                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
+                  value={nik}
+                  readOnly
+                  placeholder="Tidak ada NIK"
+                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-[15px] text-gray-500 cursor-not-allowed"
                 />
               </div>
             </div>

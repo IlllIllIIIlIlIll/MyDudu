@@ -155,7 +155,7 @@ export interface OperatorReportRecord {
 export interface OperatorParentRecord {
   id: number;
   fullName: string;
-  phoneNumber: string | null;
+  nik: string | null;
   villageName: string | null;
   childrenCount: number;
 }

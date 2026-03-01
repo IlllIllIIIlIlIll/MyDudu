@@ -16,7 +16,7 @@ interface UserAccount {
   status: 'Active' | 'Suspended' | 'Pending';
   createdAt: string;
   lastLogin: string;
-  phoneNumber?: string; // Replaced passwordHash
+  nik?: string; // Replaced phoneNumber
   profilePicture?: string;
 }
 
@@ -109,7 +109,7 @@ export function UserManagement() {
             assignedLocation: role === 'admin' ? 'Indonesia' : role === 'puskesmas' ? (u.district?.name || 'Unknown District') : (u.village?.name ? `Desa ${u.village.name}` : 'Unknown Village'),
             createdAt: new Date(u.createdAt).toLocaleDateString(),
             lastLogin: u.lastLogin ? new Date(u.lastLogin).toLocaleString() : '-',
-            phoneNumber: u.phoneNumber,
+            nik: u.nik,
             profilePicture: u.profilePicture
           };
         });
@@ -444,7 +444,7 @@ export function UserManagement() {
                 <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Role</th>
                 <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Assigned Location</th>
                 <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Status</th>
-                <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Phone Number</th>
+                <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">NIK</th>
                 <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Created At</th>
                 <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Last Login</th>
                 <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Actions</th>
@@ -486,7 +486,7 @@ export function UserManagement() {
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-[14px] text-gray-600 font-medium">
-                      {user.phoneNumber || '-'}
+                      {user.nik || '-'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-[15px] text-gray-600">{user.createdAt}</td>

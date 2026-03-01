@@ -25,7 +25,7 @@ async function runApiTest() {
                     fullName: 'Mock Clinical User',
                     role: 'ADMIN',
                     status: 'ACTIVE',
-                    phoneNumber: '081234567890'
+
                 }
             });
         } catch (e) {

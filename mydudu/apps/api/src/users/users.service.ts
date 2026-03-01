@@ -28,7 +28,7 @@ export class UsersService {
                 createdAt: true,
                 lastLogin: true,
 
-                phoneNumber: true, // Replaced passwordHash
+                nik: true,
                 profilePicture: true,
                 village: {
                     select: { name: true, district: { select: { name: true } } }
@@ -78,7 +78,7 @@ export class UsersService {
         return user;
     }
 
-    async createParent(data: { fullName: string; phoneNumber: string; villageId: number }, actorId?: number) {
+    async createParent(data: { fullName: string; nik: string; birthDate: string; villageId: number }, actorId?: number) {
         // 1. Get Village to find District and validate
         const village = await this.prisma.village.findUnique({
             where: { id: Number(data.villageId) },
@@ -90,12 +90,12 @@ export class UsersService {
         }
 
         try {
-            // 2. Create User and Parent record
-            // Email is optional (null), unique constraint is on (fullName + phoneNumber)
+            // Email is optional (null), unique constraint is on NIK
             const user = await this.prisma.user.create({
                 data: {
                     fullName: data.fullName,
-                    phoneNumber: data.phoneNumber,
+                    nik: data.nik,
+                    birthDate: new Date(data.birthDate),
                     role: UserRole.PARENT,
                     status: UserStatus.ACTIVE,
                     villageId: village.id,
@@ -122,7 +122,7 @@ export class UsersService {
         } catch (e: any) {
             if (e.code === 'P2002') {
                 // Unique constraint violation
-                throw new ConflictException('Wali anak dengan nama dan nomor telepon ini sudah terdaftar.');
+                throw new ConflictException('Wali anak dengan NIK ini sudah terdaftar.');
             }
             throw e;
         }
@@ -220,7 +220,7 @@ export class UsersService {
                 role: true,
 
                 status: true,
-                phoneNumber: true,
+                nik: true,
                 profilePicture: true,
                 villageId: true,
                 districtId: true,
@@ -260,12 +260,12 @@ export class UsersService {
             fullName: user.fullName,
             role: user.role,
             status: user.status,
-            phoneNumber: user.phoneNumber,
+            nik: user.nik,
             profilePicture: user.profilePicture,
             assignedLocation
         };
     }
-    async updateProfile(id: number, data: { fullName?: string; profilePicture?: string; district?: string; email?: string; phoneNumber?: string }, actorId?: number) {
+    async updateProfile(id: number, data: { fullName?: string; profilePicture?: string; district?: string; email?: string; nik?: string }, actorId?: number) {
         // Check email uniqueness if email is being updated
         if (data.email) {
             const existingUser = await this.prisma.user.findFirst({
@@ -294,7 +294,7 @@ export class UsersService {
             data: {
                 fullName: data.fullName,
                 email: data.email,
-                phoneNumber: data.phoneNumber,
+                nik: data.nik,
                 profilePicture: data.profilePicture,
                 ...(districtId !== undefined && { districtId })
             }

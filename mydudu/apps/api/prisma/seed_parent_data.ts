@@ -5,10 +5,9 @@ const prisma = new PrismaClient();
 async function main() {
     console.log('Seeding Parent Data...');
 
-    // 1. Create or Find Parent User
-    const phoneNumber = '08123456789';
+    const nik = '3276012345678901';
     let user = await prisma.user.findFirst({
-        where: { phoneNumber },
+        where: { nik },
         include: { parentProfile: true }
     });
 
@@ -22,7 +21,7 @@ async function main() {
                 email: 'parent.demo@example.com',
                 fullName: 'Wali anak Demo Parenting',
                 role: 'PARENT',
-                phoneNumber: phoneNumber,
+                nik: nik,
                 status: 'ACTIVE',
                 parentProfile: {
                     create: {

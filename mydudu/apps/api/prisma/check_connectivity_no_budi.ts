@@ -9,7 +9,7 @@ async function main() {
 
   const budiUsers = await prisma.user.findMany({
     where: { fullName: { contains: 'Budi', mode: 'insensitive' } },
-    select: { id: true, fullName: true, email: true, phoneNumber: true },
+    select: { id: true, fullName: true, email: true },
     orderBy: { id: 'asc' },
   });
 
@@ -18,7 +18,7 @@ async function main() {
   } else {
     console.log(`Found ${budiUsers.length} user(s) containing "Budi":`);
     for (const user of budiUsers) {
-      console.log(`- id=${user.id}, fullName=${user.fullName}, email=${user.email ?? '-'}, phone=${user.phoneNumber ?? '-'}`);
+      console.log(`- id=${user.id}, fullName=${user.fullName}, email=${user.email ?? '-'}`);
     }
   }
 }

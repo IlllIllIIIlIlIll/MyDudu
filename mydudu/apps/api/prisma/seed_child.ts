@@ -11,7 +11,7 @@ async function main() {
                 email: 'parent@example.com',
                 fullName: 'Test Parent',
                 role: 'PARENT',
-                phoneNumber: '08123456789',
+
                 parentProfile: {
                     create: {}
                 }

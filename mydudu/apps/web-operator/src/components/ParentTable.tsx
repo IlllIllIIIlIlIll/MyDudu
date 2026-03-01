@@ -25,7 +25,7 @@ export function ParentTable({ parents }: ParentTableProps) {
         return parents.filter(parent => {
             const matchesSearch =
                 parent.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (parent.phoneNumber && parent.phoneNumber.includes(searchTerm));
+                (parent.nik && parent.nik.includes(searchTerm));
 
             const matchesVillage =
                 filterVillage === 'all' || parent.villageName === filterVillage;
@@ -44,7 +44,7 @@ export function ParentTable({ parents }: ParentTableProps) {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="Cari nama wali anak atau no. HP..."
+                                placeholder="Cari nama wali anak atau NIK..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px]"
@@ -73,7 +73,7 @@ export function ParentTable({ parents }: ParentTableProps) {
                         <tr>
                             <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">ID</th>
                             <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Nama Orang Tua</th>
-                            <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">No. HP</th>
+                            <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">NIK Wali</th>
                             <th className="px-6 py-4 text-left text-[15px] font-bold text-gray-700">Jumlah Anak</th>
                         </tr>
                     </thead>
@@ -82,7 +82,7 @@ export function ParentTable({ parents }: ParentTableProps) {
                             <tr key={parent.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                                 <td className="px-6 py-4 font-mono text-[14px] text-gray-600">{parent.id}</td>
                                 <td className="px-6 py-4 font-semibold text-[15px]">{parent.fullName}</td>
-                                <td className="px-6 py-4 text-[15px] text-gray-600">{parent.phoneNumber || '-'}</td>
+                                <td className="px-6 py-4 text-[15px] text-gray-600">{parent.nik || '-'}</td>
                                 <td className="px-6 py-4 text-[15px] text-gray-600 font-medium">
                                     {parent.childrenCount} Anak
                                 </td>

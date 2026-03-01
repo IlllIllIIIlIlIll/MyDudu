@@ -215,7 +215,7 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
 
     const [parentFullName, setParentFullName] = useState(userData?.fullName || '');
     const [parentEmail, setParentEmail] = useState(userData?.email || '');
-    const [parentPhone, setParentPhone] = useState(userData?.phoneNumber || '');
+    const [parentNik, setParentNik] = useState(userData?.nik || '');
     const [parentPicPreview, setParentPicPreview] = useState<string | null>(userData?.profilePicture || null);
 
     const selectedChildDb = userData?.parentProfile?.children?.find((c: any) => c.id.toString() === selectedChildId);
@@ -246,7 +246,7 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
             parent: {
                 fullName: parentFullName,
                 email: parentEmail,
-                phoneNumber: parentPhone,
+                nik: parentNik,
                 profilePicture: parentPicPreview ? '...base64_data...' : null
             },
             child: {
@@ -892,8 +892,8 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
                             </div>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <label style={{ fontSize: '12px', fontWeight: '600', color: '#374151' }}>Nomor Telepon</label>
-                                <input type="text" maxLength={15} value={parentPhone} onChange={(e) => setParentPhone(e.target.value.replace(/\D/g, ''))} placeholder="Contoh: 0812345678" style={{ width: '100%', boxSizing: 'border-box', height: '40px', padding: '0 12px', borderRadius: '8px', border: '1px solid #d1d5db', backgroundColor: '#f9fafb', fontSize: '14px', outline: 'none' }} />
+                                <label style={{ fontSize: '12px', fontWeight: '600', color: '#374151' }}>NIK (16 Digit)</label>
+                                <input type="text" readOnly value={parentNik} placeholder="Tidak ada NIK" style={{ width: '100%', boxSizing: 'border-box', height: '40px', padding: '0 12px', borderRadius: '8px', border: '1px solid #d1d5db', backgroundColor: '#e5e7eb', fontSize: '14px', outline: 'none', color: '#6b7280' }} />
                             </div>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>

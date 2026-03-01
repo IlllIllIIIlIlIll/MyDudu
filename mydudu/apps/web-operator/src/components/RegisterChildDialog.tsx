@@ -58,7 +58,7 @@ export function RegisterChildDialog({ onSuccess, trigger }: RegisterChildDialogP
         const lower = query.toLowerCase();
         const filtered = parents.filter(p =>
             p.fullName.toLowerCase().includes(lower) ||
-            (p.phoneNumber && p.phoneNumber.includes(lower))
+            (p.nik && p.nik.includes(lower))
         );
         setFilteredParents(filtered);
         setShowParentDropdown(true);
@@ -233,7 +233,7 @@ export function RegisterChildDialog({ onSuccess, trigger }: RegisterChildDialogP
                                                     }}
                                                 >
                                                     <span className="font-medium">{parent.fullName}</span>
-                                                    <span className="text-xs text-gray-500">{parent.phoneNumber || 'No Phone'} • {parent.village?.name || 'No Village'}</span>
+                                                    <span className="text-xs text-gray-500">NIK: {parent.nik || '-'} • {parent.village?.name || 'No Village'}</span>
                                                 </button>
                                             ))
                                         ) : (

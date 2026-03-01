@@ -225,7 +225,7 @@ export class OperatorResourceService {
                 user: {
                     select: {
                         fullName: true,
-                        phoneNumber: true,
+                        nik: true,
                     },
                 },
                 _count: {
@@ -242,7 +242,7 @@ export class OperatorResourceService {
         return parents.map((parent) => ({
             id: parent.id,
             fullName: parent.user.fullName,
-            phoneNumber: parent.user.phoneNumber,
+            nik: parent.user.nik,
             villageName: parent.village?.name || null,
             districtName: parent.village?.district?.name || null,
             childrenCount: parent._count.children,

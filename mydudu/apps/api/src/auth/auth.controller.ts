@@ -22,11 +22,18 @@ export class AuthController {
 
         return this.authService.syncUser(token);
     }
-    @Post('verify-phone')
-    async verifyPhone(@Body('phoneNumber') phoneNumber: string) {
-        if (!phoneNumber) {
-            throw new UnauthorizedException('Phone number is required');
+    @Post('verify-nik')
+    async verifyNik(@Body('credentials') credentials: string) {
+        if (!credentials || credentials.length !== 24) {
+            throw new UnauthorizedException('Format kredensial tidak valid (harus 24 karakter)');
         }
-        return this.authService.verifyPhone(phoneNumber);
+
+        const nik = credentials.substring(0, 16);
+        const dobRaw = credentials.substring(16, 24);
+
+        // DDMMYYYY -> YYYY-MM-DD
+        const birthDateStr = `${dobRaw.substring(4, 8)}-${dobRaw.substring(2, 4)}-${dobRaw.substring(0, 2)}`;
+
+        return this.authService.verifyNik(nik, new Date(birthDateStr));
     }
 }

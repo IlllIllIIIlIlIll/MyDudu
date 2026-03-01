@@ -41,7 +41,7 @@ export class UsersController {
 
   @Post('parent')
   @UseGuards(AuthGuard)
-  async createParent(@Body() body: { fullName: string; phoneNumber: string; villageId: number; }, @Req() req: any) {
+  async createParent(@Body() body: { fullName: string; nik: string; birthDate: string; villageId: number; }, @Req() req: any) {
     const actorEmail = req.user?.email;
     const actor = actorEmail ? await this.usersService.findByEmail(actorEmail) : null;
     return this.usersService.createParent(body, actor?.id);

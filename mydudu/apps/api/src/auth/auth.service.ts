@@ -62,10 +62,13 @@ export class AuthService {
             throw new UnauthorizedException('Invalid Token');
         }
     }
-    async verifyPhone(phoneNumber: string) {
-        // 1. Check if user exists with this phone number
+    async verifyNik(nik: string, birthDate: Date) {
+        // 1. Check if user exists with this NIK and Date of Birth
         const user = await this.prisma.user.findFirst({
-            where: { phoneNumber: phoneNumber },
+            where: {
+                nik: nik,
+                birthDate: birthDate
+            },
             include: {
                 parentProfile: {
                     include: {
@@ -102,7 +105,7 @@ export class AuthService {
 
         if (!user) {
             // "if it is not then dont login, saying the phone number hasnt been registered yet in bahasa indonesia"
-            throw new UnauthorizedException('Nomor telepon belum terdaftar');
+            throw new UnauthorizedException('NIK atau Tanggal Lahir belum terdaftar atau salah.');
         }
 
         // 2. Check User Status

@@ -24,7 +24,6 @@ async function main() {
     create: {
       fullName: 'Operator Pemeriksaan Dummy',
       email: 'operator.pemeriksaan.dummy@mydudu.local',
-      phoneNumber: '089900000001',
       role: UserRole.POSYANDU,
       status: UserStatus.ACTIVE,
       villageId: village.id,
@@ -37,7 +36,6 @@ async function main() {
     create: {
       fullName: 'Wali anak Sesi Dummy',
       email: 'orangtua.pemeriksaan.dummy@mydudu.local',
-      phoneNumber: '089900000002',
       role: UserRole.PARENT,
       status: UserStatus.ACTIVE,
       villageId: village.id,
