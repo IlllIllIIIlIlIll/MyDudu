@@ -222,12 +222,11 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
     const [childFullName, setChildFullName] = useState(selectedChildDb?.fullName || '');
     const [childGender, setChildGender] = useState(selectedChildDb?.gender || 'M');
     const [childBloodType, setChildBloodType] = useState(selectedChildDb?.bloodType || 'UNKNOWN');
-    const [childPicPreview, setChildPicPreview] = useState<string | null>(selectedChildDb?.profilePicture || null);
     const [childBirthDate, setChildBirthDate] = useState(
         selectedChildDb?.birthDate ? new Date(selectedChildDb.birthDate).toISOString().split('T')[0] : ''
     );
 
-    const handleProfilePicChange = (e: React.ChangeEvent<HTMLInputElement>, isParent: boolean) => {
+    const handleProfilePicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
         if (file.size > 2 * 1024 * 1024) {
@@ -236,10 +235,7 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
         }
         const reader = new FileReader();
         reader.onload = (ev) => {
-            if (ev.target?.result) {
-                if (isParent) setParentPicPreview(ev.target.result as string);
-                else setChildPicPreview(ev.target.result as string);
-            }
+            if (ev.target?.result) setParentPicPreview(ev.target.result as string);
         };
         reader.readAsDataURL(file);
     };
@@ -257,8 +253,7 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
                 fullName: childFullName,
                 birthDate: childBirthDate,
                 gender: childGender,
-                bloodType: childBloodType,
-                profilePicture: childPicPreview ? '...base64_data...' : null
+                bloodType: childBloodType
             }
         });
     };
@@ -782,8 +777,8 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
                 boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)'
             }}>
                 <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                    <div style={{ 
-                        width: '48px', height: '48px', borderRadius: '24px', backgroundColor: '#fee2e2', 
+                    <div style={{
+                        width: '48px', height: '48px', borderRadius: '24px', backgroundColor: '#fee2e2',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto'
                     }}>
                         <LogOut style={{ width: '24px', height: '24px', color: '#ef4444' }} />
@@ -802,7 +797,7 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
                         lineHeight: '1.5'
                     }}>Anda perlu masuk kembali untuk mengakses data anak Anda.</p>
                 </div>
-                
+
                 <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
                     <button
                         onClick={() => setShowLogoutModal(false)}
@@ -887,7 +882,7 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
                                 </div>
                                 <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#4f46e5', fontSize: '13px', fontWeight: '500' }}>
                                     <Camera style={{ width: '16px', height: '16px' }} /> Ubah Foto
-                                    <input type="file" accept="image/jpeg,image/png,image/jpg" style={{ display: 'none' }} onChange={(e) => handleProfilePicChange(e, true)} />
+                                    <input type="file" accept="image/jpeg,image/png,image/jpg" style={{ display: 'none' }} onChange={handleProfilePicChange} />
                                 </label>
                             </div>
 
@@ -910,22 +905,6 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
 
                     {profileTab === 'child' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                                <div style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '40px', backgroundColor: '#f3f4f6', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
-                                    {childPicPreview ? (
-                                        <img src={childPicPreview} alt="Profil Anak" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                    ) : (
-                                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
-                                            <User style={{ width: '40px', height: '40px' }} />
-                                        </div>
-                                    )}
-                                </div>
-                                <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#4f46e5', fontSize: '13px', fontWeight: '500' }}>
-                                    <Camera style={{ width: '16px', height: '16px' }} /> Ubah Foto Anak
-                                    <input type="file" accept="image/jpeg,image/png,image/jpg" style={{ display: 'none' }} onChange={(e) => handleProfilePicChange(e, false)} />
-                                </label>
-                            </div>
-
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <label style={{ fontSize: '12px', fontWeight: '600', color: '#374151' }}>Nama Lengkap Anak</label>
                                 <input type="text" maxLength={100} value={childFullName} onChange={(e) => setChildFullName(e.target.value)} placeholder="Contoh: Putri Santoso" style={{ width: '100%', boxSizing: 'border-box', height: '40px', padding: '0 12px', borderRadius: '8px', border: '1px solid #d1d5db', backgroundColor: '#f9fafb', fontSize: '14px', outline: 'none' }} />

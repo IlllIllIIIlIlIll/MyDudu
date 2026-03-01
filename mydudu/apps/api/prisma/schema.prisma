@@ -195,7 +195,6 @@ model Child {
   birthDate DateTime  @map("birth_date") @db.Date
   gender         String?   @db.Char(1) // 'M' or 'F'
   bloodType      String?   @map("blood_type") @db.VarChar(10) // A, B, AB, O, UNKNOWN
-  profilePicture String?   @map("profile_picture") @db.Text
   createdAt      DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
   deletedAt      DateTime? @map("deleted_at") @db.Timestamp(6) // Soft Delete
 
