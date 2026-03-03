@@ -14,6 +14,13 @@ import {
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import {
+  Z_SCORE_THRESHOLDS,
+  VITALS_THRESHOLDS,
+  AGE_THRESHOLDS,
+  WHO_STATUS_TRANSLATE,
+  HEALTH_COLORS
+} from '@mydudu/shared';
 
 /** 
  * --- UTILITY ---
@@ -75,11 +82,11 @@ const GrowthZScoreSlider = ({ label, zScore, value, unit, ideal }: any) => {
   const initialPercentage = getPercentage(zScore);
 
   const getStatusInfo = (z: number) => {
-    if (z <= -3) return { label: 'Sangat Kurus/Pendek', color: 'text-red-700', bg: 'bg-red-600', border: 'border-red-500' };
-    if (z <= -2) return { label: 'Kurus/Pendek', color: 'text-orange-700', bg: 'bg-orange-500', border: 'border-orange-500' };
-    if (z >= 3) return { label: 'Obesitas/Sangat Tinggi', color: 'text-red-700', bg: 'bg-red-600', border: 'border-red-500' };
-    if (z >= 2) return { label: 'Gemuk/Tinggi', color: 'text-orange-700', bg: 'bg-orange-500', border: 'border-orange-500' };
-    return { label: 'Normal', color: 'text-green-700', bg: 'bg-green-600', border: 'border-green-500' };
+    if (z <= Z_SCORE_THRESHOLDS.SEVERE_UNDER) return { label: WHO_STATUS_TRANSLATE['SEVERE_WASTED'] || 'Sangat Kurus', color: 'text-red-700', bg: 'bg-red-600', border: 'border-red-500' };
+    if (z <= Z_SCORE_THRESHOLDS.UNDER) return { label: WHO_STATUS_TRANSLATE['WASTED'] || 'Kurus', color: 'text-orange-700', bg: 'bg-orange-500', border: 'border-orange-500' };
+    if (z >= Z_SCORE_THRESHOLDS.SEVERE_OVER) return { label: WHO_STATUS_TRANSLATE['OBESE'] || 'Obesitas', color: 'text-red-700', bg: 'bg-red-600', border: 'border-red-500' };
+    if (z >= Z_SCORE_THRESHOLDS.OVER) return { label: WHO_STATUS_TRANSLATE['OVERWEIGHT'] || 'Gemuk', color: 'text-orange-700', bg: 'bg-orange-500', border: 'border-orange-500' };
+    return { label: WHO_STATUS_TRANSLATE['NORMAL'] || 'Normal', color: 'text-green-700', bg: 'bg-green-600', border: 'border-green-500' };
   };
 
   const currentStatus = getStatusInfo(currentZ);
@@ -199,11 +206,11 @@ const GrowthCard = ({ titleKey, analysis }: { titleKey: string; analysis: any })
   const [localZ, setLocalZ] = useState(analysis.zScore);
 
   const getStatusMeta = (z: number) => {
-    if (z <= -3) return { label: "Sangat Kurus / Sangat Pendek", color: "#b91c1c", bg: "#fee2e2", border: "#fca5a5" };
-    if (z <= -2) return { label: "Kurus / Pendek", color: "#d97706", bg: "#fef3c7", border: "#fcd34d" };
-    if (z >= 3) return { label: "Obesitas Berat / Sangat Tinggi", color: "#b91c1c", bg: "#fee2e2", border: "#fca5a5" };
-    if (z >= 2) return { label: "Gemuk / Tinggi", color: "#d97706", bg: "#fef3c7", border: "#fcd34d" };
-    return { label: "Normal", color: "#15803d", bg: "#dcfce7", border: "#86efac" };
+    if (z <= Z_SCORE_THRESHOLDS.SEVERE_UNDER) return { label: WHO_STATUS_TRANSLATE['SEVERE_WASTED'] || "Sangat Kurus", color: "#b91c1c", bg: "#fee2e2", border: "#fca5a5" };
+    if (z <= Z_SCORE_THRESHOLDS.UNDER) return { label: WHO_STATUS_TRANSLATE['WASTED'] || "Kurus", color: "#d97706", bg: "#fef3c7", border: "#fcd34d" };
+    if (z >= Z_SCORE_THRESHOLDS.SEVERE_OVER) return { label: WHO_STATUS_TRANSLATE['OBESE'] || "Obesitas", color: "#b91c1c", bg: "#fee2e2", border: "#fca5a5" };
+    if (z >= Z_SCORE_THRESHOLDS.OVER) return { label: WHO_STATUS_TRANSLATE['OVERWEIGHT'] || "Gemuk", color: "#d97706", bg: "#fef3c7", border: "#fcd34d" };
+    return { label: WHO_STATUS_TRANSLATE['NORMAL'] || "Normal", color: "#15803d", bg: "#dcfce7", border: "#86efac" };
   };
 
   const status = getStatusMeta(localZ);
@@ -376,7 +383,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
     setVitalsData({
       weight: { value: Number(selectedSession.weight ?? 0), unit: 'kg', icon: <Weight className="w-4 h-4" /> },
       height: { value: Number(selectedSession.height ?? 0), unit: 'cm', icon: <Ruler className="w-4 h-4" /> },
-      temp: { value: tempValue, unit: '°C', icon: <Thermometer className="w-4 h-4" />, status: tempValue > 37.5 ? 'danger' : 'normal' },
+      temp: { value: tempValue, unit: '°C', icon: <Thermometer className="w-4 h-4" />, status: tempValue > VITALS_THRESHOLDS.TEMPERATURE.MAX_SAFE ? 'danger' : 'normal' },
       spo2: { value: 98, unit: '%', icon: <Activity className="w-4 h-4" /> },
       heartRate: { value: Number(selectedSession.heartRate ?? 0), unit: 'bpm', icon: <Activity className="w-4 h-4" /> },
     });
@@ -624,14 +631,36 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
 
   const currentNode = clinicalNodes[currentNodeId];
 
+  // Compute growth status once for the result view vitals summary
+  const getGrowthStatusKey = (analysis: any): keyof typeof HEALTH_COLORS => {
+    if (!analysis) return 'IDLE';
+    const stat = String(analysis.clinicalStatus || analysis.status || 'NORMAL').toUpperCase();
+    if (stat === 'NORMAL') return 'NORMAL';
+    if (stat.includes('SEVERE') || stat === 'OBESE') return 'DANGER';
+    return 'WARNING';
+  };
+
+  const resultWeightAnalysis = selectedSession?.growthAnalysis
+    ? (Object.values(selectedSession.growthAnalysis).find((a: any) => {
+      const ind = String(a.indicator || '').toLowerCase();
+      return ind.includes('weight') || ind.includes('berat');
+    }) as any)
+    : null;
+  const resultHeightAnalysis = selectedSession?.growthAnalysis
+    ? (Object.values(selectedSession.growthAnalysis).find((a: any) => {
+      const ind = String(a.indicator || '').toLowerCase();
+      return ind.includes('height') || ind.includes('length') || ind.includes('tinggi');
+    }) as any)
+    : null;
+
   // Vitals display order: left col = weight, temp, heartRate; right col = height, spo2
   const vitalsLeft = [
-    { label: 'WEIGHT', value: vitalsData.weight.value, unit: vitalsData.weight.unit, icon: <Weight className="w-3.5 h-3.5" /> },
+    { label: 'WEIGHT', value: vitalsData.weight.value, unit: vitalsData.weight.unit, icon: <Weight className="w-3.5 h-3.5" />, status: getGrowthStatusKey(resultWeightAnalysis) },
     { label: 'TEMP', value: vitalsData.temp.value, unit: vitalsData.temp.unit, icon: <Thermometer className="w-3.5 h-3.5" /> },
     { label: 'HEARTRATE', value: vitalsData.heartRate.value, unit: vitalsData.heartRate.unit, icon: <Activity className="w-3.5 h-3.5" /> },
   ];
   const vitalsRight = [
-    { label: 'HEIGHT', value: vitalsData.height.value, unit: vitalsData.height.unit, icon: <Ruler className="w-3.5 h-3.5" /> },
+    { label: 'HEIGHT', value: vitalsData.height.value, unit: vitalsData.height.unit, icon: <Ruler className="w-3.5 h-3.5" />, status: getGrowthStatusKey(resultHeightAnalysis) },
     { label: 'SPO2', value: vitalsData.spo2.value, unit: vitalsData.spo2.unit, icon: <Activity className="w-3.5 h-3.5" /> },
   ];
 
@@ -660,12 +689,7 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
           {phase === 'RESULT' && selectedPatient && clinicalOutcome ? (
             <div className="flex-1 min-h-0 flex flex-col px-4 py-3">
               <ScreeningResultView
-                diagnosis={{
-                  title: clinicalOutcome === 'DIAGNOSED' ? 'Terdiagnosis' : clinicalOutcome === 'REFER_IMMEDIATELY' ? 'Rujuk Segera' : clinicalOutcome === 'EMERGENCY' ? 'Gawat Darurat' : 'Hasil Pemeriksaan',
-                  description: `Hasil pemeriksaan klinis: ${clinicalOutcome}`,
-                  severity: clinicalOutcome === 'EMERGENCY' || clinicalOutcome === 'REFER_IMMEDIATELY' ? 'Merah' : clinicalOutcome === 'DIAGNOSED' ? 'Kuning' : 'Hijau',
-                  instructions: clinicalOutcome === 'EMERGENCY' ? ['Rujuk ke UGD segera', 'Berikan pertolongan pertama'] : clinicalOutcome === 'REFER_IMMEDIATELY' ? ['Rujuk ke fasilitas kesehatan', 'Pantau kondisi anak'] : ['Lanjutkan pemantauan', 'Berikan perawatan sesuai anjuran']
-                }}
+                clinicalOutcome={clinicalOutcome}
                 quizHistory={quizHistory}
                 vitalsLeft={vitalsLeft}
                 vitalsRight={vitalsRight}
@@ -704,8 +728,15 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                   <div className="flex-1 min-h-0 flex flex-wrap gap-4 items-stretch content-stretch">
 
                     {(() => {
-                      const weightAnalysis = selectedSession?.growthAnalysis ? Object.values(selectedSession.growthAnalysis).find((a: any) => typeof a.indicator === 'string' && (a.indicator.includes('Weight') || a.indicator.toLowerCase().includes('berat'))) as any : null;
-                      const heightAnalysis = selectedSession?.growthAnalysis ? Object.values(selectedSession.growthAnalysis).find((a: any) => typeof a.indicator === 'string' && (a.indicator.includes('Height') || a.indicator.includes('Length') || a.indicator.toLowerCase().includes('tinggi') || a.indicator.toLowerCase().includes('panjang'))) as any : null;
+                      const weightAnalysis = selectedSession?.growthAnalysis ? Object.values(selectedSession.growthAnalysis).find((a: any) => {
+                        const ind = String(a.indicator || '').toLowerCase();
+                        return ind.includes('weight') || ind.includes('berat');
+                      }) as any : null;
+
+                      const heightAnalysis = selectedSession?.growthAnalysis ? Object.values(selectedSession.growthAnalysis).find((a: any) => {
+                        const ind = String(a.indicator || '').toLowerCase();
+                        return ind.includes('height') || ind.includes('length') || ind.includes('tinggi') || ind.includes('panjang');
+                      }) as any : null;
 
                       const getNormalValues = (lms: any, unit: string) => {
                         if (!lms) return '';
@@ -717,15 +748,62 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                       };
 
                       const ageMonths = selectedPatient?.ageMonths ?? 24;
-                      const hrRange = ageMonths < 1 ? '70-190' : ageMonths < 12 ? '80-160' : '70-130';
+                      const hrRange = ageMonths < AGE_THRESHOLDS.NEWBORN_MAX_MONTHS
+                        ? `${VITALS_THRESHOLDS.HEART_RATE.NEWBORN.MIN}-${VITALS_THRESHOLDS.HEART_RATE.NEWBORN.MAX}`
+                        : ageMonths < AGE_THRESHOLDS.BABY_MAX_MONTHS
+                          ? `${VITALS_THRESHOLDS.HEART_RATE.BABY.MIN}-${VITALS_THRESHOLDS.HEART_RATE.BABY.MAX}`
+                          : `${VITALS_THRESHOLDS.HEART_RATE.CHILD.MIN}-${VITALS_THRESHOLDS.HEART_RATE.CHILD.MAX}`;
+
+                      const getGrowthStatus = (analysis: any) => {
+                        if (!analysis) return 'IDLE';
+                        const stat = analysis.clinicalStatus || 'NORMAL';
+                        if (stat === 'NORMAL') return 'NORMAL';
+                        if (stat.includes('SEVERE') || stat === 'OBESE') return 'DANGER';
+                        if (stat === 'UNDERWEIGHT' || stat === 'OVERWEIGHT' || stat === 'STUNTED' || stat === 'WASTED' || stat === 'TALL') return 'WARNING';
+                        return 'WARNING';
+                      };
+
+                      const weightStatus = getGrowthStatus(weightAnalysis);
+                      const heightStatus = getGrowthStatus(heightAnalysis);
+
+                      const getVitalsStatus = (item: any) => {
+                        if (item.label === 'Suhu') {
+                          if (item.value >= VITALS_THRESHOLDS.TEMPERATURE.MODERATE_FEVER_MIN) return 'DANGER';
+                          if (item.value >= VITALS_THRESHOLDS.TEMPERATURE.MAX_SAFE || (item.value > 0 && item.value < VITALS_THRESHOLDS.TEMPERATURE.MIN_SAFE)) return 'WARNING';
+                          return item.value > 0 ? 'NORMAL' : 'IDLE';
+                        }
+                        if (item.label === 'Saturasi O2') {
+                          if (item.value > 0 && item.value < VITALS_THRESHOLDS.SPO2.WARNING_MIN) return 'DANGER';
+                          if (item.value >= VITALS_THRESHOLDS.SPO2.WARNING_MIN && item.value < VITALS_THRESHOLDS.SPO2.NORMAL_MIN) return 'WARNING';
+                          return item.value >= VITALS_THRESHOLDS.SPO2.NORMAL_MIN ? 'NORMAL' : 'IDLE';
+                        }
+                        if (item.label === 'Detak Jantung' && item.value > 0) {
+                          let hrMin: number, hrMax: number;
+                          if (ageMonths < AGE_THRESHOLDS.NEWBORN_MAX_MONTHS) {
+                            hrMin = VITALS_THRESHOLDS.HEART_RATE.NEWBORN.MIN;
+                            hrMax = VITALS_THRESHOLDS.HEART_RATE.NEWBORN.MAX;
+                          } else if (ageMonths < AGE_THRESHOLDS.BABY_MAX_MONTHS) {
+                            hrMin = VITALS_THRESHOLDS.HEART_RATE.BABY.MIN;
+                            hrMax = VITALS_THRESHOLDS.HEART_RATE.BABY.MAX;
+                          } else {
+                            hrMin = VITALS_THRESHOLDS.HEART_RATE.CHILD.MIN;
+                            hrMax = VITALS_THRESHOLDS.HEART_RATE.CHILD.MAX;
+                          }
+                          const nearEdge = item.value < (hrMin + VITALS_THRESHOLDS.HEART_RATE.EDGE_WARNING_BPM) || item.value > (hrMax - VITALS_THRESHOLDS.HEART_RATE.EDGE_WARNING_BPM);
+                          if (item.value < hrMin || item.value > hrMax) return 'DANGER';
+                          if (nearEdge) return 'WARNING';
+                          return 'NORMAL';
+                        }
+                        return item.value > 0 ? 'NORMAL' : 'IDLE';
+                      };
 
                       // Determine which vitals actually have data to show dynamically
                       const allCards = [
-                        { label: "Berat Badan", value: vitalsData.weight.value, unit: vitalsData.weight.unit, emphasize: true, normalRange: getNormalValues(weightAnalysis?.lms, 'kg') },
-                        { label: "Tinggi Badan", value: vitalsData.height.value, unit: vitalsData.height.unit, emphasize: true, normalRange: getNormalValues(heightAnalysis?.lms, 'cm') },
-                        { label: "Suhu", value: vitalsData.temp.value, unit: vitalsData.temp.unit, normalRange: 'Normal: 36.0 - 37.4 °C' },
-                        { label: "Detak Jantung", value: vitalsData.heartRate.value, unit: vitalsData.heartRate.unit, normalRange: `Normal: ${hrRange} BPM` },
-                        { label: "Saturasi O2", value: vitalsData.spo2.value, unit: vitalsData.spo2.unit, normalRange: 'Normal: ≥ 95 %' },
+                        { label: "Berat Badan", value: vitalsData.weight.value, unit: vitalsData.weight.unit, status: weightStatus, normalRange: getNormalValues(weightAnalysis?.lms, 'kg') },
+                        { label: "Tinggi Badan", value: vitalsData.height.value, unit: vitalsData.height.unit, status: heightStatus, normalRange: getNormalValues(heightAnalysis?.lms, 'cm') },
+                        { label: "Suhu", value: vitalsData.temp.value, unit: vitalsData.temp.unit, status: getVitalsStatus({ label: 'Suhu', value: vitalsData.temp.value }), normalRange: `Normal: ${VITALS_THRESHOLDS.TEMPERATURE.MIN_SAFE} - ${VITALS_THRESHOLDS.TEMPERATURE.MAX_SAFE} °C` },
+                        { label: "Detak Jantung", value: vitalsData.heartRate.value, unit: vitalsData.heartRate.unit, status: getVitalsStatus({ label: 'Detak Jantung', value: vitalsData.heartRate.value }), normalRange: `Normal: ${hrRange} BPM` },
+                        { label: "Saturasi O2", value: vitalsData.spo2.value, unit: vitalsData.spo2.unit, status: getVitalsStatus({ label: 'Saturasi O2', value: vitalsData.spo2.value }), normalRange: `Normal: ≥ ${VITALS_THRESHOLDS.SPO2.NORMAL_MIN} %` },
                       ];
 
                       const count = allCards.length;
@@ -733,30 +811,8 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                       return allCards.map((item, i) => {
                         // Color-coded backgrounds with age-appropriate clinical thresholds
                         const getMeasurementStatus = () => {
-                          if (item.label === 'Suhu') {
-                            if (item.value >= 38.5) return { bg: '#fee2e2', border: '#fca5a5' };
-                            if (item.value >= 37.5) return { bg: '#fef3c7', border: '#fcd34d' };
-                            if (item.value > 0 && item.value < 36) return { bg: '#fef3c7', border: '#fcd34d' };
-                            if (item.value > 0) return { bg: '#f0fdf4', border: '#86efac' }; // Normal
-                          }
-                          if (item.label === 'Saturasi O2') {
-                            if (item.value > 0 && item.value < 90) return { bg: '#fee2e2', border: '#fca5a5' };
-                            if (item.value >= 90 && item.value < 95) return { bg: '#fef3c7', border: '#fcd34d' };
-                            if (item.value >= 95) return { bg: '#f0fdf4', border: '#86efac' };
-                          }
-                          if (item.label === 'Detak Jantung' && item.value > 0) {
-                            let hrMin: number, hrMax: number;
-                            if (ageMonths < 1) { hrMin = 70; hrMax = 190; }
-                            else if (ageMonths < 12) { hrMin = 80; hrMax = 160; }
-                            else { hrMin = 70; hrMax = 130; }
-                            const nearEdge = item.value < hrMin + 10 || item.value > hrMax - 10;
-                            if (item.value < hrMin || item.value > hrMax) return { bg: '#fee2e2', border: '#fca5a5' };
-                            if (nearEdge) return { bg: '#fef3c7', border: '#fcd34d' };
-                            return { bg: '#f0fdf4', border: '#86efac' };
-                          }
-                          if (item.value === 0) return { bg: '#f8fafc', border: '#e2e8f0' };
-                          if (item.emphasize) return { bg: '#f0fdf4', border: '#86efac' };
-                          return { bg: '#f8fafc', border: '#e2e8f0' };
+                          const s = (item.status || 'IDLE') as keyof typeof HEALTH_COLORS;
+                          return HEALTH_COLORS[s] || HEALTH_COLORS.IDLE;
                         };
 
                         const col = getMeasurementStatus();
@@ -790,41 +846,52 @@ export function ScreeningFlow({ onExit }: ScreeningFlowProps) {
                             )}
                             style={{ backgroundColor: col.bg, borderColor: col.border }}
                           >
-                            <div className={cn(
-                              "font-semibold text-slate-600 leading-tight line-clamp-2",
-                              isGiant ? "text-[clamp(1.125rem,6cqmin,2.5rem)] mb-[clamp(0.5rem,3cqh,1.5rem)]"
-                                : isLarge ? "text-[clamp(1rem,5cqmin,2rem)] mb-[clamp(0.5rem,2cqh,1.25rem)]"
-                                  : "text-[clamp(0.875rem,4cqmin,1.5rem)] mb-[clamp(0.25rem,1.5cqh,0.75rem)]"
-                            )}>
+                            <div
+                              style={{ color: col.text }}
+                              className={cn(
+                                "font-semibold leading-tight line-clamp-2",
+                                isGiant ? "text-[clamp(1.125rem,6cqmin,2.5rem)] mb-[clamp(0.5rem,3cqh,1.5rem)]"
+                                  : isLarge ? "text-[clamp(1rem,5cqmin,2rem)] mb-[clamp(0.5rem,2cqh,1.25rem)]"
+                                    : "text-[clamp(0.875rem,4cqmin,1.5rem)] mb-[clamp(0.25rem,1.5cqh,0.75rem)]"
+                              )}
+                            >
                               {item.label}
                             </div>
 
                             <div className="flex items-baseline gap-[clamp(0.25rem,2cqmin,1rem)] min-h-0">
-                              <span className={cn(
-                                "tabular-nums font-bold tracking-tight leading-none",
-                                isGiant ? "text-[clamp(3.5rem,25cqmin,8rem)]"
-                                  : isLarge ? "text-[clamp(2.5rem,18cqmin,6rem)]"
-                                    : "text-[clamp(2rem,15cqmin,4.5rem)]"
-                              )}>
+                              <span
+                                style={{ color: col.text }}
+                                className={cn(
+                                  "tabular-nums font-bold tracking-tight leading-none",
+                                  isGiant ? "text-[clamp(3.5rem,25cqmin,8rem)]"
+                                    : isLarge ? "text-[clamp(2.5rem,18cqmin,6rem)]"
+                                      : "text-[clamp(2rem,15cqmin,4.5rem)]"
+                                )}
+                              >
                                 {item.value}
                               </span>
-                              <span className={cn(
-                                "text-slate-500 font-medium",
-                                isGiant ? "text-[clamp(1.25rem,8cqmin,2.5rem)]"
-                                  : isLarge ? "text-[clamp(1rem,6cqmin,2rem)]"
-                                    : "text-[clamp(0.875rem,5cqmin,1.5rem)]"
-                              )}>
+                              <span
+                                style={{ color: col.text }}
+                                className={cn(
+                                  "font-medium opacity-80",
+                                  isGiant ? "text-[clamp(1.25rem,8cqmin,2.5rem)]"
+                                    : isLarge ? "text-[clamp(1rem,6cqmin,2rem)]"
+                                      : "text-[clamp(0.875rem,5cqmin,1.5rem)]"
+                                )}
+                              >
                                 {item.unit}
                               </span>
                             </div>
 
                             {item.normalRange && (
-                              <div className={cn(
-                                "font-medium text-slate-500 leading-snug break-words",
-                                isGiant ? "mt-[clamp(0.75rem,4cqh,2rem)] text-[clamp(0.875rem,4cqmin,1.5rem)]"
-                                  : isLarge ? "mt-[clamp(0.5rem,3cqh,1.5rem)] text-[clamp(0.75rem,3cqmin,1.25rem)]"
-                                    : "mt-[clamp(0.25rem,2cqh,1rem)] text-[clamp(0.65rem,2.5cqmin,1rem)]"
-                              )}>
+                              <div
+                                style={{ color: col.text }}
+                                className={cn(
+                                  "font-medium opacity-80 leading-snug break-words",
+                                  isGiant ? "mt-[clamp(0.75rem,4cqh,2rem)] text-[clamp(0.875rem,4cqmin,1.5rem)]"
+                                    : isLarge ? "mt-[clamp(0.5rem,3cqh,1.5rem)] text-[clamp(0.75rem,3cqmin,1.25rem)]"
+                                      : "mt-[clamp(0.25rem,2cqh,1rem)] text-[clamp(0.65rem,2.5cqmin,1rem)]"
+                                )}>
                                 {item.normalRange}
                               </div>
                             )}

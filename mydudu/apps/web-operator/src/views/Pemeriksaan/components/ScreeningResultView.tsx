@@ -1,58 +1,66 @@
-import { ReactNode } from 'react';
+import React, { ReactNode } from 'react';
 import { motion } from 'motion/react';
 import { Printer, CheckCircle2, AlertTriangle, AlertOctagon } from 'lucide-react';
-import { DiagnosisResult, QuizStepHistory } from '../types';
+import {
+    HEALTH_COLORS,
+    VITALS_THRESHOLDS,
+    CLINICAL_OUTCOME_CONFIG,
+} from '@mydudu/shared';
+import { QuizStepHistory } from '../types';
 
 interface ScreeningResultViewProps {
-    diagnosis: DiagnosisResult;
+    clinicalOutcome: string;
     quizHistory: QuizStepHistory[];
-    vitalsLeft: { label: string; value: number; unit: string; icon: ReactNode }[];
-    vitalsRight: { label: string; value: number; unit: string; icon: ReactNode }[];
+    vitalsLeft: { label: string; value: number; unit: string; icon: ReactNode; status?: string }[];
+    vitalsRight: { label: string; value: number; unit: string; icon: ReactNode; status?: string }[];
     onPrint: () => void;
     onNewPatient: () => void;
 }
 
-const SEVERITY_CONFIG: Record<string, { bg: string; border: string; text: string; icon: any; label: string }> = {
-    Merah: { bg: '#fee2e2', border: '#f87171', text: '#991b1b', icon: AlertOctagon, label: 'Gawat Darurat' },
-    Kuning: { bg: '#fef9c3', border: '#fbbf24', text: '#854d0e', icon: AlertTriangle, label: 'Perlu Perhatian' },
-    Hijau: { bg: '#dcfce7', border: '#4ade80', text: '#14532d', icon: CheckCircle2, label: 'Normal' },
-};
+const SEVERITY_ICON = {
+    DANGER: AlertOctagon,
+    WARNING: AlertTriangle,
+    NORMAL: CheckCircle2,
+} as const;
 
 export function ScreeningResultView({
-    diagnosis,
+    clinicalOutcome,
     quizHistory,
     vitalsLeft,
     vitalsRight,
     onPrint,
     onNewPatient,
 }: ScreeningResultViewProps) {
-    const sev = SEVERITY_CONFIG[diagnosis.severity] ?? SEVERITY_CONFIG['Hijau'];
-    const SevIcon = sev.icon;
+    const cfg = CLINICAL_OUTCOME_CONFIG[clinicalOutcome] ?? CLINICAL_OUTCOME_CONFIG['NORMAL'];
+    const col = HEALTH_COLORS[cfg.severity];
+    const SevIcon = SEVERITY_ICON[cfg.severity];
     const allVitals = [...vitalsLeft, ...vitalsRight];
 
     // Color-code icon background by vital label & value
-    // Labels from ScreeningFlow: 'WEIGHT','HEIGHT','TEMP','HEARTRATE','SPO2'
-    const getVitalIconStyle = (label: string, value: number): string => {
+    const getVitalIconStyle = (label: string, value: number, status?: string): React.CSSProperties => {
+        // If a pre-computed status is passed (e.g. from growthAnalysis for WEIGHT/HEIGHT), use it first
+        if (status && status !== 'IDLE' && status in HEALTH_COLORS) {
+            const c = HEALTH_COLORS[status as keyof typeof HEALTH_COLORS];
+            return { backgroundColor: c.bg, color: c.text };
+        }
         const l = label.toUpperCase();
-        // Temperature
         if (l === 'TEMP' || l === 'SUHU') {
-            if (value >= 38.5) return 'bg-red-100 text-red-600';
-            if (value >= 37.5 || (value > 0 && value < 36)) return 'bg-amber-100 text-amber-600';
-            if (value > 0) return 'bg-green-100 text-green-700';
+            if (value >= VITALS_THRESHOLDS.TEMPERATURE.MODERATE_FEVER_MIN) return { backgroundColor: HEALTH_COLORS.DANGER.bg, color: HEALTH_COLORS.DANGER.text };
+            if (value >= VITALS_THRESHOLDS.TEMPERATURE.MAX_SAFE || (value > 0 && value < VITALS_THRESHOLDS.TEMPERATURE.MIN_SAFE)) return { backgroundColor: HEALTH_COLORS.WARNING.bg, color: HEALTH_COLORS.WARNING.text };
+            if (value > 0) return { backgroundColor: HEALTH_COLORS.NORMAL.bg, color: HEALTH_COLORS.NORMAL.text };
         }
-        // SpO2 — 95-100: normal, 90-94: warning, <90: danger
         if (l === 'SPO2' || l.includes('O2') || l.includes('SATURASI')) {
-            if (value > 0 && value < 90) return 'bg-red-100 text-red-600';
-            if (value >= 90 && value < 95) return 'bg-amber-100 text-amber-600';
-            if (value >= 95) return 'bg-green-100 text-green-700';
+            if (value > 0 && value < VITALS_THRESHOLDS.SPO2.WARNING_MIN) return { backgroundColor: HEALTH_COLORS.DANGER.bg, color: HEALTH_COLORS.DANGER.text };
+            if (value >= VITALS_THRESHOLDS.SPO2.WARNING_MIN && value < VITALS_THRESHOLDS.SPO2.NORMAL_MIN) return { backgroundColor: HEALTH_COLORS.WARNING.bg, color: HEALTH_COLORS.WARNING.text };
+            if (value >= VITALS_THRESHOLDS.SPO2.NORMAL_MIN) return { backgroundColor: HEALTH_COLORS.NORMAL.bg, color: HEALTH_COLORS.NORMAL.text };
         }
-        // Heart Rate — use child 1–10yr range (70-130) as fallback for result view
         if (l === 'HEARTRATE' || l.includes('JANTUNG') || l.includes('HEART')) {
-            if (value > 0 && (value < 70 || value > 130)) return 'bg-red-100 text-red-600';
-            if (value > 0 && (value < 80 || value > 120)) return 'bg-amber-100 text-amber-600';
-            if (value > 0) return 'bg-green-100 text-green-700';
+            const range = VITALS_THRESHOLDS.HEART_RATE.CHILD;
+            if (value > 0 && (value < range.MIN || value > range.MAX)) return { backgroundColor: HEALTH_COLORS.DANGER.bg, color: HEALTH_COLORS.DANGER.text };
+            if (value > 0 && (value < range.MIN + 10 || value > range.MAX - 10)) return { backgroundColor: HEALTH_COLORS.WARNING.bg, color: HEALTH_COLORS.WARNING.text };
+            if (value > 0) return { backgroundColor: HEALTH_COLORS.NORMAL.bg, color: HEALTH_COLORS.NORMAL.text };
         }
-        return 'bg-slate-100 text-slate-500';
+        return { backgroundColor: HEALTH_COLORS.IDLE.bg, color: HEALTH_COLORS.IDLE.text };
     };
 
     return (
@@ -62,52 +70,60 @@ export function ScreeningResultView({
             animate={{ opacity: 1, y: 0 }}
             className="flex-1 min-h-0 flex flex-col p-4 gap-4 overflow-hidden"
         >
-            {/* ── Header Card ── */}
+            {/* ── Header Card: status icon + label + vitals chips + disabled Cetak ── */}
             <div
-                className="rounded-2xl p-5 flex items-center gap-4 shrink-0 print:rounded-none"
-                style={{ backgroundColor: sev.bg, border: `2px solid ${sev.border}` }}
+                className="rounded-2xl px-5 py-4 flex items-center gap-4 shrink-0 print:rounded-none"
+                style={{ backgroundColor: col.border, border: `2px solid ${col.text}22` }}
             >
-                <SevIcon className="w-10 h-10 shrink-0" style={{ color: sev.text }} />
-                <div className="min-w-0">
-                    <p className="text-xs font-bold uppercase tracking-widest" style={{ color: sev.text }}>{sev.label}</p>
-                    <h1 className="text-xl font-black leading-tight truncate" style={{ color: sev.text }}>{diagnosis.title}</h1>
-                    <p className="text-sm mt-0.5" style={{ color: sev.text, opacity: 0.8 }}>{diagnosis.description}</p>
+                {/* Left: severity icon + label only */}
+                <SevIcon className="w-9 h-9 shrink-0" style={{ color: col.text }} />
+                <p className="text-base font-black leading-tight shrink-0" style={{ color: col.text }}>
+                    {cfg.label}
+                </p>
+
+                {/* Right-aligned: vitals compact pills */}
+                <div className="ml-auto flex flex-wrap gap-2 items-center justify-end">
+                    {allVitals.map((v) => {
+                        const cs = getVitalIconStyle(v.label, v.value, v.status);
+                        return (
+                            <div
+                                key={v.label}
+                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg shrink-0"
+                                style={{ backgroundColor: cs.backgroundColor, color: cs.color }}
+                            >
+                                <span className="shrink-0">{v.icon}</span>
+                                <span className="text-xs font-bold tabular-nums">{v.value}</span>
+                                <span className="text-[10px] font-medium opacity-80">{v.unit}</span>
+                            </div>
+                        );
+                    })}
                 </div>
+
+                {/* Right: Cetak button — disabled / muted */}
                 <button
-                    onClick={onPrint}
-                    className="ml-auto shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-white shadow-sm border no-print hover:opacity-90 active:scale-95 transition-all"
-                    style={{ borderColor: sev.border, color: sev.text }}
+                    disabled
+                    className="ml-auto shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-white/40 border border-white/40 text-slate-400 cursor-not-allowed no-print"
                 >
                     <Printer className="w-4 h-4" /> Cetak
                 </button>
             </div>
 
-            {/* ── Body: Vitals + Symptoms ── */}
+            {/* ── Body: Riwayat Gejala (left) + Tindak Lanjut (right) ── */}
             <div className="flex-1 min-h-0 grid grid-cols-2 gap-4 overflow-hidden">
-                {/* Vitals */}
-                <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col overflow-hidden">
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3 shrink-0">Metrik Vitals</h3>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-3 overflow-y-auto">
-                        {allVitals.map((v) => (
-                            <div key={v.label} className="flex items-center gap-2">
-                                <div className={`p-1.5 rounded-lg shrink-0 ${getVitalIconStyle(v.label, v.value)}`}>{v.icon}</div>
-                                <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{v.label}</p>
-                                    <p className="text-sm font-bold text-slate-800">{v.value}<span className="text-xs font-medium text-slate-500 ml-0.5">{v.unit}</span></p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Symptoms */}
+                {/* Left: Riwayat Gejala */}
                 <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col overflow-hidden">
                     <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3 shrink-0">Riwayat Gejala</h3>
                     <div className="space-y-1.5 overflow-y-auto min-h-0">
                         {quizHistory.map((step, i) => (
                             <div key={i} className="flex items-center justify-between gap-2 py-1 border-b border-slate-100 last:border-0">
                                 <p className="text-xs text-slate-700 truncate flex-1 min-w-0">{step.question}</p>
-                                <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${step.answer === 'Ya' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                                <span
+                                    className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                                    style={step.answerYes
+                                        ? { backgroundColor: HEALTH_COLORS.DANGER.bg, color: HEALTH_COLORS.DANGER.text }
+                                        : { backgroundColor: HEALTH_COLORS.NORMAL.bg, color: HEALTH_COLORS.NORMAL.text }
+                                    }
+                                >
                                     {step.answer}
                                 </span>
                             </div>
@@ -117,22 +133,23 @@ export function ScreeningResultView({
                         )}
                     </div>
                 </div>
-            </div>
 
-            {/* ── Instructions ── */}
-            {diagnosis.instructions && diagnosis.instructions.length > 0 && (
-                <div className="shrink-0 bg-slate-50 border border-slate-200 rounded-xl p-4">
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Tindak Lanjut</h3>
-                    <ul className="space-y-1">
-                        {diagnosis.instructions.map((ins, i) => (
-                            <li key={i} className="flex items-center gap-2 text-sm text-slate-700">
-                                <span className="w-4 h-4 rounded-full bg-slate-300 text-white text-[10px] font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                {/* Right: Tindak Lanjut */}
+                <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col overflow-hidden">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3 shrink-0">Tindak Lanjut</h3>
+                    <ul className="space-y-2 overflow-y-auto min-h-0">
+                        {cfg.instructions.map((ins, i) => (
+                            <li key={i} className="flex items-start gap-2 text-sm" style={{ color: col.text }}>
+                                <span
+                                    className="w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5"
+                                    style={{ backgroundColor: col.text }}
+                                >{i + 1}</span>
                                 {ins}
                             </li>
                         ))}
                     </ul>
                 </div>
-            )}
+            </div>
         </motion.div>
     );
 }

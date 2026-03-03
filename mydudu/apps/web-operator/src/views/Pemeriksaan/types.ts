@@ -1,4 +1,4 @@
-export type Severity = 'Merah' | 'Kuning' | 'Hijau';
+export type Severity = 'DANGER' | 'WARNING' | 'NORMAL';
 
 export interface DiagnosisResult {
     title: string;

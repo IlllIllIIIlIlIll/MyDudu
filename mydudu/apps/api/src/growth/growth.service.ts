@@ -13,6 +13,7 @@ export interface GrowthAnalysisResult {
     clinicalStatus: string; // Strict WHO classification (e.g., 'SEVERE_STUNTED')
     deviation: number; // Value - Ideal (M)
     ideal: number;     // Median (M)
+    normalRange?: { min: number; max: number }; // Inverse mapped LMS boundary (Z=-2 / Z=2)
     color: string;     // Hex color based on Z-score
 }
 
@@ -41,13 +42,21 @@ export class GrowthService {
             z = (Math.pow(x / m, l) - 1) / (l * s);
         }
 
-        // Domain Guard: Reject extreme outliers to prevent statistical explosion
-        if (z < -5 || z > 5) {
-            this.logger.warn(`Z-Score ${z} out of safety range [-5, 5]. Value=${x}, L=${l}, M=${m}, S=${s}`);
-            return null; // Signals invalid/unsafe data
-        }
+        // Domain Guard: Completely removed as requested. Let the math reflect true standard deviations.
 
         return z;
+    }
+
+    /**
+     * Inverse LMS Formula:
+     * Reconstructs the exact measurement (Kg/Cm/BMI) from a specified Z-Score bound.
+     */
+    calculateMeasureFromZScore(l: number, m: number, s: number, z: number): number {
+        if (l === 0) {
+            return m * Math.exp(s * z);
+        } else {
+            return m * Math.pow(1 + l * s * z, 1 / l);
+        }
     }
 
     /**
@@ -172,6 +181,12 @@ export class GrowthService {
                 } else if (zScore <= Z_SCORE_THRESHOLDS.UNDER) {
                     status = NutritionCategory.STUNTED;
                     clinicalStatus = 'STUNTED';
+                } else if (zScore >= Z_SCORE_THRESHOLDS.SEVERE_OVER) {
+                    status = NutritionCategory.OBESE; // Extreme outlier tallness
+                    clinicalStatus = 'VERY_TALL';
+                } else if (zScore >= Z_SCORE_THRESHOLDS.OVER) {
+                    status = NutritionCategory.OBESE;
+                    clinicalStatus = 'TALL';
                 } else {
                     status = NutritionCategory.NORMAL;
                     clinicalStatus = 'NORMAL';
@@ -227,6 +242,12 @@ export class GrowthService {
                 } else if (zScore <= Z_SCORE_THRESHOLDS.UNDER) {
                     status = NutritionCategory.WASTED; // Proxy
                     clinicalStatus = 'UNDERWEIGHT';
+                } else if (zScore >= Z_SCORE_THRESHOLDS.SEVERE_OVER) {
+                    status = NutritionCategory.OBESE;
+                    clinicalStatus = 'SEVERE_OVERWEIGHT';
+                } else if (zScore >= Z_SCORE_THRESHOLDS.OVER) {
+                    status = NutritionCategory.OBESE;
+                    clinicalStatus = 'OVERWEIGHT';
                 } else {
                     status = NutritionCategory.NORMAL;
                     clinicalStatus = 'NORMAL';
@@ -249,6 +270,9 @@ export class GrowthService {
         const { status, clinicalStatus } = this.determineStatus(z, indicator);
         const color = this.colorScale(z).hex();
 
+        const normalMin = this.calculateMeasureFromZScore(lms.l, lms.m, lms.s, Z_SCORE_THRESHOLDS.UNDER);
+        const normalMax = this.calculateMeasureFromZScore(lms.l, lms.m, lms.s, Z_SCORE_THRESHOLDS.OVER);
+
         return {
             zScore: z,
             percentile: this.calculatePercentile(z),
@@ -258,6 +282,7 @@ export class GrowthService {
             clinicalStatus,
             deviation: value - lms.m,
             ideal: lms.m,
+            normalRange: { min: normalMin, max: normalMax },
             color
         };
     }

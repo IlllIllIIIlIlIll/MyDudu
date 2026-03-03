@@ -37,6 +37,8 @@ async function main() {
       fullName: 'Wali anak Sesi Dummy',
       email: 'orangtua.pemeriksaan.dummy@mydudu.local',
       role: UserRole.PARENT,
+      nik: '3276011111111111',
+      birthDate: new Date('1995-10-15'),
       status: UserStatus.ACTIVE,
       villageId: village.id,
     },

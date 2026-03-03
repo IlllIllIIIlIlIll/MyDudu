@@ -10,6 +10,7 @@ import { ParentTable } from '../components/ParentTable';
 import { Button } from '../components/ui/button';
 import { ChildDetailDialog } from '../components/ChildDetailDialog';
 import { useState, useCallback } from 'react';
+import { WHO_STATUS_TRANSLATE } from '@mydudu/shared';
 
 export function ChildRecords({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const { user } = useAuth();
@@ -86,15 +87,15 @@ export function ChildRecords({ onNavigate }: { onNavigate?: (page: string) => vo
           <p className="text-[28px] font-bold text-[#11998E]">{children.length}</p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
-          <p className="text-[14px] text-gray-600 mb-1">Status Normal</p>
+          <p className="text-[14px] text-gray-600 mb-1">{WHO_STATUS_TRANSLATE['NORMAL']}</p>
           <p className="text-[28px] font-bold text-green-600">{counts.NORMAL}</p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
-          <p className="text-[14px] text-gray-600 mb-1">Stunting</p>
+          <p className="text-[14px] text-gray-600 mb-1">{WHO_STATUS_TRANSLATE['STUNTED']}</p>
           <p className="text-[28px] font-bold text-red-600">{counts.STUNTED}</p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
-          <p className="text-[14px] text-gray-600 mb-1">Perlu Perhatian</p>
+          <p className="text-[14px] text-gray-600 mb-1">{WHO_STATUS_TRANSLATE['WASTED']}</p>
           <p className="text-[28px] font-bold text-orange-600">{counts.WASTED}</p>
         </div>
       </div>

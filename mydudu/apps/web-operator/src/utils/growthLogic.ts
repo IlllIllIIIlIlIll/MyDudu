@@ -15,17 +15,19 @@ export interface GrowthStatus {
     recommendation: string;
 }
 
+import { WHO_STATUS_TRANSLATE } from '@mydudu/shared';
+
 export const GROWTH_STATUS_MAP: Record<string, GrowthStatus> = {
     // --- Stunting (Height/Age) ---
     SANGAT_PENDEK: {
-        label: 'Sangat Pendek (Severe Stunted)',
+        label: WHO_STATUS_TRANSLATE['SEVERE_STUNTED'],
         color: '#ef4444',
         severity: 'danger',
         explanation: 'Tinggi badan sangat jauh di bawah standar.',
         recommendation: 'Rujuk segera ke Sp.A untuk investigasi stunting.'
     },
     PENDEK: {
-        label: 'Pendek (Stunted)',
+        label: WHO_STATUS_TRANSLATE['STUNTED'],
         color: '#eab308',
         severity: 'warning',
         explanation: 'Tinggi badan di bawah standar.',
@@ -34,28 +36,28 @@ export const GROWTH_STATUS_MAP: Record<string, GrowthStatus> = {
 
     // --- Wasting (Weight/Height) & BMI ---
     SANGAT_KURUS: {
-        label: 'Sangat Kurus (Severe Wasted)',
+        label: WHO_STATUS_TRANSLATE['SEVERE_WASTED'],
         color: '#ef4444',
         severity: 'danger',
         explanation: 'Berat sangat kurang dibanding tinggi.',
         recommendation: 'Rujuk segera. Risiko malnutrisi akut berat.'
     },
     KURUS: { // Wasted
-        label: 'Kurus (Wasted)',
+        label: WHO_STATUS_TRANSLATE['WASTED'],
         color: '#eab308',
         severity: 'warning',
         explanation: 'Berat kurang dibanding tinggi.',
         recommendation: 'Perbaiki asupan kalori segera.'
     },
     GEMUK: { // Overweight
-        label: 'Gemuk (Overweight)',
+        label: WHO_STATUS_TRANSLATE['OVERWEIGHT'],
         color: '#eab308',
         severity: 'warning',
         explanation: 'Berat lebih dibanding tinggi.',
         recommendation: 'Evaluasi pola makan, kurangi gula.'
     },
     OBESITAS: { // Obese
-        label: 'Obesitas (Obese)',
+        label: WHO_STATUS_TRANSLATE['OBESE'],
         color: '#ef4444',
         severity: 'danger',
         explanation: 'Berat sangat berlebih dibanding tinggi.',
@@ -64,14 +66,14 @@ export const GROWTH_STATUS_MAP: Record<string, GrowthStatus> = {
 
     // --- Underweight (Weight/Age) ---
     SANGAT_KURANG: { // Severe Underweight
-        label: 'Berat Sangat Kurang',
+        label: WHO_STATUS_TRANSLATE['SEVERE_UNDERWEIGHT'],
         color: '#ef4444',
         severity: 'danger',
         explanation: 'Berat badan sangat rendah untuk usianya.',
         recommendation: 'Perlu penanganan medis segera.'
     },
     KURANG: { // Underweight
-        label: 'Berat Kurang',
+        label: WHO_STATUS_TRANSLATE['UNDERWEIGHT'],
         color: '#eab308',
         severity: 'warning',
         explanation: 'Berat badan rendah untuk usianya.',
@@ -80,7 +82,7 @@ export const GROWTH_STATUS_MAP: Record<string, GrowthStatus> = {
 
     // --- Common ---
     NORMAL: {
-        label: 'Normal',
+        label: WHO_STATUS_TRANSLATE['NORMAL'],
         color: '#22c55e',
         severity: 'success',
         explanation: 'Pertumbuhan sesuai standar.',

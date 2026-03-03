@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Calculator, FileText, LogOut, ArrowLeft, User, Save, Camera
 } from 'lucide-react';
-import { VITALS_THRESHOLDS, AGE_THRESHOLDS } from '@mydudu/shared';
+import { VITALS_THRESHOLDS, AGE_THRESHOLDS, WHO_STATUS_TRANSLATE, WHO_INDICATOR_TRANSLATE, HEALTH_COLORS } from '@mydudu/shared';
 // @ts-ignore
 import legalContent from '../data/legalContent.json';
 
@@ -26,24 +26,32 @@ interface MoreMenuProps {
     birthDate?: string;
 }
 
-const NumberInputWithControls = ({ label, value, unit, onChange, min = 0 }: any) => {
+const NumberInputWithControls = ({ label, value, unit, onChange, min = 0, max }: any) => {
     const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
+    const parseValue = (val: any) => {
+        const s = (val || '0').toString().replace(',', '.');
+        const n = parseFloat(s);
+        return isNaN(n) ? 0 : n;
+    };
+
     const increment = () => {
-        const currentParamsStr = value || '0';
-        const num = Number(currentParamsStr);
+        const num = parseValue(value);
         let nextValue = num + 1;
-        if (nextValue > 999) nextValue = 999;
-        const decCount = currentParamsStr.includes('.') ? currentParamsStr.split('.')[1].length : 0;
-        onChange(nextValue.toFixed(decCount));
+        if (nextValue > (max || 999)) nextValue = max || 999;
+
+        const s = (value || '0').toString().replace(',', '.');
+        const decCount = s.includes('.') ? s.split('.')[1].length : 0;
+        onChange(nextValue.toFixed(decCount).replace('.', ','));
     };
 
     const decrement = () => {
-        const currentParamsStr = value || '0';
-        const num = Number(currentParamsStr) - 1;
-        const final = Math.max(num, min);
-        const decCount = currentParamsStr.includes('.') ? currentParamsStr.split('.')[1].length : 0;
-        onChange(final.toFixed(decCount));
+        const num = parseValue(value);
+        const nextValue = Math.max(num - 1, min);
+
+        const s = (value || '0').toString().replace(',', '.');
+        const decCount = s.includes('.') ? s.split('.')[1].length : 0;
+        onChange(nextValue.toFixed(decCount).replace('.', ','));
     };
 
     const handlePointerDown = (action: 'inc' | 'dec') => {
@@ -123,10 +131,8 @@ const NumberInputWithControls = ({ label, value, unit, onChange, min = 0 }: any)
                 >−</button>
                 <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
                     <input
-                        type="number"
-                        min={min}
-                        max={999}
-                        step="any"
+                        type="text"
+                        inputMode="decimal"
                         style={{
                             width: '100%',
                             height: '34px',
@@ -145,9 +151,18 @@ const NumberInputWithControls = ({ label, value, unit, onChange, min = 0 }: any)
                         }}
                         value={value}
                         onChange={e => {
-                            const val = e.target.value;
-                            if (Number(val) > 999) {
-                                onChange('999');
+                            // Only allow numbers and commas/periods, and swap periods for commas.
+                            let val = e.target.value.replace(/[^0-9.,]/g, '').replace('.', ',');
+
+                            // Prevent multiple commas
+                            const commaCount = (val.match(/,/g) || []).length;
+                            if (commaCount > 1) {
+                                val = val.substring(0, val.lastIndexOf(','));
+                            }
+
+                            const numStr = val.replace(',', '.');
+                            if (numStr && Number(numStr) > (max || 999)) {
+                                onChange((max || 999).toString());
                             } else {
                                 onChange(val);
                             }
@@ -209,6 +224,46 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
     const [temp, setTemp] = useState(childData?.latestMetrics?.temperature?.value && childData.latestMetrics.temperature.value !== '-' ? childData.latestMetrics.temperature.value.toString() : '');
     const [hr, setHr] = useState(childData?.latestMetrics?.heartRate?.value && childData.latestMetrics.heartRate.value !== '-' ? childData.latestMetrics.heartRate.value.toString() : '');
     const [spo2, setSpo2] = useState(childData?.latestMetrics?.spo2?.value && childData.latestMetrics.spo2.value !== '-' ? childData.latestMetrics.spo2.value.toString() : '');
+
+    const [clinicalEval, setClinicalEval] = useState<any>(null);
+    const [evalLoading, setEvalLoading] = useState(false);
+    const [evalGender, setEvalGender] = useState<'M' | 'F' | null>(null);
+
+    const handlePeriksa = async (genderOverride?: 'M' | 'F') => {
+        const ageMonthsNum = Number(ageMonths.toString().replace(',', '.'));
+        if (ageMonthsNum >= 0 && ageMonths.toString().trim() !== '') {
+            setEvalLoading(true);
+
+            let safeGender = genderOverride;
+            if (!safeGender) {
+                const cGender = childData?.gender?.toLowerCase() || '';
+                safeGender = (cGender === 'f' || cGender === 'perempuan' || cGender === 'p') ? 'F' : 'M';
+            }
+
+            setEvalGender(safeGender);
+
+            try {
+                const r = await fetch('/api/growth/evaluate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        gender: safeGender,
+                        ageMonths: ageMonthsNum,
+                        weightKg: Number(weight.toString().replace(',', '.')) || undefined,
+                        heightCm: Number(height.toString().replace(',', '.')) || undefined
+                    })
+                });
+                const data = await r.json();
+                if (data?.results) setClinicalEval(data.results);
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setEvalLoading(false);
+            }
+        } else {
+            setClinicalEval(null);
+        }
+    };
 
     // Profile Customization Data
     const [profileTab, setProfileTab] = useState<'parent' | 'child'>('parent');
@@ -360,39 +415,86 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
         const spo2Num = Number(spo2) || 0;
 
         const safe: string[] = [];
-        const warnings: { msg: string; danger: boolean }[] = [];
+        const warnings: { title: string; desc?: string; danger: boolean }[] = [];
         const unmeasured: string[] = [];
 
         let isDanger = false;
         let isWarning = false;
+        let bmiInfo = "";
 
-        // BMI logic
-        if (hNum === 0 || wNum === 0) {
-            unmeasured.push("Tinggi/Berat Badan");
-        } else {
-            const hM = hNum / 100;
-            const bmi = wNum / (hM * hM);
-            const bmiMinWarning = VITALS_THRESHOLDS.BMI_FALLBACK.WARNING_MIN;
-            const bmiMaxWarning = VITALS_THRESHOLDS.BMI_FALLBACK.WARNING_MAX;
-            const bmiMinDanger = VITALS_THRESHOLDS.BMI_FALLBACK.DANGER_MIN;
-            const bmiMaxDanger = VITALS_THRESHOLDS.BMI_FALLBACK.DANGER_MAX;
+        // Engine logic overrides fallbacks if available
+        if (clinicalEval) {
 
-            if (bmi < bmiMinDanger) {
-                isDanger = true;
-                warnings.push({ msg: `BMI masuk kategori Bahaya Kritis (< ${bmiMinDanger})`, danger: true });
-            } else if (bmi < bmiMinWarning) {
-                isWarning = true;
-                warnings.push({ msg: `BMI kurang dari batas minimal normal (${bmiMinWarning})`, danger: false });
-            } else if (bmi > bmiMaxDanger) {
-                isDanger = true;
-                warnings.push({ msg: `BMI masuk kategori Bahaya Obesitas (> ${bmiMaxDanger})`, danger: true });
-            } else if (bmi > bmiMaxWarning) {
-                isWarning = true;
-                warnings.push({ msg: `BMI melebihi batas maksimal normal (${bmiMaxWarning})`, danger: false });
-            } else {
-                safe.push("BMI");
+
+            const bmiOrWfl = clinicalEval.BMI_FOR_AGE || clinicalEval.WEIGHT_FOR_LENGTH || clinicalEval.WEIGHT_FOR_HEIGHT;
+            if (bmiOrWfl) {
+                const val = typeof bmiOrWfl.value === 'number' ? bmiOrWfl.value.toFixed(1) : '-';
+                const nMin = typeof bmiOrWfl.normalRange?.min === 'number' ? bmiOrWfl.normalRange.min.toFixed(1) : '-';
+                const nMax = typeof bmiOrWfl.normalRange?.max === 'number' ? bmiOrWfl.normalRange.max.toFixed(1) : '-';
+                const indID = WHO_INDICATOR_TRANSLATE[bmiOrWfl.indicator] || bmiOrWfl.indicator;
+                bmiInfo = `${indID}: ${val} (${nMin} - ${nMax})`;
             }
+
+            // Height Logic
+            if (clinicalEval.LENGTH_HEIGHT_FOR_AGE) {
+                const hstat = clinicalEval.LENGTH_HEIGHT_FOR_AGE.clinicalStatus;
+                const hstatID = WHO_STATUS_TRANSLATE[hstat] || hstat;
+                const minVal = clinicalEval.LENGTH_HEIGHT_FOR_AGE.normalRange?.min;
+                const maxVal = clinicalEval.LENGTH_HEIGHT_FOR_AGE.normalRange?.max;
+                const minN = typeof minVal === 'number' ? minVal.toFixed(1) : '-';
+                const maxN = typeof maxVal === 'number' ? maxVal.toFixed(1) : '-';
+
+                if (hstat === 'SEVERE_STUNTED') {
+                    isDanger = true;
+                    warnings.push({ title: `Tinggi/Usia (${hstatID})`, desc: `Butuh minimal ${minN} cm untuk Normal.`, danger: true });
+                } else if (hstat === 'STUNTED') {
+                    isWarning = true;
+                    warnings.push({ title: `Tinggi/Usia (${hstatID})`, desc: `Butuh minimal ${minN} cm untuk Normal.`, danger: false });
+                } else if (hstat === 'VERY_TALL') {
+                    isDanger = true;
+                    warnings.push({ title: `Tinggi/Usia (${hstatID})`, desc: `Butuh maksimal ${maxN} cm untuk Normal.`, danger: true });
+                } else if (hstat === 'TALL') {
+                    isWarning = true;
+                    warnings.push({ title: `Tinggi/Usia (${hstatID})`, desc: `Butuh maksimal ${maxN} cm untuk Normal.`, danger: false });
+                } else {
+                    safe.push(`Tinggi Ideal (Normal)`);
+                }
+            } else {
+                unmeasured.push("Tinggi Badan");
+            }
+
+            // Weight for Age logic
+            if (clinicalEval.WEIGHT_FOR_AGE) {
+                const wstat = clinicalEval.WEIGHT_FOR_AGE.clinicalStatus;
+                const wstatID = WHO_STATUS_TRANSLATE[wstat] || wstat;
+                const minVal = clinicalEval.WEIGHT_FOR_AGE.normalRange?.min;
+                const maxVal = clinicalEval.WEIGHT_FOR_AGE.normalRange?.max;
+                const minW = typeof minVal === 'number' ? minVal.toFixed(1) : '-';
+                const maxW = typeof maxVal === 'number' ? maxVal.toFixed(1) : '-';
+
+                if (wstat === 'SEVERE_UNDERWEIGHT') {
+                    isDanger = true;
+                    warnings.push({ title: `Berat/Usia (${wstatID})`, desc: `Butuh minimal ${minW} kg untuk Normal.`, danger: true });
+                } else if (wstat === 'UNDERWEIGHT') {
+                    isWarning = true;
+                    warnings.push({ title: `Berat/Usia (${wstatID})`, desc: `Butuh minimal ${minW} kg untuk Normal.`, danger: false });
+                } else if (wstat === 'SEVERE_OVERWEIGHT') {
+                    isDanger = true;
+                    warnings.push({ title: `Berat/Usia (${wstatID})`, desc: `Butuh maksimal ${maxW} kg untuk Normal.`, danger: true });
+                } else if (wstat === 'OVERWEIGHT') {
+                    isWarning = true;
+                    warnings.push({ title: `Berat/Usia (${wstatID})`, desc: `Butuh maksimal ${maxW} kg untuk Normal.`, danger: false });
+                } else {
+                    safe.push(`Berat Ideal (Normal)`);
+                }
+            } else {
+                unmeasured.push("Berat Badan");
+            }
+
+        } else {
+            unmeasured.push("Memuat Evaluasi Medis (WHO)");
         }
+
 
         // Temp
         if (tNum === 0) {
@@ -402,10 +504,10 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
             const tempMax = VITALS_THRESHOLDS.TEMPERATURE.MAX_SAFE;
             if (tNum < tempMin) {
                 isWarning = true;
-                warnings.push({ msg: `Suhu Tubuh kurang dari normal (${tempMin} °C)`, danger: false });
+                warnings.push({ title: `Suhu Tubuh kurang dari normal (${tempMin} °C)`, danger: false });
             } else if (tNum > tempMax) {
                 isDanger = true;
-                warnings.push({ msg: `Suhu Tubuh lebih dari batas aman (${tempMax} °C)`, danger: true });
+                warnings.push({ title: `Suhu Tubuh lebih dari batas aman (${tempMax} °C)`, danger: true });
             } else {
                 safe.push("Suhu Tubuh");
             }
@@ -428,10 +530,10 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
 
             if (hrNum < hrMin) {
                 isDanger = true;
-                warnings.push({ msg: `Detak Jantung lambat (< ${hrMin} bpm)`, danger: true });
+                warnings.push({ title: `Detak Jantung lambat (< ${hrMin} bpm)`, danger: true });
             } else if (hrNum > hrMax) {
                 isDanger = true;
-                warnings.push({ msg: `Detak Jantung cepat (> ${hrMax} bpm)`, danger: true });
+                warnings.push({ title: `Detak Jantung cepat (> ${hrMax} bpm)`, danger: true });
             } else {
                 safe.push("Detak Jantung");
             }
@@ -445,10 +547,10 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
             const spoDanger = VITALS_THRESHOLDS.SPO2.WARNING_MIN;
             if (spo2Num < spoDanger) {
                 isDanger = true;
-                warnings.push({ msg: `Saturasi Oksigen sangat rendah krisis (< ${spoDanger}%)`, danger: true });
+                warnings.push({ title: `Saturasi Oksigen sangat rendah krisis (< ${spoDanger}%)`, danger: true });
             } else if (spo2Num < spoMin) {
                 isWarning = true;
-                warnings.push({ msg: `Saturasi Oksigen kurang dari normal (< ${spoMin}%)`, danger: false });
+                warnings.push({ title: `Saturasi Oksigen kurang dari normal (< ${spoMin}%)`, danger: false });
             } else {
                 safe.push("Saturasi Oksigen");
             }
@@ -510,12 +612,85 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
                         gridTemplateColumns: 'repeat(3, 1fr)',
                         gap: '8px'
                     }}>
-                        <NumberInputWithControls label="Usia" value={ageMonths} unit="bln" onChange={setAgeMonths} min={0} />
+                        <NumberInputWithControls label="Usia" value={ageMonths} unit="bln" onChange={setAgeMonths} min={0} max={60} />
                         <NumberInputWithControls label="Tinggi" value={height} unit="cm" onChange={setHeight} min={0} />
                         <NumberInputWithControls label="Berat" value={weight} unit="kg" onChange={setWeight} min={0} />
                         <NumberInputWithControls label="Suhu" value={temp} unit="°C" onChange={setTemp} min={30} />
                         <NumberInputWithControls label="Detak" value={hr} unit="bpm" onChange={setHr} min={0} />
                         <NumberInputWithControls label="Saturasi" value={spo2} unit="%" onChange={setSpo2} min={0} />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '2px', marginBottom: '4px' }}>
+                        <button
+                            onClick={() => handlePeriksa('M')}
+                            disabled={evalLoading}
+                            style={{
+                                flex: 1,
+                                padding: '12px',
+                                backgroundColor: evalGender === 'M' ? '#1e40af' : '#60a5fa',
+                                color: '#ffffff',
+                                border: evalGender === 'M' ? '2px solid #111827' : 'none',
+                                borderRadius: '8px',
+                                fontWeight: '600',
+                                fontSize: '14px',
+                                cursor: evalLoading ? 'not-allowed' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px',
+                                boxShadow: evalGender === 'M' ? 'inset 0 2px 4px rgba(0,0,0,0.1)' : '0 1px 2px rgba(0,0,0,0.05)',
+                                transition: 'all 0.2s',
+                                opacity: evalLoading && evalGender !== 'M' ? 0.7 : 1,
+                                transform: evalGender === 'M' ? 'scale(0.98)' : 'none'
+                            }}
+                            onMouseEnter={(e) => {
+                                if (!evalLoading) {
+                                    e.currentTarget.style.backgroundColor = '#1e3a8a';
+                                }
+                            }}
+                            onMouseLeave={(e) => {
+                                if (!evalLoading) {
+                                    e.currentTarget.style.backgroundColor = evalGender === 'M' ? '#1e40af' : '#60a5fa';
+                                }
+                            }}
+                        >
+                            {evalLoading && evalGender === 'M' ? '...' : 'Laki-laki'}
+                        </button>
+                        <button
+                            onClick={() => handlePeriksa('F')}
+                            disabled={evalLoading}
+                            style={{
+                                flex: 1,
+                                padding: '12px',
+                                backgroundColor: evalGender === 'F' ? '#be185d' : '#f472b6',
+                                color: '#ffffff',
+                                border: evalGender === 'F' ? '2px solid #111827' : 'none',
+                                borderRadius: '8px',
+                                fontWeight: '600',
+                                fontSize: '14px',
+                                cursor: evalLoading ? 'not-allowed' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px',
+                                boxShadow: evalGender === 'F' ? 'inset 0 2px 4px rgba(0,0,0,0.1)' : '0 1px 2px rgba(0,0,0,0.05)',
+                                transition: 'all 0.2s',
+                                opacity: evalLoading && evalGender !== 'F' ? 0.7 : 1,
+                                transform: evalGender === 'F' ? 'scale(0.98)' : 'none'
+                            }}
+                            onMouseEnter={(e) => {
+                                if (!evalLoading) {
+                                    e.currentTarget.style.backgroundColor = '#9d174d';
+                                }
+                            }}
+                            onMouseLeave={(e) => {
+                                if (!evalLoading) {
+                                    e.currentTarget.style.backgroundColor = evalGender === 'F' ? '#be185d' : '#f472b6';
+                                }
+                            }}
+                        >
+                            {evalLoading && evalGender === 'F' ? '...' : 'Perempuan'}
+                        </button>
                     </div>
 
                     <div style={{
@@ -534,7 +709,7 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
                             borderBottom: '1px solid #e5e7eb',
                             margin: '0 0 10px 0'
                         }}>
-                            Status Saat Ini: <span style={{ color: statusColor }}>{overallStatus}</span>
+                            Status Saat Ini: <span style={{ color: isDanger ? HEALTH_COLORS.DANGER.text : isWarning ? HEALTH_COLORS.WARNING.text : HEALTH_COLORS.NORMAL.text }}>{isDanger ? 'Bahaya' : isWarning ? 'Waspada' : 'Normal'}</span>
                         </h2>
                         <div style={{
                             display: 'flex',
@@ -545,17 +720,17 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
                                 <p key={`warn-${idx}`} style={{
                                     fontSize: '13px',
                                     fontWeight: '500',
-                                    color: w.danger ? '#dc2626' : '#ea8c55',
                                     lineHeight: '1.4',
                                     margin: '0'
                                 }}>
-                                    • {w.msg}
+                                    <span style={{ color: w.danger ? HEALTH_COLORS.DANGER.text : HEALTH_COLORS.WARNING.text }}>• {w.title}</span>
+                                    {w.desc && <span style={{ color: '#111827' }}>: {w.desc}</span>}
                                 </p>
                             ))}
                             {safe.length > 0 && (
                                 <p style={{
                                     fontSize: '13px',
-                                    color: '#16a34a',
+                                    color: HEALTH_COLORS.NORMAL.text,
                                     fontWeight: '500',
                                     lineHeight: '1.4',
                                     margin: '0'
@@ -572,6 +747,19 @@ export function MoreMenu({ onLogout, childData, userData, selectedChildId, birth
                                     margin: '0'
                                 }}>
                                     • Belum diukur: <span style={{ fontWeight: '400', color: '#9ca3af' }}>{unmeasured.join(', ')}</span>
+                                </p>
+                            )}
+                            {bmiInfo && (
+                                <p style={{
+                                    fontSize: '13px',
+                                    color: '#6b7280',
+                                    fontWeight: '500',
+                                    lineHeight: '1.4',
+                                    margin: '4px 0 0 0',
+                                    paddingTop: '6px',
+                                    borderTop: '1px dashed #e5e7eb'
+                                }}>
+                                    • {bmiInfo}
                                 </p>
                             )}
                         </div>

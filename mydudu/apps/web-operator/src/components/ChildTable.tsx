@@ -2,19 +2,13 @@ import { Eye, Search, Wifi } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { OperatorChildRecord, NutritionCategory } from '../types/operator';
 import { useAuth } from '../context/AuthContext';
+import { WHO_STATUS_TRANSLATE } from '@mydudu/shared';
 
 interface ChildTableProps {
   children: OperatorChildRecord[];
   onSelect: (child: OperatorChildRecord) => void;
   onConnect?: (child: OperatorChildRecord) => void;
 }
-
-const nutritionLabels: Record<NutritionCategory, string> = {
-  NORMAL: 'Normal',
-  STUNTED: 'Stunting',
-  WASTED: 'Gizi Kurang',
-  OBESE: 'Obesitas',
-};
 
 export function ChildTable({ children, onSelect, onConnect }: ChildTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,7 +26,8 @@ export function ChildTable({ children, onSelect, onConnect }: ChildTableProps) {
     return ['all', ...Array.from(new Set(names))];
   }, [children]);
 
-  const statuses = ['all', ...Object.values(nutritionLabels)];
+  // Merge standardized WHO health strings into the filter options
+  const statuses = ['all', ...Object.values(WHO_STATUS_TRANSLATE)];
 
   const filteredChildren = useMemo(() => {
     return children.filter(child => {
@@ -43,7 +38,7 @@ export function ChildTable({ children, onSelect, onConnect }: ChildTableProps) {
       const matchesVillage =
         filterVillage === 'all' || child.lastSession?.villageName === filterVillage;
       const statusLabel = child.lastSession?.nutritionCategory
-        ? nutritionLabels[child.lastSession.nutritionCategory]
+        ? WHO_STATUS_TRANSLATE[child.lastSession.nutritionCategory]
         : null;
       const matchesStatus = filterStatus === 'all' || statusLabel === filterStatus;
       return matchesSearch && matchesVillage && matchesStatus;
@@ -52,13 +47,21 @@ export function ChildTable({ children, onSelect, onConnect }: ChildTableProps) {
 
   const getStatusColor = (status: string | null) => {
     switch (status) {
-      case 'Normal':
+      case WHO_STATUS_TRANSLATE['NORMAL']:
         return 'bg-green-100 text-green-700';
-      case 'Stunting':
+      case WHO_STATUS_TRANSLATE['STUNTED']:
+      case WHO_STATUS_TRANSLATE['SEVERE_STUNTED']:
+      case WHO_STATUS_TRANSLATE['SEVERE_WASTED']:
+      case WHO_STATUS_TRANSLATE['SEVERE_UNDERWEIGHT']:
         return 'bg-red-100 text-red-700';
-      case 'Gizi Kurang':
+      case WHO_STATUS_TRANSLATE['WASTED']:
+      case WHO_STATUS_TRANSLATE['UNDERWEIGHT']:
         return 'bg-orange-100 text-orange-700';
-      case 'Obesitas':
+      case WHO_STATUS_TRANSLATE['OBESE']:
+      case WHO_STATUS_TRANSLATE['SEVERE_OVERWEIGHT']:
+      case WHO_STATUS_TRANSLATE['OVERWEIGHT']:
+      case WHO_STATUS_TRANSLATE['TALL']:
+      case WHO_STATUS_TRANSLATE['VERY_TALL']:
         return 'bg-blue-100 text-blue-700';
       default:
         return 'bg-gray-100 text-gray-700';
@@ -157,7 +160,7 @@ export function ChildTable({ children, onSelect, onConnect }: ChildTableProps) {
           <tbody>
             {filteredChildren.map((child) => {
               const nutritionLabel = child.lastSession?.nutritionCategory
-                ? nutritionLabels[child.lastSession.nutritionCategory]
+                ? WHO_STATUS_TRANSLATE[child.lastSession.nutritionCategory]
                 : null;
               return (
                 <tr key={child.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">

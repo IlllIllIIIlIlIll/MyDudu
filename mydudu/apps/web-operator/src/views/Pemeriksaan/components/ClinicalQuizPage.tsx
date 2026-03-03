@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
-import { QuizCard } from './QuizCard';
+import { ImageWithFallback } from '../../../components/figma/ImageWithFallback';
+import { getPublicAsset } from '../utils';
 import { ProgressLine } from './ProgressLine';
 import styles from '../ScreeningFlow.module.css';
 
@@ -47,22 +48,30 @@ export function ClinicalQuizPage({
       {/* Answers */}
       <div className="flex-1 min-h-0 flex items-center justify-center px-6 pb-8">
         <div className="w-full max-w-6xl flex flex-col md:flex-row gap-6 md:gap-12 items-center justify-center h-full">
-          <div className="w-[min(100%,_40vh)] md:w-[min(45%,_65vh)] aspect-square relative">
-            <QuizCard
-              label="YA"
-              type="yes"
-              image="placeholder1.png"
-              onClick={() => !isSubmitting && onAnswer('yes')}
+          {/* Left: Visualization (WAS YES) */}
+          <div className="w-[min(100%,_40vh)] md:w-[min(45%,_65vh)] aspect-square relative border-8 border-black bg-white overflow-hidden">
+            <ImageWithFallback
+              src={getPublicAsset('logo_mydudu.png')}
+              alt="Illustration"
+              className="w-full h-full object-contain p-8"
             />
           </div>
 
-          <div className="w-[min(100%,_40vh)] md:w-[min(45%,_65vh)] aspect-square relative">
-            <QuizCard
-              label="TIDAK"
-              type="no"
-              image="placeholder2.png"
+          {/* Right: Divided Interaction (WAS NO) */}
+          <div className="w-[min(100%,_40vh)] md:w-[min(45%,_65vh)] aspect-square relative flex flex-col gap-4">
+            <button
+              onClick={() => !isSubmitting && onAnswer('yes')}
+              className={`flex-1 w-full rounded-[32px] transition-all active:scale-95 border-2 border-[#ff3b5f] flex items-center justify-center shadow-[0_18px_30px_-22px_rgba(255,59,95,0.45)] hover:bg-[#ff3b5f]/5`}
+            >
+              <h3 className="font-black text-[clamp(2rem,6vw,4rem)] text-[#ff3b5f] tracking-tight">YES</h3>
+            </button>
+
+            <button
               onClick={() => !isSubmitting && onAnswer('no')}
-            />
+              className={`flex-1 w-full rounded-[32px] transition-all active:scale-95 border-2 border-[#3ad29f] flex items-center justify-center shadow-[0_18px_30px_-22px_rgba(58,210,159,0.45)] hover:bg-[#3ad29f]/5`}
+            >
+              <h3 className="font-black text-[clamp(2rem,6vw,4rem)] text-[#3ad29f] tracking-tight">No</h3>
+            </button>
           </div>
         </div>
       </div>

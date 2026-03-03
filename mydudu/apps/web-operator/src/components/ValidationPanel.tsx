@@ -1,6 +1,7 @@
 import { CheckCircle, Clock, XCircle, ThermometerSun, Weight, Ruler, AlertTriangle } from 'lucide-react';
 import { OperatorValidationRecord, NutritionCategory } from '../types/operator';
 import { useState } from 'react';
+import { WHO_STATUS_TRANSLATE } from '@mydudu/shared';
 
 interface ValidationPanelProps {
   validations: OperatorValidationRecord[];
@@ -9,16 +10,9 @@ interface ValidationPanelProps {
   canApprove?: boolean;
 }
 
-const nutritionLabels: Record<NutritionCategory, string> = {
-  NORMAL: 'Normal',
-  STUNTED: 'Stunting',
-  WASTED: 'Gizi Kurang',
-  OBESE: 'Obesitas',
-};
-
 const flagReasonFromCategory = (category: NutritionCategory | null) => {
   if (!category || category === 'NORMAL') return null;
-  return `Perlu validasi karena status ${nutritionLabels[category]}`;
+  return `Perlu validasi karena status ${WHO_STATUS_TRANSLATE[category] || category}`;
 };
 
 export function ValidationPanel({ validations, onApprove, onReject, canApprove = false }: ValidationPanelProps) {

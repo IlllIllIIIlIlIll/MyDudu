@@ -22,6 +22,7 @@ async function main() {
                 fullName: 'Wali anak Demo Parenting',
                 role: 'PARENT',
                 nik: nik,
+                birthDate: new Date('1990-01-01'),
                 status: 'ACTIVE',
                 parentProfile: {
                     create: {

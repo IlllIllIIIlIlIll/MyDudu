@@ -441,14 +441,7 @@ export default function Home() {
                     status={childData.latestMetrics.height.status}
                     trend={childData.latestMetrics.height.trend}
                   />
-                  <DashboardCard
-                    icon={User} // Using User for BMI context
-                    label="Indeks Massa"
-                    value={childData.latestMetrics.bmi.value}
-                    unit={childData.latestMetrics.bmi.unit}
-                    status={childData.latestMetrics.bmi.status}
-                    trend={childData.latestMetrics.bmi.trend}
-                  />
+
                   <DashboardCard
                     icon={Thermometer}
                     label="Suhu Tubuh"
