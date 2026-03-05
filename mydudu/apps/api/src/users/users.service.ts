@@ -11,7 +11,9 @@ export class UsersService {
     ) { }
 
     async findAll(role?: string) {
-        const where: any = {};
+        const where: any = {
+            deletedAt: null
+        };
         if (role) {
             where.role = role.toUpperCase() as UserRole;
         }
@@ -309,8 +311,12 @@ export class UsersService {
     }
 
     async deleteUser(id: number, actorId?: number) {
-        const deletedUser = await this.prisma.user.delete({
-            where: { id }
+        const deletedUser = await this.prisma.user.update({
+            where: { id },
+            data: {
+                status: UserStatus.SUSPENDED,
+                deletedAt: new Date()
+            }
         });
         await this.systemLogsService.logEvent(SystemLogAction.USER_UPDATE, { event: 'USER_DELETED', targetUserId: id }, actorId);
         return deletedUser;

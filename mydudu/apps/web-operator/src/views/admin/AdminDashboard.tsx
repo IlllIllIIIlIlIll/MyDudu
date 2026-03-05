@@ -66,7 +66,7 @@ export function AdminDashboard() {
         <div className="flex items-center justify-between">
           <h3 className="font-bold text-[18px] text-gray-800 flex items-center gap-2">
             <Server className="w-5 h-5 text-indigo-600" />
-            Infrastructure Health (Free Tier)
+            Infrastructure Health
           </h3>
           {obsData?.lastCollectedAt && (
             <span className="text-[12px] text-gray-400">
