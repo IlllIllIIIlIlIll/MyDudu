@@ -42,7 +42,7 @@ export class UsersService {
         });
     }
 
-    async createPuskesmas(data: { fullName: string; email: string; district: string; profilePicture?: string }, actorId?: number) {
+    async createPuskesmas(data: { fullName: string; email: string; nik?: string; district: string; profilePicture?: string }, actorId?: number) {
         // 1. Check for existing user
         const existingUser = await this.prisma.user.findUnique({ where: { email: data.email } });
         if (existingUser) {
@@ -65,6 +65,7 @@ export class UsersService {
             data: {
                 email: data.email,
                 fullName: data.fullName,
+                nik: data.nik,
                 role: UserRole.PUSKESMAS,
                 status: UserStatus.ACTIVE,
                 profilePicture: data.profilePicture,
@@ -130,7 +131,7 @@ export class UsersService {
         }
     }
 
-    async createPosyandu(data: { fullName: string; email: string; village: string; profilePicture?: string }, actorId?: number) {
+    async createPosyandu(data: { fullName: string; email: string; nik?: string; village: string; profilePicture?: string }, actorId?: number) {
         // 1. Check for existing user
         const existingUser = await this.prisma.user.findUnique({ where: { email: data.email } });
         if (existingUser) {
@@ -152,6 +153,7 @@ export class UsersService {
             data: {
                 email: data.email,
                 fullName: data.fullName,
+                nik: data.nik,
                 role: UserRole.POSYANDU,
                 status: UserStatus.PENDING, // Pending Admin Approval
                 profilePicture: data.profilePicture,

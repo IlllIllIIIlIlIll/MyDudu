@@ -33,6 +33,7 @@ export function UserManagement() {
   // Registration Form State
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [nik, setNik] = useState('');
   const [districts, setDistricts] = useState<{ id: number; name: string }[]>([]);
   const [districtSearch, setDistrictSearch] = useState('');
   const [showDistrictDropdown, setShowDistrictDropdown] = useState(false);
@@ -232,6 +233,7 @@ export function UserManagement() {
     setEditingUserId(user.id);
     setFullName(user.fullName);
     setEmail(user.email);
+    setNik(user.nik || '');
     // Note: In real app, we might need to fetch full details or store district name in UserAccount to pre-fill districtSearch
     // For now assuming we can use assignedLocation if it's not 'Unknown'
     setDistrictSearch(user.role === 'puskesmas' ? user.assignedLocation : '');
@@ -334,6 +336,7 @@ export function UserManagement() {
             setEditingUserId(null);
             setFullName('');
             setEmail('');
+            setNik('');
             setDistrictSearch('');
             setSelectedDistrict('');
             setVillageSearch('');
@@ -579,6 +582,7 @@ export function UserManagement() {
               const payload = {
                 fullName,
                 email, // usually email isn't editable easily without re-verification, allowing specific fields 
+                nik,
                 district: districtSearch,
                 village: villageSearch,
                 // posyanduName: posyanduName, // Removed
@@ -615,6 +619,7 @@ export function UserManagement() {
                   setEditingUserId(null);
                   setFullName('');
                   setEmail('');
+                  setNik('');
                   setDistrictSearch('');
                   setSelectedDistrict('');
                   setVillageSearch('');
@@ -675,6 +680,17 @@ export function UserManagement() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">NIK</label>
+                <input
+                  type="text"
+                  className="w-full border rounded-lg p-2"
+                  placeholder="16-digit NIK"
+                  value={nik}
+                  onChange={(e) => setNik(e.target.value)}
+                  maxLength={16}
                 />
               </div>
 

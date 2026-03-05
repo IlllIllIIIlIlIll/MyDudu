@@ -33,7 +33,7 @@ export class UsersController {
 
   @Post('puskesmas')
   @UseGuards(AuthGuard)
-  async createPuskesmas(@Body() body: { fullName: string; email: string; district: string; profilePicture?: string }, @Req() req: any) {
+  async createPuskesmas(@Body() body: { fullName: string; email: string; nik?: string; district: string; profilePicture?: string }, @Req() req: any) {
     const actorEmail = req.user?.email;
     const actor = actorEmail ? await this.usersService.findByEmail(actorEmail) : null;
     return this.usersService.createPuskesmas(body, actor?.id);
@@ -49,7 +49,7 @@ export class UsersController {
 
   @Post('posyandu')
   @UseGuards(AuthGuard)
-  async createPosyandu(@Body() body: { fullName: string; email: string; village: string; profilePicture?: string }, @Req() req: any) {
+  async createPosyandu(@Body() body: { fullName: string; email: string; nik?: string; village: string; profilePicture?: string }, @Req() req: any) {
     const actorEmail = req.user?.email;
     const actor = actorEmail ? await this.usersService.findByEmail(actorEmail) : null;
     return this.usersService.createPosyandu(body, actor?.id);
