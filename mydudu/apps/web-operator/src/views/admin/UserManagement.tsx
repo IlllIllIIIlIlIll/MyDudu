@@ -18,6 +18,8 @@ interface UserAccount {
   lastLogin: string;
   nik?: string; // Replaced phoneNumber
   profilePicture?: string;
+  districtName?: string;
+  villageName?: string;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -42,6 +44,7 @@ export function UserManagement() {
   // Editing State
   const [isEditing, setIsEditing] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editingUserRole, setEditingUserRole] = useState<string>('');
 
   const { user: currentUser } = useAuth();
 
@@ -61,7 +64,7 @@ export function UserManagement() {
   // Debounced Village Search
   useEffect(() => {
     const timer = setTimeout(async () => {
-      if (villageSearch.length >= 2 && currentUser?.role === 'puskesmas') {
+      if (villageSearch.length >= 2) {
         try {
           const token = await auth.currentUser?.getIdToken();
           const res = await fetch(`${API_URL}/users/villages?q=${villageSearch}`, {
@@ -111,7 +114,9 @@ export function UserManagement() {
             createdAt: new Date(u.createdAt).toLocaleDateString(),
             lastLogin: u.lastLogin ? new Date(u.lastLogin).toLocaleString() : '-',
             nik: u.nik,
-            profilePicture: u.profilePicture
+            profilePicture: u.profilePicture,
+            districtName: u.district?.name || u.village?.district?.name || '',
+            villageName: u.village?.name || ''
           };
         });
         setUsers(formattedUsers);
@@ -231,23 +236,17 @@ export function UserManagement() {
   const handleEditUser = (user: UserAccount) => {
     setIsEditing(true);
     setEditingUserId(user.id);
+    setEditingUserRole(user.role);
     setFullName(user.fullName);
     setEmail(user.email);
     setNik(user.nik || '');
-    // Note: In real app, we might need to fetch full details or store district name in UserAccount to pre-fill districtSearch
-    // For now assuming we can use assignedLocation if it's not 'Unknown'
-    setDistrictSearch(user.role === 'puskesmas' ? user.assignedLocation : '');
-    // For posyandu role, assignedLocation might have more info or just village name.
-    // If it's posyandu, we might want to pre-fill posyanduSearch
-    // For posyandu role, assignedLocation might have more info or just village name.
-    if (user.role === 'posyandu') {
-      // Assuming assignedLocation is "Desa [VillageName]" or just "[VillageName]"
-      // We might need to parse or fetch details. For now, cleared to force re-selection if editing critical info.
-      // But typically we want to prefill.
-      // If we had villageId in UserAccount we could use it.
-      // For now, let's just leave it blank or try to parse.
-      // setVillageSearch(user.assignedLocation.replace('Desa ', ''));
-    }
+
+    setDistrictSearch(user.districtName || '');
+    setSelectedDistrict(user.districtName || '');
+
+    setVillageSearch(user.villageName || '');
+    setSelectedVillage(user.villageName || '');
+
     setShowRegisterModal(true);
   };
 
@@ -334,6 +333,7 @@ export function UserManagement() {
           onClick={() => {
             setIsEditing(false);
             setEditingUserId(null);
+            setEditingUserRole('');
             setFullName('');
             setEmail('');
             setNik('');
@@ -346,9 +346,9 @@ export function UserManagement() {
             setProfilePicBase64(undefined);
             setShowRegisterModal(true);
           }}
-          className="gradient-primary text-white px-6 py-3 rounded-lg flex items-center gap-2 hover:opacity-90 transition-opacity"
+          className="bg-[#11998E] hover:bg-[#0e8076] text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm active:scale-95 transition-all cursor-pointer"
         >
-          <UserPlus className="w-5 h-5" />
+          <UserPlus className="w-4 h-4" />
           <span className="font-semibold">
             {currentUser?.role === 'puskesmas' ? 'Register Posyandu' : 'Register Puskesmas'}
           </span>
@@ -557,264 +557,270 @@ export function UserManagement() {
       {/* Simplified Modal for Registration (Demo) */}
       {/* Replaced <dialog> with standard fixed div to avoid layout/stacking issues */}
       {showRegisterModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-t-2xl md:rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col animate-in slide-in-from-bottom-4 duration-300">
-            <div className="flex justify-between items-center p-6 border-b border-gray-200">
-              <h3 className="text-lg font-bold">
-                {isEditing ? 'Edit User' : (currentUser?.role === 'puskesmas' ? 'Register Posyandu Operator' : 'Register Puskesmas Operator')}
-              </h3>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg flex flex-col animate-in zoom-in-95 duration-200">
+            <div className="gradient-primary p-6 text-white relative rounded-t-xl">
               <button
                 onClick={() => setShowRegisterModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-lg transition-colors"
               >
-                <span className="sr-only"></span>
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                <X className="w-5 h-5" />
               </button>
-            </div>
-            <form className="p-6 space-y-4" onSubmit={async (e) => {
-              e.preventDefault();
-
-              if (!fullName || !email) {
-                alert("Please fill all required fields");
-                return;
-              }
-
-              const payload = {
-                fullName,
-                email, // usually email isn't editable easily without re-verification, allowing specific fields 
-                nik,
-                district: districtSearch,
-                village: villageSearch,
-                // posyanduName: posyanduName, // Removed
-                profilePicture: profilePicBase64
-              };
-
-              try {
-                let url = `${API_URL}/users/puskesmas`;
-                let method = 'POST';
-
-                if (isEditing && editingUserId) {
-                  url = `${API_URL}/users/${editingUserId}`;
-                  method = 'PATCH';
-                } else if (currentUser?.role === 'puskesmas') {
-                  url = `${API_URL}/users/posyandu`;
-                }
-
-                const token = await auth.currentUser?.getIdToken();
-                const res = await fetch(url, {
-                  method: method,
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                  },
-                  body: JSON.stringify(payload),
-                });
-
-                if (res.ok) {
-                  alert(isEditing ? "User updated successfully!" : "Puskesmas operator registered successfully!");
-                  setShowRegisterModal(false);
-
-                  // Reset form
-                  setIsEditing(false);
-                  setEditingUserId(null);
-                  setFullName('');
-                  setEmail('');
-                  setNik('');
-                  setDistrictSearch('');
-                  setSelectedDistrict('');
-                  setVillageSearch('');
-                  setSelectedVillage('');
-                  // setPosyanduName('');
-                  // setPosyanduSearch('');
-                  setProfilePicBase64(undefined);
-
-                  // Refresh list
-                  fetchUsers();
-                } else {
-                  const errData = await res.json();
-                  alert(`Operation failed: ${errData.message || 'Unknown error'}`);
-                }
-              } catch (error) {
-                console.error("Operation error:", error);
-                alert("An error occurred.");
-              }
-            }}>
-              {/* Profile Picture Input Section in Form */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Profile Picture (Upload & Crop)</label>
-                <div className="flex items-center gap-4">
-                  {profilePicBase64 && (
-                    <img src={profilePicBase64} alt="Preview" className="w-16 h-16 rounded-full object-cover border-2 border-[#11998E]" />
-                  )}
-                  <label className="cursor-pointer px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
-                    <span className="text-[18px]">📷</span>
-                    <span>{profilePicBase64 ? 'Change Photo' : 'Upload Photo'}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
-                  </label>
+              <div className="flex items-center gap-3">
+                <UserPlus className="w-6 h-6" />
+                <div>
+                  <h2 className="text-[20px] font-bold text-white">
+                    {isEditing ? 'Edit Data User' : (currentUser?.role === 'puskesmas' ? 'Daftarkan Posyandu Operator' : 'Daftarkan Puskesmas Operator')}
+                  </h2>
+                  <p className="text-white/90 text-[13px] mt-0.5">
+                    {isEditing ? 'Modifikasi informasi user' : 'Registrasi user baru ke dalam sistem'}
+                  </p>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Image will be cropped to 1:1 and optimized.</p>
               </div>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <input
-                  type="text"
-                  className="w-full border rounded-lg p-2"
-                  placeholder="e.g. Dr. Budi"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  className="w-full border rounded-lg p-2"
-                  placeholder="budi@puskesmas.id"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">NIK</label>
-                <input
-                  type="text"
-                  className="w-full border rounded-lg p-2"
-                  placeholder="16-digit NIK"
-                  value={nik}
-                  onChange={(e) => setNik(e.target.value)}
-                  maxLength={16}
-                />
-              </div>
+            <div className="p-6 space-y-4">
+              <form className="space-y-4" onSubmit={async (e) => {
+                e.preventDefault();
 
-              {/* District Selection (Visible for Admin AND Puskesmas now, or pre-filled for Puskesmas) */}
-              {/* Actually, user flow says: "when registering new posyandu operator... first the district has to be filled" */}
-              {/* If currentUser is Puskesmas, they are likely tied to a district. 
-                    If so, we should Auto-fill and Lock the district? 
-                    BUT, prompt says: "first the district has to be filled... then after choosing district... and if the user modify the district..."
-                    This implies the user (Operator Puskesmas) CAN choose/modify the district. 
-                    So we will show the District Input for Puskesmas too. 
-                */}
+                if (!fullName || !email) {
+                  alert("Please fill all required fields");
+                  return;
+                }
 
-              <div className={`relative ${showDistrictDropdown ? 'z-50' : ''}`}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Kecamatan/District {currentUser?.role === 'puskesmas' && '(Required for filtering Village)'}
-                </label>
-                <input
-                  type="text"
-                  className="w-full border rounded-lg p-2"
-                  placeholder="Type to search kecamatan..."
-                  value={districtSearch}
-                  onChange={(e) => {
-                    setDistrictSearch(e.target.value);
-                    setShowDistrictDropdown(true);
-                    setSelectedDistrict(''); // Reset selection when typing/modifying
-                    setVillageSearch(''); // Clear village when district changes
+                const payload = {
+                  fullName,
+                  email, // usually email isn't editable easily without re-verification, allowing specific fields 
+                  nik,
+                  district: districtSearch,
+                  village: villageSearch,
+                  // posyanduName: posyanduName, // Removed
+                  profilePicture: profilePicBase64
+                };
+
+                try {
+                  let url = `${API_URL}/users/puskesmas`;
+                  let method = 'POST';
+
+                  if (isEditing && editingUserId) {
+                    url = `${API_URL}/users/${editingUserId}`;
+                    method = 'PATCH';
+                  } else if (currentUser?.role === 'puskesmas') {
+                    url = `${API_URL}/users/posyandu`;
+                  }
+
+                  const token = await auth.currentUser?.getIdToken();
+                  const res = await fetch(url, {
+                    method: method,
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload),
+                  });
+
+                  if (res.ok) {
+                    alert(isEditing ? "User updated successfully!" : "Puskesmas operator registered successfully!");
+                    setShowRegisterModal(false);
+
+                    // Reset form
+                    setIsEditing(false);
+                    setEditingUserId(null);
+                    setEditingUserRole('');
+                    setFullName('');
+                    setEmail('');
+                    setNik('');
+                    setDistrictSearch('');
+                    setSelectedDistrict('');
+                    setVillageSearch('');
                     setSelectedVillage('');
-                  }}
-                  onFocus={() => setShowDistrictDropdown(true)}
-                  required
-                />
+                    // setPosyanduName('');
+                    // setPosyanduSearch('');
+                    setProfilePicBase64(undefined);
 
-                {/* Autocomplete Dropdown */}
-                {showDistrictDropdown && districtSearch && (
-                  <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto mt-1" style={{ backgroundColor: 'white' }}>
-                    {filteredDistricts.length > 0 ? (
-                      filteredDistricts.map((district) => (
-                        <button
-                          key={district.id}
-                          type="button"
-                          className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
-                          onClick={() => {
-                            setDistrictSearch(district.name);
-                            setSelectedDistrict(district.name);
-                            setShowDistrictDropdown(false);
-                            setVillageSearch(''); // Reset village when new district confirmed
-                          }}
-                        >
-                          {district.name}
-                        </button>
-                      ))
-                    ) : (
-                      <div className="px-4 py-2 text-sm text-gray-500 italic">
-                        Kecamatan tidak ditemukan
-                      </div>
+                    // Refresh list
+                    fetchUsers();
+                  } else {
+                    const errData = await res.json();
+                    alert(`Operation failed: ${errData.message || 'Unknown error'}`);
+                  }
+                } catch (error) {
+                  console.error("Operation error:", error);
+                  alert("An error occurred.");
+                }
+              }}>
+                {/* Profile Picture Input Section in Form */}
+                <div className="space-y-1.5">
+                  <label className="text-[14px] font-semibold text-gray-700">Profile Picture (Upload & Crop)</label>
+                  <div className="flex items-center gap-4">
+                    {profilePicBase64 && (
+                      <img src={profilePicBase64} alt="Preview" className="w-16 h-16 rounded-full object-cover border-2 border-[#11998E]" />
                     )}
+                    <label className="cursor-pointer px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
+                      <span className="text-[18px]">📷</span>
+                      <span>{profilePicBase64 ? 'Change Photo' : 'Upload Photo'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                    </label>
                   </div>
-                )}
-              </div>
+                  <p className="text-xs text-gray-500 mt-1">Image will be cropped to 1:1 and optimized.</p>
+                </div>
 
-              {/* Village Field for Puskesmas (and Admin if they want to create Posyandu user?) */}
-              {/* Assuming this flow is for creating Posyandu Operator */}
-              {(currentUser?.role === 'puskesmas' || roleFilter === 'posyandu' /* or context check */) && (
-                <>
-                  <div className={`relative ${showVillageDropdown ? 'z-50' : ''}`}>
-                    <label className={`block text-sm font-medium mb-1 ${isVillageDisabled ? 'text-gray-400' : 'text-gray-700'}`}>
-                      Kelurahan/Desa
+                <div className="space-y-1.5">
+                  <label className="text-[14px] font-semibold text-gray-700">Nama Lengkap</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px] border-gray-300"
+                    placeholder="e.g. Dr. Budi"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[14px] font-semibold text-gray-700">Email</label>
+                  <input
+                    type="email"
+                    className="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px] border-gray-300"
+                    placeholder="budi@puskesmas.id"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[14px] font-semibold text-gray-700">NIK</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px] border-gray-300"
+                    placeholder="16-digit NIK"
+                    value={nik}
+                    onChange={(e) => setNik(e.target.value)}
+                    maxLength={16}
+                  />
+                </div>
+
+                {/* Role-Specific Fields */}
+                {(!isEditing || editingUserRole === 'puskesmas' || editingUserRole === 'posyandu') && (
+                  <div className={`space-y-1.5 relative ${showDistrictDropdown ? 'z-[999]' : 'z-10'}`}>
+                    <label className="text-[14px] font-semibold text-gray-700">
+                      Kecamatan/District {(currentUser?.role === 'puskesmas' || editingUserRole === 'posyandu') ? '(Required for filtering Village)' : ''}
                     </label>
                     <input
                       type="text"
-                      className={`w-full border rounded-lg p-2 ${isVillageDisabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                      placeholder={isVillageDisabled ? "Please select a district first" : "Type to search village..."}
-                      value={villageSearch}
+                      className="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px] bg-white border-gray-300 relative z-20"
+                      placeholder="Type to search kecamatan..."
+                      value={districtSearch}
                       onChange={(e) => {
-                        setVillageSearch(e.target.value);
-                        setShowVillageDropdown(true);
+                        setDistrictSearch(e.target.value);
+                        setShowDistrictDropdown(true);
+                        setSelectedDistrict('');
+                        setVillageSearch('');
+                        setSelectedVillage('');
                       }}
-                      onFocus={() => {
-                        if (!isVillageDisabled) setShowVillageDropdown(true);
-                      }}
-                      disabled={isVillageDisabled}
-                      required={!isEditing}
+                      onFocus={() => setShowDistrictDropdown(true)}
+                      required={!isEditing || editingUserRole === 'puskesmas'} // Required for puskesmas
                     />
-                    {showVillageDropdown && villageSearch.length >= 2 && !isVillageDisabled && (
-                      <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-[200px] overflow-y-auto mt-1" style={{ backgroundColor: 'white' }}>
-                        {villages.length > 0 ? (
-                          villages.map((v) => (
+
+                    {/* Autocomplete Dropdown */}
+                    {showDistrictDropdown && districtSearch && (
+                      <div className="absolute z-[9999] w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-[200px] overflow-y-auto mt-1" style={{ backgroundColor: '#ffffff' }}>
+                        {filteredDistricts.length > 0 ? (
+                          filteredDistricts.map((district) => (
                             <button
-                              key={v.id}
+                              key={district.id}
                               type="button"
-                              className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
+                              className="w-full text-left px-4 py-2 hover:bg-gray-50 text-[14px] flex items-center border-b border-gray-50 last:border-none bg-white relative z-50"
                               onClick={() => {
-                                setVillageSearch(v.name);
-                                setSelectedVillage(v.name);
-                                setShowVillageDropdown(false);
+                                setDistrictSearch(district.name);
+                                setSelectedDistrict(district.name);
+                                setShowDistrictDropdown(false);
+                                setVillageSearch('');
                               }}
                             >
-                              {v.name}
+                              <span className="font-medium text-gray-800 pointer-events-none">{district.name}</span>
                             </button>
                           ))
                         ) : (
-                          <div className="px-4 py-2 text-sm text-gray-500 italic">
-                            No villages found in {selectedDistrict}
+                          <div className="px-4 py-2 text-[14px] text-gray-500 italic bg-white relative z-50">
+                            Kecamatan tidak ditemukan
                           </div>
                         )}
                       </div>
                     )}
                   </div>
-                </>
-              )}
+                )}
 
-              <div className="pt-4 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowRegisterModal(false)}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="px-4 py-2 bg-[#11998E] text-white rounded-lg hover:opacity-90">
-                  {isEditing ? 'Save Changes' : 'Register'}
-                </button>
-              </div>
-            </form >
+                {/* Village Field - Only for Posyandu Operators */}
+                {((currentUser?.role === 'puskesmas' && !isEditing) || editingUserRole === 'posyandu') && (
+                  <>
+                    <div className={`space-y-1.5 relative ${showVillageDropdown ? 'z-[999]' : 'z-10'}`}>
+                      <label className={`text-[14px] font-semibold ${isVillageDisabled ? 'text-gray-400' : 'text-gray-700'}`}>
+                        Kelurahan/Desa
+                      </label>
+                      <input
+                        type="text"
+                        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#11998E] text-[15px] relative z-20 ${isVillageDisabled ? 'bg-gray-100 cursor-not-allowed border-gray-200' : 'bg-white border-gray-300'}`}
+                        placeholder={isVillageDisabled ? "Pilih kecamatan terlebih dahulu" : "Ketik untuk mencari desa..."}
+                        value={villageSearch}
+                        onChange={(e) => {
+                          setVillageSearch(e.target.value);
+                          setShowVillageDropdown(true);
+                        }}
+                        onFocus={() => {
+                          if (!isVillageDisabled) setShowVillageDropdown(true);
+                        }}
+                        disabled={isVillageDisabled}
+                        required={!isEditing || editingUserRole === 'posyandu'}
+                      />
+                      {showVillageDropdown && villageSearch.length >= 2 && !isVillageDisabled && (
+                        <div className="absolute z-[9999] w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-[200px] overflow-y-auto mt-1" style={{ backgroundColor: '#ffffff' }}>
+                          {villages.length > 0 ? (
+                            villages.map((v) => (
+                              <button
+                                key={v.id}
+                                type="button"
+                                className="w-full text-left px-4 py-2 hover:bg-gray-50 text-[14px] flex items-center border-b border-gray-50 last:border-none bg-white relative z-50"
+                                onClick={() => {
+                                  setVillageSearch(v.name);
+                                  setSelectedVillage(v.name);
+                                  setShowVillageDropdown(false);
+                                }}
+                              >
+                                <span className="font-medium text-gray-800 pointer-events-none">{v.name}</span>
+                              </button>
+                            ))
+                          ) : (
+                            <div className="px-4 py-2 text-[14px] text-gray-500 italic bg-white relative z-50">
+                              No villages found in {selectedDistrict}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                <div className="flex flex-col gap-3 pt-4 mt-2">
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowRegisterModal(false)}
+                      className="flex-1 px-6 py-3 border border-gray-300 rounded-lg font-semibold text-[15px] hover:bg-gray-50 transition-colors"
+                    >
+                      Batal
+                    </button>
+                    <button type="submit" className="flex-1 gradient-primary text-white px-6 py-3 rounded-lg font-semibold text-[15px] hover:opacity-90 transition-opacity disabled:opacity-50">
+                      {isEditing ? 'Simpan Perubahan' : 'Daftarkan Operator'}
+                    </button>
+                  </div>
+                </div>
+              </form >
+            </div>
           </div >
         </div >
       )}

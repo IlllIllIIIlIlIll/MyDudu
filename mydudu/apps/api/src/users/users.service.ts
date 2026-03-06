@@ -65,7 +65,7 @@ export class UsersService {
             data: {
                 email: data.email,
                 fullName: data.fullName,
-                nik: data.nik,
+                nik: data.nik === '' ? null : data.nik,
                 role: UserRole.PUSKESMAS,
                 status: UserStatus.ACTIVE,
                 profilePicture: data.profilePicture,
@@ -153,7 +153,7 @@ export class UsersService {
             data: {
                 email: data.email,
                 fullName: data.fullName,
-                nik: data.nik,
+                nik: data.nik === '' ? null : data.nik,
                 role: UserRole.POSYANDU,
                 status: UserStatus.PENDING, // Pending Admin Approval
                 profilePicture: data.profilePicture,
@@ -269,7 +269,7 @@ export class UsersService {
             assignedLocation
         };
     }
-    async updateProfile(id: number, data: { fullName?: string; profilePicture?: string; district?: string; email?: string; nik?: string }, actorId?: number) {
+    async updateProfile(id: number, data: { fullName?: string; profilePicture?: string; district?: string; village?: string; email?: string; nik?: string }, actorId?: number) {
         // Check email uniqueness if email is being updated
         if (data.email) {
             const existingUser = await this.prisma.user.findFirst({
@@ -293,14 +293,28 @@ export class UsersService {
             }
         }
 
+        let villageId = undefined;
+        if (data.village) {
+            const village = await this.prisma.village.findFirst({
+                where: { name: { equals: data.village, mode: 'insensitive' } },
+                include: { district: true }
+            });
+            if (village) {
+                villageId = village.id;
+                // If village is found, override district mapping to ensure data integrity
+                districtId = village.district.id;
+            }
+        }
+
         const updatedUser = await this.prisma.user.update({
             where: { id },
             data: {
                 fullName: data.fullName,
                 email: data.email,
-                nik: data.nik,
+                nik: data.nik === '' ? null : data.nik,
                 profilePicture: data.profilePicture,
-                ...(districtId !== undefined && { districtId })
+                ...(districtId !== undefined && { districtId }),
+                ...(villageId !== undefined && { villageId })
             }
         });
 

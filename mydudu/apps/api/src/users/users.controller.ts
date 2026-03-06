@@ -57,7 +57,7 @@ export class UsersController {
 
   @Patch(':id')
   @UseGuards(AuthGuard)
-  async updateProfile(@Param('id', ParseIntPipe) id: number, @Body() body: { fullName?: string; profilePicture?: string; district?: string; email?: string }, @Req() req: any) {
+  async updateProfile(@Param('id', ParseIntPipe) id: number, @Body() body: { fullName?: string; profilePicture?: string; district?: string; village?: string; email?: string; nik?: string }, @Req() req: any) {
     const actorEmail = req.user?.email;
     const actor = actorEmail ? await this.usersService.findByEmail(actorEmail) : null;
     return this.usersService.updateProfile(id, body, actor?.id);
