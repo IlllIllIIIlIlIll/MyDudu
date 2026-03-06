@@ -3,6 +3,7 @@ import { auth } from '@/lib/firebase';
 import { Server, Users, Smartphone, Activity, AlertTriangle, CheckCircle, Database } from 'lucide-react';
 import { OverviewCard } from '../../components/OverviewCard';
 import { ObservabilityCard } from '../../components/ObservabilityCard'; // Import new component
+import { WHO_STATUS_TRANSLATE } from '@mydudu/shared';
 
 export function AdminDashboard() {
   const [stats, setStats] = useState<any>(null);
@@ -167,7 +168,9 @@ export function AdminDashboard() {
           <ul className="space-y-3">
             {stats?.nutrition?.map((n: any, i: number) => (
               <li key={i} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="font-semibold text-gray-700">{n.category || 'UNKNOWN'}</span>
+                <span className="font-semibold text-gray-700">
+                  {n.category ? (WHO_STATUS_TRANSLATE[n.category] || n.category.replace(/_/g, ' ')) : 'UNKNOWN'}
+                </span>
                 <span className="font-bold text-[#11998E] text-[18px]">{n._count}</span>
               </li>
             ))}
