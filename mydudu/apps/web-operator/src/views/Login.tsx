@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Lock, AlertCircle } from 'lucide-react';
+import { getFriendlyErrorMessage } from '@mydudu/shared';
 
 interface LoginProps {
   onLogin: () => Promise<void>;
@@ -16,7 +17,7 @@ export function Login({ onLogin }: LoginProps) {
     try {
       await onLogin();
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      setError(getFriendlyErrorMessage(err));
       setIsLoading(false);
     }
   };

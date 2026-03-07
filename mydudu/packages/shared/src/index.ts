@@ -154,3 +154,5 @@ export const CLINICAL_OUTCOME_CONFIG: Record<string, {
         instructions: ['Lanjutkan pemantauan', 'Berikan perawatan sesuai anjuran'],
     },
 };
+
+export * from './utils/error';

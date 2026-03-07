@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CreditCard, AlertCircle } from 'lucide-react';
+import { getFriendlyErrorMessage } from '@mydudu/shared';
 
 interface LoginPageProps {
   onLogin: (userData: any) => void;
@@ -39,7 +40,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Terjadi kesalahan saat login');
+      setError(getFriendlyErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
